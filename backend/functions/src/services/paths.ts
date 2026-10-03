@@ -1,0 +1,22 @@
+/** Firestore paths in one place. */
+export const paths = {
+  business: (b: string) => `businesses/${b}`,
+  members: (b: string) => `businesses/${b}/members`,
+  member: (b: string, uid: string) => `businesses/${b}/members/${uid}`,
+  services: (b: string) => `businesses/${b}/services`,
+  service: (b: string, id: string) => `businesses/${b}/services/${id}`,
+  bays: (b: string) => `businesses/${b}/bays`,
+  bay: (b: string, id: string) => `businesses/${b}/bays/${id}`,
+  customers: (b: string) => `businesses/${b}/customers`,
+  customer: (b: string, id: string) => `businesses/${b}/customers/${id}`,
+  bookings: (b: string) => `businesses/${b}/bookings`,
+  booking: (b: string, id: string) => `businesses/${b}/bookings/${id}`,
+  queue: (b: string) => `businesses/${b}/queue`,
+  queueItem: (b: string, id: string) => `businesses/${b}/queue/${id}`,
+  queueCounter: (b: string, dayKey: string) => `businesses/${b}/counters/queue-${dayKey}`,
+  auditLogs: (b: string) => `businesses/${b}/audit_logs`,
+  auditLog: (b: string, id: string) => `businesses/${b}/audit_logs/${id}`,
+  apiClient: (id: string) => `api_clients/${id}`,
+  apiBookingIndex: (bookingId: string) => `api_booking_index/${bookingId}`,
+  idempotency: (keyHash: string) => `api_idempotency/${keyHash}`,
+};

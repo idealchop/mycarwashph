@@ -1,0 +1,79 @@
+rules_version = '2';
+
+// Mycarwash.ph Firestore rules.
+//
+// Model: every business-scoped document lives under businesses/{businessId}.
+// - All writes go through the API (Cloud Functions, Admin SDK bypasses rules),
+//   so clients can never write directly.
+// - Clients may READ a business and its data only if they are an active member
+//   (businesses/{businessId}/members/{uid}). This lets the web app use live
+//   listeners later without opening data across tenants.
+// - Platform collections (api_clients, idempotency, booking index) are server-only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberDoc(businessId) {
+      return /databases/$(database)/documents/businesses/$(businessId)/members/$(request.auth.uid);
+    }
+
+    function isMember(businessId) {
+      return signedIn()
+        && exists(memberDoc(businessId))
+        && get(memberDoc(businessId)).data.status == 'active'
+        && get(memberDoc(businessId)).data.businessId == businessId;
+    }
+
+    function isOwner(businessId) {
+      return isMember(businessId) && get(memberDoc(businessId)).data.role == 'owner';
+    }
+
+    match /businesses/{businessId} {
+      allow read: if isMember(businessId);
+      allow write: if false;
+
+      // Members can see their own membership even before others; members see the team.
+      match /members/{uid} {
+        allow read: if isMember(businessId) || (signedIn() && request.auth.uid == uid);
+        allow write: if false;
+      }
+
+      // Owner-only: the audit trail.
+      match /audit_logs/{logId} {
+        allow read: if isOwner(businessId);
+        allow write: if false;
+      }
+
+      // Counters are internal (queue numbers).
+      match /counters/{counterId} {
+        allow read, write: if false;
+      }
+
+      // Bookings: never expose the check-in code hash to clients; read via the API.
+      match /bookings/{bookingId} {
+        allow read, write: if false;
+      }
+
+      // Everything else under a business (services, bays, customers, queue, ...).
+      match /{collection}/{docId} {
+        allow read: if isMember(businessId)
+          && collection in ['services', 'bays', 'customers', 'queue'];
+        allow write: if false;
+      }
+    }
+
+    // Collection-group read of a user's own memberships (e.g. "my shops").
+    // Queries must filter on uid == request.auth.uid for the rules to allow them.
+    match /{path=**}/members/{uid} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // Default deny (api_clients, api_idempotency, api_booking_index, anything else).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

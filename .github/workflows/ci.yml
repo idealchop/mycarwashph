@@ -34,7 +34,32 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
-      - name: Unit tests
+      - name: Unit tests (API membership checks, lifecycle, /v1)
         run: pnpm test
       - name: Build (packages, functions, web)
         run: pnpm build
+
+  rules:
+    name: Firestore rules tests (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Cache emulator binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Rules tests
+        run: pnpm test:rules
