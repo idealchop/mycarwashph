@@ -16,7 +16,7 @@
     "test": "pnpm --filter @mycarwash/functions test",
     "test:rules": "firebase emulators:exec --only firestore --project demo-mycarwash \"pnpm --filter @mycarwash/rules-tests test\"",
     "emulators": "pnpm --filter @mycarwash/functions build && firebase emulators:start --only auth,firestore,functions --project demo-mycarwash",
-    "seed:emulator": "node scripts/seed-emulator.mjs",
+    "seed:emulator": "pnpm --filter @mycarwash/functions seed:emulator",
     "screenshots": "python3 scripts/screenshots.py"
   },
   "devDependencies": {

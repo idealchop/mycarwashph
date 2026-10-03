@@ -4,7 +4,7 @@
       "source": "backend/functions",
       "codebase": "mycarwash",
       "runtime": "nodejs22",
-      "ignore": ["node_modules", ".git", "src", "test", "*.log", ".env.example", "vitest.config.ts", "tsconfig*.json"],
+      "ignore": ["node_modules", ".git", "src", "test", "scripts", "*.log", ".env.example", "vitest.config.ts", "tsconfig*.json"],
       "predeploy": ["pnpm --filter @mycarwash/functions build"]
     }
   ],

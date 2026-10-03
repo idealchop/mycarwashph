@@ -5,5 +5,5 @@
 
 html,
 body {
-  background: var(--ra-color-canvas, #f2f2f0);
+  background: var(--color-canvas);
 }

@@ -6,12 +6,15 @@
   "license": "UNLICENSED",
   "type": "module",
   "main": "dist/index.js",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed:emulator": "node scripts/seed-emulator.mjs"
   },
   "dependencies": {
     "express": "5.2.1",

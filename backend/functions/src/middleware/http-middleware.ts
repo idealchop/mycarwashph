@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import type { AppConfig } from "../config/env.js";
 
 /** Minimal CORS for the shop web app origins. */
@@ -28,6 +28,11 @@ export function limiter(config: AppConfig, limit: number): RequestHandler {
     limit,
     standardHeaders: "draft-8",
     legacyHeaders: false,
+    // req.ip can be undefined behind some proxies (and in the functions emulator).
+    keyGenerator: (req) => {
+      const ip = req.ip ?? req.header("x-forwarded-for")?.split(",")[0]?.trim();
+      return ip ? ipKeyGenerator(ip) : "unknown";
+    },
     message: { status: 429, code: "rate_limited", title: "Too many requests. Please slow down." },
   });
 }
