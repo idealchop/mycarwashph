@@ -1,0 +1,43 @@
+{
+  "name": "mycarwashph",
+  "private": true,
+  "description": "Mycarwash.ph: standalone car wash management web app by River Apps (web, mobile-first).",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "build:packages": "pnpm --filter \"./packages/**\" -r run build",
+    "build": "pnpm build:packages && pnpm --filter @mycarwash/functions build && pnpm --filter @mycarwash/web build",
+    "dev": "pnpm build:packages && pnpm --filter @mycarwash/web dev",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --workspace-concurrency=1 run typecheck",
+    "test": "pnpm --filter @mycarwash/functions test",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-mycarwash \"pnpm --filter @mycarwash/rules-tests test\"",
+    "emulators": "pnpm --filter @mycarwash/functions build && firebase emulators:start --only auth,firestore,functions --project demo-mycarwash",
+    "seed:emulator": "node scripts/seed-emulator.mjs",
+    "screenshots": "python3 scripts/screenshots.py"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.8",
+    "firebase-tools": "15.32.1",
+    "globals": "17.13.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "protobufjs",
+      "re2",
+      "sharp",
+      "unrs-resolver"
+    ],
+    "ignoredBuiltDependencies": [
+      "@firebase/util"
+    ]
+  }
+}

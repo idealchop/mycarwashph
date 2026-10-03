@@ -1,0 +1,32 @@
+{
+  "name": "@mycarwash/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mycarwash.ph shop web app (owners and staff), mobile-first, built with the River Apps UI Kit.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@river-apps/icons": "workspace:*",
+    "@river-apps/tokens": "workspace:*",
+    "@river-apps/ui": "workspace:*",
+    "firebase": "12.19.0",
+    "lucide-react": "1.51.0",
+    "next": "16.3.8",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.5",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
+  }
+}

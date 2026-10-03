@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@import "@river-apps/tokens/theme.css";
+@source "../../packages/ui/src";
+@source "../../packages/icons/src";
+
+html,
+body {
+  background: var(--ra-color-canvas, #f2f2f0);
+}

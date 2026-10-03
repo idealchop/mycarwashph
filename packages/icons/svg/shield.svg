@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><defs>
+<radialGradient id="ra-shield-b1" cx=".42" cy=".4" r=".6"><stop offset="0" stop-color="#EAF4FF"/><stop offset=".6" stop-color="#9CCBFF"/><stop offset="1" stop-color="#4F95F5"/></radialGradient>
+<linearGradient id="ra-shield-iri" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF9FD2"/><stop offset=".4" stop-color="#7CC4FF"/><stop offset=".75" stop-color="#8CF0C4"/><stop offset="1" stop-color="#FFD66B"/></linearGradient>
+<linearGradient id="ra-shield-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF4B8"/><stop offset=".45" stop-color="#FFC93C"/><stop offset="1" stop-color="#F08C00"/></linearGradient>
+<linearGradient id="ra-shield-peach" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD9BF"/><stop offset=".5" stop-color="#FF8A4C"/><stop offset="1" stop-color="#E4572E"/></linearGradient>
+<linearGradient id="ra-shield-lil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E7DDFF"/><stop offset=".5" stop-color="#9B7BFF"/><stop offset="1" stop-color="#5B3FD6"/></linearGradient>
+<linearGradient id="ra-shield-mint" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C9F7E1"/><stop offset=".5" stop-color="#34D399"/><stop offset="1" stop-color="#0E9F6E"/></linearGradient>
+<linearGradient id="ra-shield-sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D5EBFF"/><stop offset=".5" stop-color="#5FA8FF"/><stop offset="1" stop-color="#2563EB"/></linearGradient>
+<radialGradient id="ra-shield-tyre" cx=".42" cy=".38" r=".7"><stop offset="0" stop-color="#4A4E57"/><stop offset=".7" stop-color="#1B1D22"/><stop offset="1" stop-color="#060708"/></radialGradient>
+<radialGradient id="ra-shield-rim" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#D6DBE2"/><stop offset="1" stop-color="#7E8794"/></radialGradient>
+<filter id="ra-shield-sh" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="2.5" stdDeviation="2.2" flood-color="#0A0A0A" flood-opacity=".22"/></filter>
+</defs><g filter="url(#ra-shield-sh)"><path d="M32 6 L52 13 L52 30 C52 43 43 52 32 57 C21 52 12 43 12 30 L12 13 Z" fill="url(#ra-shield-mint)"/><path d="M23 31 L29.5 37.5 L42 25" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 16 L30 11" stroke="#fff" stroke-opacity=".6" stroke-width="2.5" stroke-linecap="round"/></g></svg>

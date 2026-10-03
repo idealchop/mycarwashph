@@ -1,0 +1,24 @@
+{
+  "name": "@river-apps/tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "River Apps UI Kit design tokens: CSS variables, Tailwind 4 theme, JSON and fonts.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./tokens.css": "./dist/tokens.css",
+    "./theme.css": "./dist/theme.css",
+    "./fonts.css": "./dist/fonts.css",
+    "./tokens.json": "./dist/tokens.json",
+    "./fonts/*": "./fonts/*"
+  },
+  "files": ["dist", "fonts", "src"],
+  "sideEffects": ["*.css"],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "node scripts/build.mjs > /dev/null && node -e \"JSON.parse(require('fs').readFileSync('src/tokens.json','utf8'))\""
+  }
+}

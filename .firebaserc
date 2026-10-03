@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "mycarwash-dev",
+    "dev": "mycarwash-dev",
+    "prod": "mycarwash-prod"
+  }
+}
