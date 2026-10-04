@@ -1,0 +1,9 @@
+# Environment "dev" (backend mycarwash-dev): Firestore database mycarwash-dev
+# via the *Dev functions.
+env:
+  - variable: NEXT_PUBLIC_APP_ENV
+    value: dev
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_API_BASE_URL
+    value: https://asia-southeast1-mycarwashph.cloudfunctions.net/mycarwashApiDev
+    availability: [BUILD, RUNTIME]

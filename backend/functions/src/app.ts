@@ -16,7 +16,7 @@ function base() {
   return app;
 }
 
-/** Shop app API (owners and staff, Firebase ID tokens). Function: mycarwashApi. */
+/** Shop app API (owners and staff, Firebase ID tokens). Functions: mycarwashApiDev / mycarwashApiProd. */
 export function createApp(deps: Deps) {
   const app = base();
   app.use(cors(deps.config));
@@ -30,7 +30,7 @@ export function createApp(deps: Deps) {
   return app;
 }
 
-/** Public partner API for River Mobile (server to server). Function: mycarwashPublicApi. */
+/** Public partner API for River Mobile (server to server). Functions: mycarwashPublicApiDev / mycarwashPublicApiProd. */
 export function createPublicApp(deps: Deps) {
   const app = base();
   app.use(limiter(deps.config, 120));

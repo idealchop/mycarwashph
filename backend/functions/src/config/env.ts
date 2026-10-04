@@ -1,7 +1,7 @@
 /**
- * Runtime configuration from environment variables. Real values live in
- * backend/functions/.env.<project-id> (git-ignored) or Secret Manager.
- * See backend/functions/.env.example.
+ * Runtime configuration for one environment (dev or prod). Non-secret values come
+ * from config/environments.ts and can be overridden with env vars; the API key
+ * pepper comes from Secret Manager (see index.ts).
  */
 export interface AppConfig {
   allowedOrigins: string[];
@@ -10,13 +10,14 @@ export interface AppConfig {
   disableRateLimit: boolean;
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+export function loadConfig(
+  defaults: { allowedOrigins: string[]; apiKeyPepper: string },
+  env: NodeJS.ProcessEnv = process.env,
+): AppConfig {
+  const origins = env.ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean);
   return {
-    allowedOrigins: (env.ALLOWED_ORIGINS ?? "http://localhost:3000,http://127.0.0.1:3000")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
-    apiKeyPepper: env.API_KEY_PEPPER ?? "local-dev-pepper",
+    allowedOrigins: origins?.length ? origins : defaults.allowedOrigins,
+    apiKeyPepper: defaults.apiKeyPepper,
     disableRateLimit: env.DISABLE_RATE_LIMIT === "true",
   };
 }

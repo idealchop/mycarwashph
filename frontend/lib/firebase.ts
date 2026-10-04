@@ -4,9 +4,10 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { connectAuthEmulator, getAuth, type Auth } from "firebase/auth";
 
 /**
- * Firebase web config comes from NEXT_PUBLIC_* env vars (see frontend/.env.example).
- * Defaults target the local emulators with the offline `demo-mycarwash` project,
- * so the app runs without any real Firebase project.
+ * Firebase web config comes from NEXT_PUBLIC_* env vars: on App Hosting they are
+ * derived from FIREBASE_WEBAPP_CONFIG (see next.config.ts); locally from
+ * frontend/.env.local. Defaults target the local emulators with the offline
+ * `demo-mycarwash` project, so the app runs without the real `mycarwashph` project.
  */
 const config = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "demo-api-key",
@@ -15,7 +16,9 @@ const config = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "1:000000000000:web:0000000000000000000000",
 };
 
-export const useEmulators = (process.env.NEXT_PUBLIC_USE_EMULATORS ?? "true") === "true";
+/** Emulators by default in development; deployed builds set NEXT_PUBLIC_USE_EMULATORS=false. */
+export const useEmulators =
+  (process.env.NEXT_PUBLIC_USE_EMULATORS ?? (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "false" : "true")) === "true";
 const authEmulatorUrl = process.env.NEXT_PUBLIC_AUTH_EMULATOR_URL ?? "http://127.0.0.1:9099";
 
 let auth: Auth | null = null;

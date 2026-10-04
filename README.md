@@ -9,7 +9,7 @@ Web only: desktop and phone browsers, designed mobile-first.
   customers and (later) sales, messaging and growth tools. Plan prices are not
   set yet and are not in the code.
 
-> **Standalone.** Mycarwash.ph has its own Firebase projects, its own database
+> **Standalone.** Mycarwash.ph has its own Firebase project, its own databases
 > and its own sign-in. It shares no database, users or code at runtime with
 > River Mobile or any other River Apps product. River Mobile connects **only
 > through the versioned public API** (`/v1`, see [docs/api.md](docs/api.md)).
@@ -38,16 +38,17 @@ mycarwashph/
 ├─ packages/            River Apps UI Kit, vendored (tokens, icons, ui) — see packages/VENDORED.md
 ├─ tests/rules/         Firestore security rules tests (emulator)
 ├─ firestore.rules      Member-only reads, server-only writes
-├─ firebase.json        Functions, Firestore, emulators
-├─ .firebaserc          mycarwash-dev / mycarwash-prod aliases (placeholders)
+├─ firebase.json        Functions, Firestore (both databases), Auth, App Hosting, emulators
+├─ .firebaserc          Firebase project `mycarwashph`
+├─ apphosting*.yaml     App Hosting config: shared + dev / prod overrides
 └─ docs/                api.md, screenshots/
 ```
 
 ```
-Phone / desktop browser ──► frontend (Next.js) ──Firebase ID token──► mycarwashApi ──► Firestore
-                               │                                          ▲
-                               └── Firebase Auth (phone SMS code, Google) │
-River Mobile backend ──API key (placeholder)──► mycarwashPublicApi (/v1) ─┘
+Phone / desktop browser ──► frontend (Next.js on App Hosting) ──Firebase ID token──► mycarwashApi<Env> ──► Firestore DB
+                               │                                                         ▲
+                               └── Firebase Auth (phone SMS code, Google)                │
+River Mobile backend ──API key (placeholder)──► mycarwashPublicApi<Env> (/v1) ───────────┘
 ```
 
 **Backend** (`backend/functions/src`), following River Kit's structure:
@@ -92,8 +93,9 @@ pnpm build:packages      # builds the vendored UI kit (tokens, icons, ui)
 
 ### Run locally against the emulators (no Firebase project needed)
 
-The emulators use the offline demo project `demo-mycarwash`, so nothing touches
-the cloud and no real SMS is sent.
+The emulators use the offline demo project `demo-mycarwash` (with the same
+named database `mycarwash-dev` the dev functions use), so nothing touches the
+real `mycarwashph` project and no real SMS is sent.
 
 ```bash
 # terminal 1: Auth, Firestore and Functions emulators (UI at http://127.0.0.1:4000)
@@ -141,28 +143,57 @@ Only `.env.example` files are committed. Never commit real values.
 
 | Variable | Purpose |
 |---|---|
-| `NEXT_PUBLIC_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, `_PROJECT_ID`, `_APP_ID` | Firebase web app config for `mycarwash-dev` / `mycarwash-prod` (defaults target the emulator demo project) |
+| `NEXT_PUBLIC_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, `_PROJECT_ID`, `_APP_ID` | Web config of the "Mycarwash PH Web" app in `mycarwashph`. On App Hosting derived from `FIREBASE_WEBAPP_CONFIG`; locally optional (defaults target the emulator demo project) |
 | `NEXT_PUBLIC_USE_EMULATORS` | `true` to use the local Auth emulator (default `true`) |
 | `NEXT_PUBLIC_AUTH_EMULATOR_URL` | Auth emulator URL (default `http://127.0.0.1:9099`) |
-| `NEXT_PUBLIC_API_BASE_URL` | Base URL of the `mycarwashApi` function |
+| `NEXT_PUBLIC_APP_ENV` | `local`, `dev` or `prod` (label) |
+| `NEXT_PUBLIC_API_BASE_URL` | Base URL of the shop API for the environment (`mycarwashApiDev` / `mycarwashApiProd`) |
 
-**`backend/functions/.env.example`** → `backend/functions/.env.local` (emulator) or
-`.env.<project-id>` (deploy)
+**`backend/functions/.env.example`** → `backend/functions/.env.local` (emulator only)
 
 | Variable | Purpose |
 |---|---|
-| `ALLOWED_ORIGINS` | Comma-separated web origins allowed by CORS |
-| `API_KEY_PEPPER` | Pepper for `/v1` API key hashes (use Secret Manager in production) |
+| `ALLOWED_ORIGINS` | Optional CORS override; defaults per environment are in `src/config/environments.ts` |
+| `API_KEY_PEPPER` | Emulator only. Deployed functions read `API_KEY_PEPPER_DEV` / `API_KEY_PEPPER_PROD` from Secret Manager |
 
-## Firebase projects
+## Firebase project and environments
 
-`.firebaserc` has placeholder aliases `dev → mycarwash-dev` and
-`prod → mycarwash-prod`. The projects are **not created yet**. To deploy once
-they exist: `firebase use dev && firebase deploy --only functions,firestore`.
-Each environment needs: Firestore (default) database (proposed region
-`asia-southeast1`), Auth with **Phone** and **Google** providers only, SMS region
-policy set to the Philippines, authorized domains, test phone numbers, and billing
-(phone auth is billed per SMS).
+One Firebase project, **`mycarwashph`** ("Mycarwash PH", Blaze). Dev and prod
+share the project, Firebase Auth and the Functions deployment; they differ by
+**Firestore named database**, **function names** and **App Hosting backend**:
+
+| | dev | prod |
+|---|---|---|
+| Firestore database (asia-southeast1) | `mycarwash-dev` | `mycarwash-prod` |
+| Shop API function | `mycarwashApiDev` | `mycarwashApiProd` |
+| River Mobile API function (`/v1`) | `mycarwashPublicApiDev` | `mycarwashPublicApiProd` |
+| API key pepper (Secret Manager) | `API_KEY_PEPPER_DEV` | `API_KEY_PEPPER_PROD` |
+| App Hosting backend | `mycarwash-dev` | `mycarwash-prod` |
+| App Hosting environment / overrides | `dev` / `apphosting.dev.yaml` | `prod` / `apphosting.prod.yaml` |
+| Web URL | https://mycarwash-dev--mycarwashph.asia-southeast1.hosted.app | https://mycarwash-prod--mycarwashph.asia-southeast1.hosted.app |
+
+The mapping lives in `backend/functions/src/config/environments.ts`; each
+function binds its database with `getFirestore(app, databaseId)`. There is no
+`(default)` database. Note: Auth users are shared by both environments (one
+project), so a person who signs in on dev also exists on prod, but their shops
+and memberships live in separate databases.
+
+The web app does not read Firestore directly (it goes through the API), so the
+frontend only needs the API base URL per environment. The Firebase web config is
+injected by App Hosting (`FIREBASE_WEBAPP_CONFIG`, mapped in
+`frontend/next.config.ts`); nothing is committed.
+
+Deploy (from the repo root, logged in to the Firebase CLI with access to `mycarwashph`):
+
+```bash
+firebase deploy --only firestore --project mycarwashph            # rules + indexes to both databases
+firebase deploy --only functions --project mycarwashph            # all four functions
+firebase deploy --only apphosting:mycarwash-dev --project mycarwashph   # web app, dev (from local source)
+firebase deploy --only apphosting:mycarwash-prod --project mycarwashph  # web app, prod
+firebase deploy --only auth --project mycarwashph                 # Google sign-in provider
+```
+
+Secrets: `firebase functions:secrets:set API_KEY_PEPPER_DEV` (and `_PROD`).
 
 ## Licence
 

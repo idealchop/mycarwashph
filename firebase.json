@@ -4,19 +4,95 @@
       "source": "backend/functions",
       "codebase": "mycarwash",
       "runtime": "nodejs22",
-      "ignore": ["node_modules", ".git", "src", "test", "scripts", "*.log", ".env.example", "vitest.config.ts", "tsconfig*.json"],
-      "predeploy": ["pnpm --filter @mycarwash/functions build"]
+      "ignore": [
+        "node_modules",
+        ".git",
+        "src",
+        "test",
+        "scripts",
+        "*.log",
+        ".env.example",
+        ".secret.local",
+        "vitest.config.ts",
+        "tsconfig*.json"
+      ],
+      "predeploy": [
+        "pnpm --filter @mycarwash/functions build"
+      ]
     }
   ],
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+  "firestore": [
+    {
+      "database": "mycarwash-prod",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    },
+    {
+      "database": "mycarwash-dev",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    }
+  ],
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Mycarwash PH",
+        "supportEmail": "jimboy@smartrefill.io"
+      }
+    }
   },
+  "apphosting": [
+    {
+      "backendId": "mycarwash-dev",
+      "rootDir": "/",
+      "ignore": [
+        "**/node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "**/.next",
+        "**/dist",
+        "docs/screenshots",
+        "**/.env",
+        "**/.env.*.local",
+        "**/.secret.local"
+      ]
+    },
+    {
+      "backendId": "mycarwash-prod",
+      "rootDir": "/",
+      "ignore": [
+        "**/node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "**/.next",
+        "**/dist",
+        "docs/screenshots",
+        "**/.env",
+        "**/.env.*.local",
+        "**/.secret.local"
+      ]
+    }
+  ],
   "emulators": {
-    "auth": { "host": "127.0.0.1", "port": 9099 },
-    "firestore": { "host": "127.0.0.1", "port": 8080 },
-    "functions": { "host": "127.0.0.1", "port": 5001 },
-    "ui": { "enabled": true, "host": "127.0.0.1", "port": 4000 },
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8080
+    },
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "ui": {
+      "enabled": true,
+      "host": "127.0.0.1",
+      "port": 4000
+    },
     "singleProjectMode": true
   }
 }

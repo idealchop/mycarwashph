@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "packageManager": "pnpm@10.33.4",
   "engines": {
-    "node": ">=20.9"
+    "node": "22.x"
   },
   "scripts": {
     "build:packages": "pnpm --filter \"./packages/**\" -r run build",

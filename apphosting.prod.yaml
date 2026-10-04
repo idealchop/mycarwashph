@@ -1,0 +1,12 @@
+# Environment "prod" (backend mycarwash-prod): Firestore database mycarwash-prod
+# via the *Prod functions.
+runConfig:
+  minInstances: 0
+  maxInstances: 4
+env:
+  - variable: NEXT_PUBLIC_APP_ENV
+    value: prod
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_API_BASE_URL
+    value: https://asia-southeast1-mycarwashph.cloudfunctions.net/mycarwashApiProd
+    availability: [BUILD, RUNTIME]

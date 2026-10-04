@@ -10,7 +10,8 @@
  *   +63 917 123 4567  Jun   -> "Sample Carwash"      (Partner, listed on River Mobile)
  *   +63 918 123 4567  Liza  -> "Sample Carwash Plus" (Paid, with bays and a queue)
  * It also registers a local River Mobile API client and books through the real
- * /v1 API, so the Partner home shows incoming bookings. Writes the local API key
+ * /v1 API (mycarwashPublicApiDev -> database mycarwash-dev), so the Partner home
+ * shows incoming bookings. Writes the local API key
  * and check-in QR payloads to /tmp/mycarwash-seed.json (local only).
  */
 import { createHash, randomBytes } from "node:crypto";
@@ -24,11 +25,13 @@ if (!PROJECT.startsWith("demo-")) throw new Error("Refusing to seed a non-demo p
 process.env.FIRESTORE_EMULATOR_HOST ??= "127.0.0.1:8080";
 process.env.FIREBASE_AUTH_EMULATOR_HOST ??= "127.0.0.1:9099";
 const PEPPER = process.env.API_KEY_PEPPER ?? "local-dev-pepper";
-const PUBLIC_API = process.env.PUBLIC_API_URL ?? `http://127.0.0.1:5001/${PROJECT}/asia-southeast1/mycarwashPublicApi`;
+const DATABASE_ID = process.env.FIRESTORE_DATABASE_ID ?? "mycarwash-dev";
+const PUBLIC_API = process.env.PUBLIC_API_URL ?? `http://127.0.0.1:5001/${PROJECT}/asia-southeast1/mycarwashPublicApiDev`;
 
-initializeApp({ projectId: PROJECT });
-const auth = getAuth();
-const db = getFirestore();
+const app = initializeApp({ projectId: PROJECT });
+const auth = getAuth(app);
+// Same named database the *Dev functions use (the emulator supports named databases).
+const db = getFirestore(app, DATABASE_ID);
 const now = new Date();
 const at = now.toISOString();
 const minsAgo = (m) => new Date(now.getTime() - m * 60_000).toISOString();

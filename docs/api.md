@@ -3,13 +3,19 @@
 Two HTTP APIs run as Firebase Cloud Functions v2 (Node 22, `asia-southeast1`),
 both Express apps in `backend/functions`:
 
-| Function | Who calls it | Auth | Base URL (emulator) |
-|---|---|---|---|
-| `mycarwashApi` | Shop web app (owners, staff) | Firebase ID token | `http://127.0.0.1:5001/demo-mycarwash/asia-southeast1/mycarwashApi` |
-| `mycarwashPublicApi` | River Mobile backend (server to server) | API key (placeholder) | `http://127.0.0.1:5001/demo-mycarwash/asia-southeast1/mycarwashPublicApi` |
+Each API is deployed once per environment in Firebase project `mycarwashph`;
+the dev functions use Firestore database `mycarwash-dev`, the prod functions
+`mycarwash-prod`.
 
-Production hosts (proposed, not set up yet): the web app calls `mycarwashApi`
-through App Hosting rewrites; the partner API is served at `https://api.mycarwash.ph`.
+| API | Who calls it | Auth | dev | prod |
+|---|---|---|---|---|
+| Shop API | Shop web app (owners, staff) | Firebase ID token | `mycarwashApiDev` | `mycarwashApiProd` |
+| Partner API (`/v1`) | River Mobile backend (server to server) | API key (placeholder) | `mycarwashPublicApiDev` | `mycarwashPublicApiProd` |
+
+Base URLs: `https://asia-southeast1-mycarwashph.cloudfunctions.net/<function>`
+(e.g. `.../mycarwashPublicApiDev/v1/health`). Emulator:
+`http://127.0.0.1:5001/demo-mycarwash/asia-southeast1/<function>`.
+Proposed later: the partner API behind `https://api.mycarwash.ph`.
 
 ## Conventions
 
@@ -25,7 +31,7 @@ through App Hosting rewrites; the partner API is served at `https://api.mycarwas
   shop API, 120/min for `/v1`. A shared counter or gateway quota is a Phase 1 item.
 - Dual-endpoint rule (River Kit): every mutation domain also has a `GET`.
 
-## Shop API (`mycarwashApi`)
+## Shop API (`mycarwashApiDev` / `mycarwashApiProd`)
 
 Send `Authorization: Bearer <Firebase ID token>`. The token comes from Firebase
 Auth (phone SMS code or Google) in the web app.
@@ -90,7 +96,7 @@ Results: `200` with `{ booking, queueItem }`; `422 invalid_qr`, `422 wrong_shop`
 `409 already_processed`. Partner shops go to `checked_in`; Paid shops also get a
 queue item with the day's next number and the booking moves to `queued`.
 
-## River Mobile API (`/v1`, `mycarwashPublicApi`)
+## River Mobile API (`/v1`, `mycarwashPublicApiDev` / `mycarwashPublicApiProd`)
 
 Server to server only: the River Mobile app talks to River Mobile's backend,
 which holds the Mycarwash credentials. Mycarwash and River Mobile share no
@@ -99,7 +105,8 @@ database or user table; this API is the only connection.
 ### Auth (placeholder)
 
 `Authorization: Bearer mcw_<clientId>_<secret>`. The key is checked against
-`api_clients/{clientId}` (`secretHash = sha256(API_KEY_PEPPER:secret)`, `status`,
+`api_clients/{clientId}` in that environment's database (`secretHash = sha256(pepper:secret)`,
+with the pepper from Secret Manager `API_KEY_PEPPER_DEV` / `_PROD`; `status`,
 `scopes`). Scopes: `shops:read`, `bookings:write`, `bookings:read`, `checkin:write`.
 Phase 1 replaces this with OAuth 2.0 client credentials (`POST /v1/oauth/token`,
 short-lived tokens) as proposed in the plan (§3.9.1).

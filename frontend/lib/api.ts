@@ -2,8 +2,21 @@
 
 import { firebaseAuth } from "./firebase";
 
-const BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:5001/demo-mycarwash/asia-southeast1/mycarwashApi";
+import { useEmulators } from "./firebase";
+
+const FUNCTIONS = "https://asia-southeast1-mycarwashph.cloudfunctions.net";
+
+/**
+ * API base URL. Set NEXT_PUBLIC_API_BASE_URL per environment (apphosting.<env>.yaml).
+ * Fallbacks: the emulator (dev function) locally, otherwise pick dev or prod from
+ * the App Hosting hostname so a backend works even before its environment is set.
+ */
+function apiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (useEmulators) return "http://127.0.0.1:5001/demo-mycarwash/asia-southeast1/mycarwashApiDev";
+  const host = typeof window === "undefined" ? "" : window.location.hostname;
+  return host.startsWith("mycarwash-dev--") || host === "localhost" ? `${FUNCTIONS}/mycarwashApiDev` : `${FUNCTIONS}/mycarwashApiProd`;
+}
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) {
@@ -11,12 +24,12 @@ export class ApiError extends Error {
   }
 }
 
-/** Calls the mycarwashApi function with the signed-in user's Firebase ID token. */
+/** Calls the shop API function (mycarwashApiDev / mycarwashApiProd) with the signed-in user's Firebase ID token. */
 export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const user = firebaseAuth().currentUser;
   if (!user) throw new ApiError(401, "unauthorized", "Please sign in.");
   const token = await user.getIdToken();
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${apiBase()}${path}`, {
     method: init.method ?? "GET",
     headers: { Authorization: `Bearer ${token}`, ...(init.body ? { "Content-Type": "application/json" } : {}) },
     body: init.body ? JSON.stringify(init.body) : undefined,
