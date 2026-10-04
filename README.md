@@ -169,7 +169,7 @@ share the project, Firebase Auth and the Functions deployment; they differ by
 | River Mobile API function (`/v1`) | `mycarwashPublicApiDev` | `mycarwashPublicApiProd` |
 | API key pepper (Secret Manager) | `API_KEY_PEPPER_DEV` | `API_KEY_PEPPER_PROD` |
 | App Hosting backend | `mycarwash-dev` | `mycarwash-prod` |
-| App Hosting environment / overrides | `dev` / `apphosting.dev.yaml` | `prod` / `apphosting.prod.yaml` |
+| App Hosting environment / overrides | `dev` / `frontend/apphosting.dev.yaml` | `prod` / `frontend/apphosting.prod.yaml` |
 | Web URL | https://mycarwash-dev--mycarwashph.asia-southeast1.hosted.app | https://mycarwash-prod--mycarwashph.asia-southeast1.hosted.app |
 
 The mapping lives in `backend/functions/src/config/environments.ts`; each
@@ -194,6 +194,11 @@ firebase deploy --only auth --project mycarwashph                 # Google sign-
 ```
 
 Secrets: `firebase functions:secrets:set API_KEY_PEPPER_DEV` (and `_PROD`).
+
+App Hosting builds the monorepo through its Turborepo support: both backends use
+root directory `frontend` (see `firebase.json`), the CLI uploads the whole repo,
+and the buildpack runs `turbo run build --filter=@mycarwash/web` (UI kit packages
+first, per `turbo.json`), then the App Hosting Next.js adapter (standalone output).
 
 ## Licence
 

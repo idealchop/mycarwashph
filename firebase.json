@@ -44,7 +44,7 @@
   "apphosting": [
     {
       "backendId": "mycarwash-dev",
-      "rootDir": "/",
+      "rootDir": "frontend",
       "ignore": [
         "**/node_modules",
         ".git",
@@ -55,12 +55,13 @@
         "docs/screenshots",
         "**/.env",
         "**/.env.*.local",
-        "**/.secret.local"
+        "**/.secret.local",
+        "**/.turbo"
       ]
     },
     {
       "backendId": "mycarwash-prod",
-      "rootDir": "/",
+      "rootDir": "frontend",
       "ignore": [
         "**/node_modules",
         ".git",
@@ -71,7 +72,8 @@
         "docs/screenshots",
         "**/.env",
         "**/.env.*.local",
-        "**/.secret.local"
+        "**/.secret.local",
+        "**/.turbo"
       ]
     }
   ],

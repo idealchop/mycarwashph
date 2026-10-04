@@ -1,16 +1,17 @@
 # App Hosting config shared by both backends (mycarwash-dev, mycarwash-prod) of
 # Firebase project `mycarwashph`. Per-environment values live in
-# apphosting.dev.yaml / apphosting.prod.yaml, selected by each backend's
+# frontend/apphosting.dev.yaml / apphosting.prod.yaml, selected by each backend's
 # Environment name (dev / prod). No secrets here.
 #
 # The Firebase web config is NOT listed here: App Hosting injects
 # FIREBASE_WEBAPP_CONFIG at build time for the linked web app ("Mycarwash PH Web")
 # and frontend/next.config.ts maps it to NEXT_PUBLIC_FIREBASE_*.
 
-# pnpm monorepo: build the vendored UI kit, then the Next.js app in frontend/.
-scripts:
-  buildCommand: pnpm build:packages && pnpm --filter @mycarwash/web build
-  runCommand: pnpm --filter @mycarwash/web start
+# pnpm monorepo deployed with App Hosting's Turborepo support: the backend root
+# directory is `frontend` (firebase.json), and the buildpack runs
+# `turbo run build --filter=@mycarwash/web`, which builds the vendored UI kit
+# packages first (turbo.json dependsOn ^build) and then `next build` through the
+# App Hosting Next.js adapter (standalone output).
 
 runConfig:
   minInstances: 0
