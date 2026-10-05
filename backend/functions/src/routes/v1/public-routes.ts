@@ -43,6 +43,7 @@ export function publicRoutes(deps: Deps) {
       location: b.location
         ? { lat: b.location.lat, lng: b.location.lng, formattedAddress: b.location.formattedAddress ?? null }
         : null,
+      photoUrls: Array.isArray(b.photoUrls) ? b.photoUrls.filter((u) => typeof u === "string" && u.startsWith("https://")).slice(0, 6) : [],
     });
   });
 

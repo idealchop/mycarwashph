@@ -4,6 +4,7 @@ import { Button, EmptyState, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
 import { BrowseGate } from "@/components/browse-gate";
 import { Spinner } from "@/components/screen";
+import { ShopContentCard } from "@/components/shop/content-card";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { useAuthGate } from "@/components/auth/auth-gate";
 import { GuestPage } from "@/components/shop/guest-page";
@@ -30,21 +31,23 @@ function GuestBookings() {
   const { requireAuth } = useAuthGate();
   return (
     <GuestPage title="Bookings" description="Sample River Mobile requests. Accept and decline need an account." actionLabel="Sign in to manage bookings" mobileTab="bookings">
-      <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
-        {GUEST_BOOKINGS.map((b) => (
-          <li key={b.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <b className="text-[15px]">{b.customerSnapshot.name}</b>
-                <p className="text-[13px] font-medium text-muted">{b.plate} · {b.status} · sample</p>
+      <ShopContentCard>
+        <ul className="divide-y divide-grey-200">
+          {GUEST_BOOKINGS.map((b) => (
+            <li key={b.id} className="py-3.5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <b className="text-[15px]">{b.customerSnapshot.name}</b>
+                  <p className="text-[13px] font-medium text-muted">{b.plate} · {b.status} · sample</p>
+                </div>
+                {b.status === "requested" ? (
+                  <Button size="sm" onClick={() => requireAuth(undefined, { subtitle: "Sign in to accept bookings." })}>Accept</Button>
+                ) : null}
               </div>
-              {b.status === "requested" ? (
-                <Button size="sm" onClick={() => requireAuth(undefined, { subtitle: "Sign in to accept bookings." })}>Accept</Button>
-              ) : null}
-            </div>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      </ShopContentCard>
     </GuestPage>
   );
 }
@@ -78,31 +81,35 @@ function BookingsInner() {
         {data && data.bookings.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No bookings yet" description="River Mobile bookings show up here when customers book your shop." />
         ) : null}
-        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
-          {data?.bookings.map((b) => (
-            <li key={b.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <b className="text-[16px]">{serviceNames(b.serviceIds, data.services)}</b>
-                  <p className="text-[13px] font-medium text-muted">{b.customerSnapshot.name} · {timePHT(b.scheduledStart)} · {b.status}</p>
-                  <p className="text-[12px] font-semibold text-muted">{b.reference}{b.plate ? ` · ${b.plate}` : ""}</p>
-                </div>
-                <div className="flex gap-1.5">
-                  {b.status === "requested" ? (
-                    <>
-                      <Button size="sm" variant="secondary" onClick={() => act(b.id, "decline")}>Decline</Button>
-                      <Button size="sm" onClick={() => act(b.id, "accept")}>Accept</Button>
-                    </>
-                  ) : null}
-                  {b.status === "checked_in" && shop.plan === "partner" ? (
-                    <Button size="sm" onClick={() => act(b.id, "complete")}>Mark served</Button>
-                  ) : null}
-                  {b.status === "accepted" ? <Button size="sm" href="/scan">Scan</Button> : null}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {data && data.bookings.length > 0 ? (
+          <ShopContentCard>
+            <ul className="divide-y divide-grey-200">
+              {data.bookings.map((b) => (
+                <li key={b.id} className="py-3.5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <b className="text-[16px]">{serviceNames(b.serviceIds, data.services)}</b>
+                      <p className="text-[13px] font-medium text-muted">{b.customerSnapshot.name} · {timePHT(b.scheduledStart)} · {b.status}</p>
+                      <p className="text-[12px] font-semibold text-muted">{b.reference}{b.plate ? ` · ${b.plate}` : ""}</p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {b.status === "requested" ? (
+                        <>
+                          <Button size="sm" variant="secondary" onClick={() => act(b.id, "decline")}>Decline</Button>
+                          <Button size="sm" onClick={() => act(b.id, "accept")}>Accept</Button>
+                        </>
+                      ) : null}
+                      {b.status === "checked_in" && shop.plan === "partner" ? (
+                        <Button size="sm" onClick={() => act(b.id, "complete")}>Mark served</Button>
+                      ) : null}
+                      {b.status === "accepted" ? <Button size="sm" href="/scan">Scan</Button> : null}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </ShopContentCard>
+        ) : null}
       </ShopPageFrame>
     </ShopShell>
   );

@@ -17,6 +17,7 @@ function webConfigEnv(): Record<string, string> {
       ...pick("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", c.authDomain),
       ...pick("NEXT_PUBLIC_FIREBASE_PROJECT_ID", c.projectId),
       ...pick("NEXT_PUBLIC_FIREBASE_APP_ID", c.appId),
+      ...pick("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", c.storageBucket),
     };
   } catch {
     return {};

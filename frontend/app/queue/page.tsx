@@ -5,6 +5,7 @@ import { Icon3D } from "@river-apps/icons";
 import { useMemo, useState } from "react";
 import { BrowseGate } from "@/components/browse-gate";
 import { Screen, Spinner } from "@/components/screen";
+import { ShopContentCard } from "@/components/shop/content-card";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { GuestPage } from "@/components/shop/guest-page";
 import { ShopShell } from "@/components/shop/shop-shell";
@@ -29,14 +30,16 @@ function QueueInner() {
   if (!user) {
     return (
       <GuestPage title="Queue" description="Preview of today’s queue. Assign bay and record pay require sign-in." actionLabel="Sign in to run the queue" mobileTab="queue">
-        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
-          {GUEST_QUEUE.map((q) => (
-            <li key={q.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
-              <b className="text-[16px]">#{q.queueNumber} · {q.plate ?? "Walk-in"}</b>
-              <p className="text-[13px] font-medium text-muted">{q.status.replace("_", " ")} · sample</p>
-            </li>
-          ))}
-        </ul>
+        <ShopContentCard>
+          <ul className="divide-y divide-grey-200">
+            {GUEST_QUEUE.map((q) => (
+              <li key={q.id} className="py-3.5">
+                <b className="text-[16px]">#{q.queueNumber} · {q.plate ?? "Walk-in"}</b>
+                <p className="text-[13px] font-medium text-muted">{q.status.replace("_", " ")} · sample</p>
+              </li>
+            ))}
+          </ul>
+        </ShopContentCard>
       </GuestPage>
     );
   }
@@ -116,26 +119,30 @@ function PaidQueue({ shopId, newBookings, waiting, onChanged }: { shopId: string
         {data && data.queue.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No cars in the queue" description="Add a walk-in or scan a River Mobile booking." />
         ) : null}
-        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
-          {data?.queue.map((q) => (
-            <li key={q.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <b className="text-[16px]">#{q.queueNumber} · {serviceNames(q.serviceIds, data.services) || "Walk-in"}</b>
-                  <p className="text-[13px] font-medium text-muted">{q.plate ?? "No plate"} · {q.status.replace("_", " ")} · {q.source}</p>
-                </div>
-                <div className="flex flex-wrap justify-end gap-1.5">
-                  {q.status === "queued" && freeBay ? (
-                    <Button size="sm" disabled={busy} onClick={() => patch(q.id, { status: "in_bay", bayId: freeBay.id })}>Assign {freeBay.name}</Button>
-                  ) : null}
-                  {q.status === "in_bay" ? <Button size="sm" disabled={busy} onClick={() => patch(q.id, { status: "done" })}>Mark done</Button> : null}
-                  {q.status === "done" ? <Button size="sm" disabled={busy} onClick={() => { setPayFor(q); setAmount("350"); }}>Record pay</Button> : null}
-                  {q.status === "paid" ? <Button size="sm" variant="secondary" disabled={busy} onClick={() => patch(q.id, { status: "closed" })}>Close</Button> : null}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {data && data.queue.length > 0 ? (
+          <ShopContentCard>
+            <ul className="divide-y divide-grey-200">
+              {data.queue.map((q) => (
+                <li key={q.id} className="py-3.5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <b className="text-[16px]">#{q.queueNumber} · {serviceNames(q.serviceIds, data.services) || "Walk-in"}</b>
+                      <p className="text-[13px] font-medium text-muted">{q.plate ?? "No plate"} · {q.status.replace("_", " ")} · {q.source}</p>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      {q.status === "queued" && freeBay ? (
+                        <Button size="sm" disabled={busy} onClick={() => patch(q.id, { status: "in_bay", bayId: freeBay.id })}>Assign {freeBay.name}</Button>
+                      ) : null}
+                      {q.status === "in_bay" ? <Button size="sm" disabled={busy} onClick={() => patch(q.id, { status: "done" })}>Mark done</Button> : null}
+                      {q.status === "done" ? <Button size="sm" disabled={busy} onClick={() => { setPayFor(q); setAmount("350"); }}>Record pay</Button> : null}
+                      {q.status === "paid" ? <Button size="sm" variant="secondary" disabled={busy} onClick={() => patch(q.id, { status: "closed" })}>Close</Button> : null}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </ShopContentCard>
+        ) : null}
         {payFor ? (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
             <div className="w-full max-w-md rounded-3xl bg-white p-5">

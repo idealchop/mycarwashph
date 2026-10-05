@@ -8,6 +8,7 @@ import {
 import { ArrowRight, Bell, LogOut, Plus, ScanLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type Bay, type Booking, type MeResponse, type QueueItem, type SalesSummary, type Service } from "@/lib/api";
 import { signOut } from "@/lib/auth";
@@ -116,7 +117,11 @@ export function PaidHome({ me, shop }: { me: MeResponse; shop: MeResponse["busin
   return (
     <ShopShell plan="paid" newBookings={data?.bookings.length ?? 0} waiting={waiting.length} mobileTab="home">
       <div className="lg:hidden"><PaidPhone {...props} /></div>
-      <div className="hidden min-w-0 lg:block"><PaidDesktop {...props} /></div>
+      <div className="hidden min-w-0 lg:block">
+        <ShopPageFrame wide className="!pt-0 lg:!pt-0">
+          <PaidDesktop {...props} />
+        </ShopPageFrame>
+      </div>
     </ShopShell>
   );
 }
@@ -162,7 +167,7 @@ function PaidPhone({ me, shop, data, error, views, waiting, busy, name, total, c
     <div className="shop-phone pb-4">
       <Greeting title={shop.name} name={me.user.name ?? name} alerts={data?.bookings.length ?? 0} />
       <HeroBanner
-        className="shop-inset mt-3"
+        className="mt-3"
         size="sm"
         eyebrow={<>Today · {longDatePHT(new Date())}</>}
         title={peso(total)}
@@ -172,14 +177,14 @@ function PaidPhone({ me, shop, data, error, views, waiting, busy, name, total, c
         illustration={<CarIllustration size={168} />}
         illustrationClassName="-right-[10px] bottom-3"
       />
-      {error ? <p role="alert" className="shop-inset mt-4 text-[14px] font-semibold">{error}</p> : null}
-      <div className="shop-inset mt-3.5 grid grid-cols-3 gap-3">
+      {error ? <p role="alert" className="mt-4 text-[14px] font-semibold">{error}</p> : null}
+      <div className="mt-3.5 grid grid-cols-3 gap-3">
         <StatCard className="pb-3.5" label="Waiting" value={String(waiting.length)} />
         <StatCard className="pb-3.5" label="In bay" value={String(busy)} />
         <StatCard className="pb-3.5" label="Target" value={target != null ? `${targetPct}%` : "—"} caption={target != null ? changeLabel(total, data?.summary.previousDayTotalCentavos ?? 0) : "Set in Settings"} />
       </div>
       <SectionHeader className="shop-section-title" title="Bays" aside={`${busy} of ${views.length} busy`} />
-      <div className="grid grid-cols-1 gap-3 px-5 sm:grid-cols-2">
+      <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {views.map((v) =>
           v.item ? (
             <ResourceCard key={v.bay.id}
@@ -192,7 +197,7 @@ function PaidPhone({ me, shop, data, error, views, waiting, busy, name, total, c
         )}
       </div>
       <SectionHeader className="shop-section-title" title="Queue" aside={<Button size="sm" variant="ghost" href="/queue">Open</Button>} />
-      <Card padding="none" className="shop-inset mb-4 px-4 py-2">
+      <Card padding="none" className="mb-4 px-4 py-2">
         {waiting.length === 0 ? (
           <p className="px-1 py-5 text-center text-[14px] font-medium text-muted">No cars waiting. <button type="button" className="font-bold underline" disabled={actionBusy} onClick={() => void walkIn()}>Add walk-in</button></p>
         ) : (
@@ -205,7 +210,7 @@ function PaidPhone({ me, shop, data, error, views, waiting, busy, name, total, c
           }))} />
         )}
       </Card>
-      <div className="px-5 pb-24 pt-1">
+      <div className="pb-24 pt-2">
         <Button fullWidth disabled={actionBusy} onClick={() => void walkIn()} leadingIcon={<Plus size={18} strokeWidth={1.75} />}>Add walk-in</Button>
       </div>
     </div>
