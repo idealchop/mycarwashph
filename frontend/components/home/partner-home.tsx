@@ -120,10 +120,10 @@ function BookingCard({ b, i, services, act }: { b: Booking; i: number; services:
 
 function PartnerPhone({ me, shop, bookings, services, error, dayList, counts, selected, setSelected, now, isToday, newCount, act }: Props) {
   return (
-    <div className="mx-auto max-w-[440px] pt-3">
+    <div className="shop-phone pb-4">
       <Greeting title={`Hi, ${firstName(me.user.name, shop.name)} 👋`} name={me.user.name ?? shop.name} alerts={newCount} />
       <HeroBanner
-        className="mx-4 mt-2"
+        className="shop-inset mt-3"
         eyebrow="River Mobile"
         title="Scan River Mobile customers"
         description="Check in bookings fast."
@@ -132,10 +132,10 @@ function PartnerPhone({ me, shop, bookings, services, error, dayList, counts, se
         illustration={<CarIllustration size={214} />}
         illustrationClassName="-right-[58px] bottom-3"
       />
-      <SectionHeader className="px-5 pb-3 pt-[22px]" title="Schedule" aside={now.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "long", year: "numeric" })} />
+      <SectionHeader className="shop-section-title" title="Schedule" aside={now.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "long", year: "numeric" })} />
       <DateStrip className="px-5" items={weekStrip(now, counts)} selectedKey={selected} onSelect={setSelected} />
-      <SectionHeader className="px-5 pb-3 pt-[18px]" title={isToday ? "Today" : "Bookings"} aside={`${dayList.length} booking${dayList.length === 1 ? "" : "s"}`} />
-      <div className="flex flex-col gap-2.5 px-4 pb-28">
+      <SectionHeader className="shop-section-title" title={isToday ? "Today" : "Bookings"} aside={`${dayList.length} booking${dayList.length === 1 ? "" : "s"}`} />
+      <div className="shop-stack pb-28">
         {error ? <p role="alert" className="px-1 text-[14px] font-semibold">{error}</p> : null}
         {bookings === null && !error ? <p className="px-1 text-[14px] font-medium text-muted">Loading bookings…</p> : null}
         {bookings !== null && dayList.length === 0 ? (
@@ -167,7 +167,7 @@ function PartnerDesktop({ me, shop, bookings, services, error, dayList, counts, 
           </>
         }
       />
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.8fr)]">
+      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.8fr)]">
         <HeroBanner
           size="lg"
           eyebrow="River Mobile"
@@ -193,7 +193,7 @@ function PartnerDesktop({ me, shop, bookings, services, error, dayList, counts, 
         </Card>
       </div>
       <SectionHeader
-        className="mb-2.5 mt-[18px]"
+        className="mb-3 mt-6"
         title={isToday ? "Today’s bookings" : "Bookings"}
         aside={`${dayList.length} booking${dayList.length === 1 ? "" : "s"}`}
       />
@@ -207,7 +207,7 @@ function PartnerDesktop({ me, shop, bookings, services, error, dayList, counts, 
           description={shop.role === "owner" ? "Turn on River Mobile listing in Settings so customers can book you." : "New River Mobile bookings will show up here."}
         />
       ) : (
-        <div className="grid gap-3 pb-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 pb-8 sm:grid-cols-2 xl:grid-cols-3">
           {dayList.map((b, i) => <BookingCard key={b.id} b={b} i={i} services={services} act={act} />)}
         </div>
       )}

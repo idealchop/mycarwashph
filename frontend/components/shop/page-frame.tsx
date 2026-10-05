@@ -2,8 +2,8 @@ import { cn } from "@river-apps/ui";
 import type { ReactNode } from "react";
 
 /**
- * Shop content width: stacked + padded on phones; fills the AppShell main
- * column on desktop (no phone-width cage). Soft max keeps ultra-wide readable.
+ * Shop content width — Laundry.ph rhythm: phone column ~560px with px-5;
+ * desktop fills AppShell main with generous bottom padding.
  */
 export function ShopPageFrame({
   children,
@@ -12,14 +12,14 @@ export function ShopPageFrame({
 }: {
   children: ReactNode;
   className?: string;
-  /** Slightly tighter reading column (forms/settings). Still expands past phone width on lg+. */
+  /** Forms/settings reading column. */
   narrow?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "mx-auto w-full px-4 pb-24 pt-4 lg:px-0 lg:pb-10 lg:pt-0",
-        narrow ? "max-w-[760px] lg:max-w-[880px]" : "max-w-[720px] lg:max-w-[1280px]",
+        "mx-auto w-full px-5 pb-28 pt-5 lg:px-0 lg:pb-12 lg:pt-0",
+        narrow ? "max-w-[560px] lg:max-w-[880px]" : "max-w-[560px] lg:max-w-[1200px]",
         className,
       )}
     >

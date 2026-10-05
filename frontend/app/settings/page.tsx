@@ -171,7 +171,7 @@ function SettingsInner() {
 
         {data ? (
           <>
-            <section className="mt-5 rounded-2xl border border-grey-200 bg-white p-4 lg:p-5">
+            <section className="mt-6 shop-panel">
               <b className="text-[15px]">Shop profile</b>
               <p className="mt-1 text-[13px] font-medium text-muted">
                 Address and map pin help River Mobile detect your shop. Owners only can edit.
@@ -210,7 +210,7 @@ function SettingsInner() {
             </section>
 
             {shop.plan === "paid" && shop.role === "owner" ? (
-              <section className="mt-5 rounded-2xl border border-grey-200 bg-white p-4 lg:p-5">
+              <section className="mt-6 shop-panel">
                 <b className="text-[15px]">Daily sales target</b>
                 <p className="mt-1 text-[13px] font-medium text-muted">Shown on the Paid dashboard. Amount in pesos.</p>
                 <div className="mt-3 flex gap-2">
@@ -229,7 +229,7 @@ function SettingsInner() {
               </section>
             ) : null}
 
-            <section className="mt-5 rounded-2xl border border-grey-200 bg-white p-4 lg:p-5">
+            <section className="mt-6 shop-panel">
               <div className="flex items-center justify-between gap-3">
                 <b className="text-[15px]">Billing</b>
                 <Badge variant="soft">{billing?.status ?? "trial"}</Badge>
@@ -246,7 +246,7 @@ function SettingsInner() {
                       type="button"
                       disabled={busy || shop.role !== "owner"}
                       onClick={() => void selectOption("monthly")}
-                      className={`rounded-2xl border px-4 py-4 text-left transition ${
+                      className={`rounded-card border px-5 py-5 text-left transition ${
                         billing?.partnerOption === "monthly" ? "border-ink bg-ink text-white" : "border-grey-200 bg-grey-50"
                       }`}
                     >
@@ -260,7 +260,7 @@ function SettingsInner() {
                       type="button"
                       disabled={busy || shop.role !== "owner"}
                       onClick={() => void selectOption("lifetime")}
-                      className={`rounded-2xl border px-4 py-4 text-left transition ${
+                      className={`rounded-card border px-5 py-5 text-left transition ${
                         billing?.partnerOption === "lifetime" ? "border-ink bg-ink text-white" : "border-grey-200 bg-grey-50"
                       }`}
                     >
@@ -273,7 +273,7 @@ function SettingsInner() {
                   </div>
 
                   {shop.role === "owner" && billing?.partnerOption ? (
-                    <div className="mt-4 rounded-2xl border border-dashed border-grey-200 p-4">
+                    <div className="mt-5 rounded-card border border-dashed border-grey-200 p-5">
                       <b className="text-[14px]">Record a payment</b>
                       <p className="mt-1 text-[13px] font-medium text-muted">
                         Pay via GCash, Maya, or bank, then enter the reference. Amount due:{" "}
@@ -326,7 +326,7 @@ function SettingsInner() {
               )}
             </section>
 
-            <section className="mt-5 rounded-2xl border border-grey-200 bg-white p-4 lg:p-5">
+            <section className="mt-6 shop-panel">
               <b className="text-[15px]">Team</b>
               <ul className="mt-3 flex flex-col gap-2">
                 {data.members.map((m) => (

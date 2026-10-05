@@ -28,9 +28,9 @@ export function GuestPage({
   return (
     <ShopShell plan="paid" newBookings={1} waiting={2} mobileTab={mobileTab ?? "home"}>
       <ShopPageFrame>
-        <GuestBanner />
+        <div className="mb-5"><GuestBanner /></div>
         <SectionHeader title={title} aside={aside ?? "Preview"} />
-        <p className="mt-1 text-[13.5px] font-medium text-muted">{description}</p>
+        <p className="mt-2 max-w-xl text-[14px] font-medium leading-relaxed text-muted">{description}</p>
         {children ?? (
           <EmptyState
             className="mt-8"
@@ -39,7 +39,7 @@ export function GuestPage({
             description="Sample layout only. Sign in to load your shop — we never show other shops’ private data."
           />
         )}
-        <Button className="mt-6" onClick={() => requireAuth(undefined, { subtitle: `Sign in to use ${title}.` })}>
+        <Button className="mt-8" onClick={() => requireAuth(undefined, { subtitle: `Sign in to use ${title}.` })}>
           {actionLabel}
         </Button>
       </ShopPageFrame>

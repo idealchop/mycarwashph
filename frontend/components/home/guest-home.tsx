@@ -32,11 +32,11 @@ export function GuestHome() {
   return (
     <ShopShell plan="paid" newBookings={GUEST_BOOKINGS.filter((b) => b.status === "requested").length} waiting={waiting.length} mobileTab="home">
       <div className="lg:hidden">
-        <GuestBanner />
-        <div className="mx-auto max-w-[440px] pt-1">
+        <div className="mb-4 lg:mb-5"><GuestBanner /></div>
+        <div className="shop-phone pb-4">
           <Greeting title={shop.name} name="Guest" alerts={1} />
           <HeroBanner
-            className="mx-4 mt-2"
+            className="shop-inset mt-3"
             size="sm"
             eyebrow={<>Preview · {longDatePHT(new Date())}</>}
             title={<>{peso(summary.totalCentavos)} · {summary.cars} cars</>}
@@ -48,47 +48,35 @@ export function GuestHome() {
             }
             illustration={<CarIllustration size={200} />}
           />
-          <StatCard className="mx-4 mt-2.5" label="Sales today" value={peso(summary.totalCentavos)} trailing={<Badge variant="soft">Sample</Badge>}>
-            <BarChart className="mt-1" data={hourly.slice(0, 7)} highlightIndex={2} tooltip={peso(120000)} width={318} height={100} ariaLabel="Sample sales by hour" />
-          </StatCard>
-          <StatCard
-            className="mx-4 mt-2.5"
-            label="Daily target"
-            footer={
-              <>
-                <span className="flex flex-col leading-[1.2]">
-                  <b className="text-[17px] font-extrabold">{peso(summary.totalCentavos)}</b>
-                  <small className="text-[12px] font-semibold text-muted">of {peso(SAMPLE_TARGET.targetCentavos)}</small>
-                </span>
-                <Badge variant="soft">Sample</Badge>
-              </>
-            }
-          >
-            <div className="my-1.5 flex justify-center">
-              <ProgressRing value={SAMPLE_TARGET.pct} size={100} thickness={10} label={`${SAMPLE_TARGET.pct}%`} labelSize={20} ariaLabel="Sample target" />
-            </div>
-          </StatCard>
-          <SectionHeader className="px-5 pb-2 pt-5" title="Queue" aside="Sample" />
-          <div className="px-4 pb-28">
-            <QueueList
-              label="Waiting"
-              items={waiting.map((q, i) => ({
-                id: q.id,
-                leading: <Avatar name={q.plate ?? `#${q.queueNumber}`} preset={PRESETS[i % PRESETS.length]} size={36} />,
-                title: q.plate ?? `Car #${q.queueNumber}`,
-                subtitle: "Walk-in · preview",
-                trailing: `#${q.queueNumber}`,
-              }))}
-            />
-            <Button className="mt-3" fullWidth onClick={() => gate("add a walk-in")}>
+          <div className="shop-inset mt-3.5 grid grid-cols-3 gap-3">
+            <StatCard className="pb-3.5" label="Cars" value={String(summary.cars)} />
+            <StatCard className="pb-3.5" label="Waiting" value={String(waiting.length)} />
+            <StatCard className="pb-3.5" label="Target" value={`${SAMPLE_TARGET.pct}%`} caption="Sample" />
+          </div>
+          <SectionHeader className="shop-section-title" title="Queue" aside="Sample" />
+          <div className="shop-inset mb-4">
+            <Card padding="none" className="px-4 py-2">
+              <QueueList
+                label="Waiting"
+                items={waiting.map((q, i) => ({
+                  id: q.id,
+                  leading: <Avatar name={q.plate ?? `#${q.queueNumber}`} preset={PRESETS[i % PRESETS.length]} size={36} />,
+                  title: q.plate ?? `Car #${q.queueNumber}`,
+                  subtitle: "Walk-in · preview",
+                  trailing: `#${q.queueNumber}`,
+                }))}
+              />
+            </Card>
+            <Button className="mt-4" fullWidth onClick={() => gate("add a walk-in")}>
               Add walk-in
             </Button>
           </div>
+          <div className="pb-24" />
         </div>
       </div>
 
       <div className="hidden min-w-0 lg:block">
-        <GuestBanner />
+        <div className="mb-4 lg:mb-5"><GuestBanner /></div>
         <Topbar
           title="Preview your shop dashboard"
           subtitle="Sample data · sign in to connect your carwash"
@@ -98,7 +86,7 @@ export function GuestHome() {
             </Button>
           }
         />
-        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_286px]">
+        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_286px]">
           <HeroBanner
             size="lg"
             eyebrow={<>Preview · {longDatePHT(new Date())}</>}
@@ -138,7 +126,7 @@ export function GuestHome() {
             </div>
           </StatCard>
         </div>
-        <SectionHeader className="mb-2.5 mt-[18px]" title="Bays" aside="Sample" />
+        <SectionHeader className="mb-3 mt-6" title="Bays" aside="Sample" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <ResourceCard
             density="comfortable"
@@ -162,7 +150,7 @@ export function GuestHome() {
             }
           />
         </div>
-        <div className="mt-[18px] grid gap-5 pb-6 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 grid gap-5 pb-8 lg:grid-cols-2 xl:grid-cols-3">
           <Card padding="none" className="px-[18px] pb-2.5 pt-4 lg:min-h-[260px]">
             <CardHeader title="Sales today" subtitle="Sample by hour" />
             <BarChart className="mt-3.5" data={hourly} highlightIndex={2} tooltip={peso(120000)} width={470} height={180} ariaLabel="Sample sales" />

@@ -44,7 +44,7 @@ function Inner() {
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
         {!data && !error ? <div className="mt-8"><Spinner label="Loading growth" /></div> : data ? (
           <>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard label="Open booking requests" value={String(data.bookingsRequestedOpen)} />
               <StatCard label="Queue today" value={String(data.queueToday)} />
               <StatCard label="Cars washed today" value={String(data.carsWashedToday)} />

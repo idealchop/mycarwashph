@@ -44,11 +44,11 @@ export default function WelcomePage() {
         <FloatingCard className="absolute right-4 top-[70px]" icon={<CoinIcon size={30} />} title="+₱350" subtitle="New booking" />
         <SampleDataTag className="absolute bottom-3 right-3">Illustration</SampleDataTag>
       </div>
-      <div className="px-7 pt-[26px]">
+      <div className="px-7 pt-8">
         <h1 className="text-[31px] font-extrabold leading-[1.12] tracking-[-0.03em]">Run your carwash<br />from your phone</h1>
         <p className="mt-2.5 text-[16px] font-medium text-muted">Bookings, queue and today’s sales in one simple app.</p>
       </div>
-      <div className="mt-auto flex flex-col gap-2.5 px-6 pb-10 pt-6">
+      <div className="mt-auto flex flex-col gap-3 px-6 pb-10 pt-8">
         <Button href="/sign-in/phone" fullWidth leadingIcon={<Smartphone size={20} strokeWidth={1.75} />}>Continue with phone number</Button>
         <Button fullWidth variant="secondary" leadingIcon={<GoogleG />} onClick={google} disabled={busy}>Continue with Google</Button>
         <Button

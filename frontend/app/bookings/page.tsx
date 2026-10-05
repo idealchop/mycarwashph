@@ -30,9 +30,9 @@ function GuestBookings() {
   const { requireAuth } = useAuthGate();
   return (
     <GuestPage title="Bookings" description="Sample River Mobile requests. Accept and decline need an account." actionLabel="Sign in to manage bookings" mobileTab="bookings">
-      <ul className="mt-4 grid gap-2.5 lg:grid-cols-2">
+      <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
         {GUEST_BOOKINGS.map((b) => (
-          <li key={b.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+          <li key={b.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <b className="text-[15px]">{b.customerSnapshot.name}</b>
@@ -78,9 +78,9 @@ function BookingsInner() {
         {data && data.bookings.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No bookings yet" description="River Mobile bookings show up here when customers book your shop." />
         ) : null}
-        <ul className="mt-4 grid gap-2.5 lg:grid-cols-2">
+        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
           {data?.bookings.map((b) => (
-            <li key={b.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+            <li key={b.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <b className="text-[16px]">{serviceNames(b.serviceIds, data.services)}</b>

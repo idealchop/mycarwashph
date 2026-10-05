@@ -53,7 +53,7 @@ function Inner() {
         {data && data.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="chat" size={64} />} title="No alerts yet" description="New River Mobile bookings and status changes show up here." />
         ) : (
-          <ul className="mt-4 grid gap-2 lg:grid-cols-2">
+          <ul className="mt-5 grid gap-3.5 lg:grid-cols-2">
             {data?.map((a) => (
               <li key={a.id} className={`rounded-2xl border px-4 py-3 ${a.read ? "border-grey-200 bg-white" : "border-ink/20 bg-grey-50"}`}>
                 <div className="flex items-start justify-between gap-3">

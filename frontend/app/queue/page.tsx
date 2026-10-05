@@ -29,9 +29,9 @@ function QueueInner() {
   if (!user) {
     return (
       <GuestPage title="Queue" description="Preview of today’s queue. Assign bay and record pay require sign-in." actionLabel="Sign in to run the queue" mobileTab="queue">
-        <ul className="mt-4 grid gap-2.5 lg:grid-cols-2">
+        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
           {GUEST_QUEUE.map((q) => (
-            <li key={q.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+            <li key={q.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
               <b className="text-[16px]">#{q.queueNumber} · {q.plate ?? "Walk-in"}</b>
               <p className="text-[13px] font-medium text-muted">{q.status.replace("_", " ")} · sample</p>
             </li>
@@ -116,9 +116,9 @@ function PaidQueue({ shopId, newBookings, waiting, onChanged }: { shopId: string
         {data && data.queue.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No cars in the queue" description="Add a walk-in or scan a River Mobile booking." />
         ) : null}
-        <ul className="mt-4 grid gap-2.5 lg:grid-cols-2">
+        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
           {data?.queue.map((q) => (
-            <li key={q.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+            <li key={q.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <b className="text-[16px]">#{q.queueNumber} · {serviceNames(q.serviceIds, data.services) || "Walk-in"}</b>

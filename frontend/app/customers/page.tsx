@@ -81,9 +81,9 @@ function Inner() {
         {data && data.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No customers yet" description="Add walk-in regulars so staff can find them quickly." />
         ) : (
-          <ul className="mt-4 grid gap-2 lg:grid-cols-2">
+          <ul className="mt-5 grid gap-3.5 lg:grid-cols-2">
             {data?.map((c) => (
-              <li key={c.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+              <li key={c.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
                 <b className="text-[15px]">{c.name}</b>
                 <p className="text-[13px] font-medium text-muted">{c.phoneE164 ?? "No phone"}{c.plate ? ` · ${c.plate}` : ""}</p>
               </li>

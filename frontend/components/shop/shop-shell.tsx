@@ -67,17 +67,17 @@ export function ShopShell({
           activeKey={active}
           secondaryItems={[{ key: "help", label: "Help", icon: <CircleHelp {...ic} /> }]}
           footer={
-            <div className="relative rounded-[22px] bg-grey-100 px-4 pb-4 pt-[66px]">
-              <div className="absolute inset-x-1 -top-7 flex justify-center"><CarIllustration size={200} /></div>
+            <div className="relative rounded-[22px] bg-grey-100 px-4 pb-5 pt-[78px]">
+              <div className="absolute inset-x-0 -top-9 flex justify-center"><CarIllustration size={180} /></div>
               <b className="block text-[14.5px]">River Mobile bookings</b>
-              <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">{newBookings} new to review</small>
+              <small className="mb-3.5 mt-1 block text-[12.5px] font-semibold text-ink/55">{newBookings} new to review</small>
               <Button size="sm" fullWidth href="/bookings">View bookings</Button>
             </div>
           }
         />
       }
       mobileTabBar={<MobileTabBar items={tabs} activeKey={mobileTab} />}
-      mainClassName="w-full lg:px-[30px] lg:pt-6 lg:pb-8"
+      mainClassName="w-full lg:px-[30px] lg:pt-6 lg:pb-10"
     >
       {children}
     </AppShell>

@@ -46,7 +46,7 @@ export function Onboarding({ onCreated }: { onCreated: (id: string) => void }) {
         <p className="mt-1.5 text-[15.5px] font-medium text-muted">
           Add your address and map pin so River Mobile can find you. You can edit this later in Settings.
         </p>
-        <div className="mt-5 flex flex-col gap-3">
+        <div className="mt-6 flex flex-col gap-4">
           <Input label="Shop name" placeholder="e.g. Sample Carwash" value={name} onChange={(e) => setName(e.target.value)} error={error ?? undefined} autoFocus />
           <LocationPicker
             address={address}
@@ -58,7 +58,7 @@ export function Onboarding({ onCreated }: { onCreated: (id: string) => void }) {
             }}
           />
         </div>
-        <div className="mt-auto flex flex-col gap-2.5 pb-10 pt-6">
+        <div className="mt-auto flex flex-col gap-3 pb-10 pt-8">
           <Button type="submit" fullWidth disabled={busy || !name.trim()}>
             {busy ? "Creating…" : "Create my shop"}
           </Button>

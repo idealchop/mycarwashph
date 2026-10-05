@@ -60,7 +60,7 @@ function Inner() {
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
         {!data ? <Spinner label="Loading sales" /> : (
           <>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <StatCard label="Today" value={peso(data.summary.totalCentavos)} />
               <StatCard label="Cars today" value={String(data.summary.cars)} />
             </div>
@@ -69,7 +69,7 @@ function Inner() {
             ) : (
               <ul className="mt-5 flex flex-col gap-2">
                 {data.list.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between rounded-2xl border border-grey-200 bg-white px-4 py-3">
+                  <li key={s.id} className="flex items-center justify-between rounded-card border border-grey-200 bg-white px-5 py-4">
                     <div>
                       <b className="text-[15px]">{s.customerName ?? s.plate ?? "Sale"}</b>
                       <p className="text-[12.5px] font-medium text-muted">{s.method.toUpperCase()}{s.paymentRef ? ` · ${s.paymentRef}` : ""} · {timePHT(s.paidAt)}</p>

@@ -1,7 +1,7 @@
 # Mycarwash.ph
 
 Car wash management web app by **River Apps** for shop owners and staff.
-Web only: desktop and phone browsers, designed mobile-first.
+Web only: desktop and phone browsers, designed mobile-first. Shop density follows **Laundry.ph** (same River tokens, looser section rhythm).
 
 - **Partner** shops get a light app: receive River Mobile bookings, accept or
   decline, **Scan** to verify customers on arrival, and booking history.
