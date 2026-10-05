@@ -5,7 +5,9 @@ import { Avatar, Button, Card, IconButton, Input, MonoText, StatusDot, SuccessSt
 import { Camera, ScanLine, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
+import { GuestPage } from "@/components/shop/guest-page";
+import { useAuth } from "@/lib/auth";
 import { Screen } from "@/components/screen";
 import { api, type Service, type VerifyResult } from "@/lib/api";
 import { longDatePHT, timePHT } from "@/lib/format";
@@ -15,9 +17,9 @@ import { useMe } from "@/lib/use-me";
 
 export default function ScanPage() {
   return (
-    <RequireAuth>
+    <BrowseGate>
       <Scan />
-    </RequireAuth>
+    </BrowseGate>
   );
 }
 
@@ -27,6 +29,21 @@ type Detector = { detect: (src: HTMLVideoElement) => Promise<{ rawValue: string 
 
 /** 05 · Scan to verify a River Mobile booking, then show the verified result. */
 function Scan() {
+  const { user } = useAuth();
+  if (!user) {
+    return (
+      <GuestPage
+        title="Scan"
+        description="Scan verifies a real River Mobile check-in QR for your shop."
+        actionLabel="Sign in to scan customers"
+        mobileTab="home"
+      />
+    );
+  }
+  return <ScanInner />;
+}
+
+function ScanInner() {
   const router = useRouter();
   const { shop } = useMe();
   const [payload, setPayload] = useState("");

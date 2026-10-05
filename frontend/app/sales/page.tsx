@@ -2,7 +2,9 @@
 
 import { EmptyState, SectionHeader, StatCard } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
+import { GuestPage } from "@/components/shop/guest-page";
+import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
@@ -12,7 +14,19 @@ import { useLoad } from "@/lib/use-load";
 import { useShopPage } from "@/lib/use-shop-page";
 
 export default function SalesPage() {
-  return <RequireAuth><Inner /></RequireAuth>;
+  return (
+    <BrowseGate>
+      <SalesEntry />
+    </BrowseGate>
+  );
+}
+
+function SalesEntry() {
+  const { user } = useAuth();
+  if (!user) {
+    return <GuestPage title="Sales" description="Sample sales totals. Recording payments needs sign-in." actionLabel="Sign in to view real sales" mobileTab="sales" />;
+  }
+  return <Inner />;
 }
 
 function Inner() {

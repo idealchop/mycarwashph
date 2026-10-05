@@ -2,10 +2,14 @@
 
 import { Button, EmptyState, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
 import { Spinner } from "@/components/screen";
 import { ShopPageFrame } from "@/components/shop/page-frame";
+import { useAuthGate } from "@/components/auth/auth-gate";
+import { GuestPage } from "@/components/shop/guest-page";
 import { ShopShell } from "@/components/shop/shop-shell";
+import { useAuth } from "@/lib/auth";
+import { GUEST_BOOKINGS } from "@/lib/guest-fixtures";
 import { api, type Booking, type Service } from "@/lib/api";
 import { timePHT } from "@/lib/format";
 import { serviceNames } from "@/lib/shop";
@@ -13,11 +17,41 @@ import { useLoad } from "@/lib/use-load";
 import { useShopPage } from "@/lib/use-shop-page";
 
 export default function BookingsPage() {
-  return <RequireAuth><Inner /></RequireAuth>;
+  return <BrowseGate><Inner /></BrowseGate>;
 }
 
 function Inner() {
+  const { user } = useAuth();
+  if (!user) return <GuestBookings />;
+  return <BookingsInner />;
+}
+
+function GuestBookings() {
+  const { requireAuth } = useAuthGate();
+  return (
+    <GuestPage title="Bookings" description="Sample River Mobile requests. Accept and decline need an account." actionLabel="Sign in to manage bookings" mobileTab="bookings">
+      <ul className="mt-4 grid gap-2.5 lg:grid-cols-2">
+        {GUEST_BOOKINGS.map((b) => (
+          <li key={b.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <b className="text-[15px]">{b.customerSnapshot.name}</b>
+                <p className="text-[13px] font-medium text-muted">{b.plate} · {b.status} · sample</p>
+              </div>
+              {b.status === "requested" ? (
+                <Button size="sm" onClick={() => requireAuth(undefined, { subtitle: "Sign in to accept bookings." })}>Accept</Button>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </GuestPage>
+  );
+}
+
+function BookingsInner() {
   const { shop, newBookings, waiting, error: meError } = useShopPage();
+
   const { data, error, reload } = useLoad(async () => {
     if (!shop) return null;
     const [bookings, services] = await Promise.all([

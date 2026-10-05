@@ -18,6 +18,15 @@ Status: **Phase 1** (+ location/Maps, Partner billing UI, responsive dashboards)
 Messages alerts, Growth metrics, `/v1` App Hosting proxy. Partner home still uses
 real bookings; Paid sales/target are live (no Sample data badges on those widgets).
 
+### Guest browse (River Mobile–style)
+
+You can **Browse dashboard as guest** from the welcome screen without signing in.
+Shop pages show **local sample/preview data only** (never another shop’s Firestore).
+Actions that mutate (accept booking, scan, walk-in, save Settings, billing, etc.)
+open a **Sign up or log in** sheet (same idea as River Mobile `AuthGateSheet` /
+`useAuthGate` + `enterAsGuest`). After login you return to the page you were on.
+
+
 ## Screens
 
 | | | | |

@@ -2,7 +2,9 @@
 
 import { Badge, Button, Input, SectionHeader } from "@river-apps/ui";
 import { useState } from "react";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
+import { GuestPage } from "@/components/shop/guest-page";
+import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
 import { LocationPicker } from "@/components/shop/location-picker";
 import { ShopPageFrame } from "@/components/shop/page-frame";
@@ -23,13 +25,21 @@ import { useShopPage } from "@/lib/use-shop-page";
 
 export default function SettingsPage() {
   return (
-    <RequireAuth>
+    <BrowseGate>
       <Inner />
-    </RequireAuth>
+    </BrowseGate>
   );
 }
 
 function Inner() {
+  const { user } = useAuth();
+  if (!user) {
+    return <GuestPage title="Settings" description="Profile, location, team and billing stay private." actionLabel="Sign in to open Settings" mobileTab="more" />;
+  }
+  return <SettingsInner />;
+}
+
+function SettingsInner() {
   const { shop, me, newBookings, waiting, reload: reloadMe } = useShopPage();
   const { data, error, reload } = useLoad(async () => {
     if (!shop) return null;

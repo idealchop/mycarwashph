@@ -3,10 +3,13 @@
 import { Button, EmptyState, Input, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
 import { useMemo, useState } from "react";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
 import { Screen, Spinner } from "@/components/screen";
 import { ShopPageFrame } from "@/components/shop/page-frame";
+import { GuestPage } from "@/components/shop/guest-page";
 import { ShopShell } from "@/components/shop/shop-shell";
+import { useAuth } from "@/lib/auth";
+import { GUEST_QUEUE } from "@/lib/guest-fixtures";
 import { api, type Bay, type QueueItem, type Service } from "@/lib/api";
 import { peso } from "@/lib/format";
 import { serviceNames } from "@/lib/shop";
@@ -15,13 +18,32 @@ import { useShopPage } from "@/lib/use-shop-page";
 
 export default function QueuePage() {
   return (
-    <RequireAuth>
+    <BrowseGate>
       <QueueInner />
-    </RequireAuth>
+    </BrowseGate>
   );
 }
 
 function QueueInner() {
+  const { user } = useAuth();
+  if (!user) {
+    return (
+      <GuestPage title="Queue" description="Preview of today’s queue. Assign bay and record pay require sign-in." actionLabel="Sign in to run the queue" mobileTab="queue">
+        <ul className="mt-4 grid gap-2.5 lg:grid-cols-2">
+          {GUEST_QUEUE.map((q) => (
+            <li key={q.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+              <b className="text-[16px]">#{q.queueNumber} · {q.plate ?? "Walk-in"}</b>
+              <p className="text-[13px] font-medium text-muted">{q.status.replace("_", " ")} · sample</p>
+            </li>
+          ))}
+        </ul>
+      </GuestPage>
+    );
+  }
+  return <PaidQueueEntry />;
+}
+
+function PaidQueueEntry() {
   const { shop, error: meError, newBookings, waiting, reload: reloadMe } = useShopPage();
   if (meError) return <ErrorBox message={meError} />;
   if (!shop) return <Spinner label="Loading shop" />;

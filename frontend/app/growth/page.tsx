@@ -1,7 +1,9 @@
 "use client";
 
 import { SectionHeader, StatCard } from "@river-apps/ui";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
+import { GuestPage } from "@/components/shop/guest-page";
+import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
@@ -11,7 +13,19 @@ import { useLoad } from "@/lib/use-load";
 import { useShopPage } from "@/lib/use-shop-page";
 
 export default function GrowthPage() {
-  return <RequireAuth><Inner /></RequireAuth>;
+  return (
+    <BrowseGate>
+      <GrowthEntry />
+    </BrowseGate>
+  );
+}
+
+function GrowthEntry() {
+  const { user } = useAuth();
+  if (!user) {
+    return <GuestPage title="Growth" description="Metrics come from your live bookings and sales." actionLabel="Sign in for live growth" mobileTab="home" />;
+  }
+  return <Inner />;
 }
 
 function Inner() {

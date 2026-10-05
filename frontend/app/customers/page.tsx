@@ -3,7 +3,9 @@
 import { Button, EmptyState, Input, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
 import { useState } from "react";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
+import { GuestPage } from "@/components/shop/guest-page";
+import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
@@ -12,7 +14,19 @@ import { useLoad } from "@/lib/use-load";
 import { useShopPage } from "@/lib/use-shop-page";
 
 export default function CustomersPage() {
-  return <RequireAuth><Inner /></RequireAuth>;
+  return (
+    <BrowseGate>
+      <CustomersEntry />
+    </BrowseGate>
+  );
+}
+
+function CustomersEntry() {
+  const { user } = useAuth();
+  if (!user) {
+    return <GuestPage title="Customers" description="Customer list is private to your shop." actionLabel="Sign in to manage customers" mobileTab="more" />;
+  }
+  return <Inner />;
 }
 
 function Inner() {

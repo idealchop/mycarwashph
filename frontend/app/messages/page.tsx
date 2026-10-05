@@ -2,7 +2,9 @@
 
 import { Button, EmptyState, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
+import { GuestPage } from "@/components/shop/guest-page";
+import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
@@ -12,7 +14,19 @@ import { useLoad } from "@/lib/use-load";
 import { useShopPage } from "@/lib/use-shop-page";
 
 export default function MessagesPage() {
-  return <RequireAuth><Inner /></RequireAuth>;
+  return (
+    <BrowseGate>
+      <MessagesEntry />
+    </BrowseGate>
+  );
+}
+
+function MessagesEntry() {
+  const { user } = useAuth();
+  if (!user) {
+    return <GuestPage title="Messages" description="In-app alerts for your shop only." actionLabel="Sign in to read alerts" mobileTab="home" />;
+  }
+  return <Inner />;
 }
 
 function Inner() {
