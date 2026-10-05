@@ -1,0 +1,31 @@
+rules_version = '2';
+// Mycarwash.ph shop photos for River Mobile listing.
+// Path: businesses/{businessId}/photos/{fileName}
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+    // Membership may live in mycarwash-dev (App Hosting / Functions dev) or mycarwash-prod.
+    function isShopMember(businessId) {
+      return signedIn() && (
+        firestore.exists(/databases/mycarwash-dev/documents/businesses/$(businessId)/members/$(request.auth.uid))
+        || firestore.exists(/databases/mycarwash-prod/documents/businesses/$(businessId)/members/$(request.auth.uid))
+      );
+    }
+    function isImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+    function under5mb() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /businesses/{businessId}/photos/{fileName} {
+      // Public read so River Mobile can show storefront photos from download URLs.
+      allow read: if true;
+      allow create, update: if isShopMember(businessId) && isImage() && under5mb()
+        && fileName.size() < 180;
+      allow delete: if isShopMember(businessId);
+    }
+  }
+}

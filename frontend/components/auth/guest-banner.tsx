@@ -7,7 +7,7 @@ import { useAuthGate } from "@/components/auth/auth-gate";
 export function GuestBanner({ className }: { className?: string }) {
   const { openAuth } = useAuthGate();
   return (
-    <div className={`border-b border-grey-200 bg-grey-100 px-5 py-3 lg:rounded-card lg:border lg:px-5 lg:py-3.5 ${className ?? ""}`}>
+    <div className={`border-b border-grey-200 bg-grey-100 px-0 py-3 lg:rounded-card lg:border lg:px-5 lg:py-3.5 ${className ?? ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] font-semibold text-ink">
           Browsing as guest · sample data. Sign in to save changes to your shop.

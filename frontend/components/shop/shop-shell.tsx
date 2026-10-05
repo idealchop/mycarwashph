@@ -77,7 +77,7 @@ export function ShopShell({
         />
       }
       mobileTabBar={<MobileTabBar items={tabs} activeKey={mobileTab} />}
-      mainClassName="w-full lg:px-[30px] lg:pt-6 lg:pb-10"
+      mainClassName="w-full min-w-0"
     >
       {children}
     </AppShell>

@@ -72,6 +72,8 @@ export interface Business {
   bookingCapacity: { slotMins: number; maxBookingsPerSlot: number };
   /** Shop settings (Paid). dailyTargetCentavos null = not set. */
   settings: { dailyTargetCentavos: number | null };
+  /** Storefront / interior photo HTTPS URLs for River Mobile (max 6). */
+  photoUrls: string[];
   /** Partner billing (Paid prices TBD). */
   billing: BusinessBilling;
   createdAt: string;

@@ -68,6 +68,7 @@ export interface BusinessProfile {
   riverMobile?: { listed: boolean; listedAt: string | null };
   bookingCapacity?: { slotMins: number; maxBookingsPerSlot: number };
   settings?: { dailyTargetCentavos: number | null };
+  photoUrls?: string[];
   billing?: BusinessBilling | null;
 }
 
@@ -84,6 +85,7 @@ export interface MeResponse {
     phoneE164?: string | null;
     riverMobileListed?: boolean;
     settings?: { dailyTargetCentavos: number | null };
+    photoUrls?: string[];
     billing?: BusinessBilling | null;
   }[];
 }
