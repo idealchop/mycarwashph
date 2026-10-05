@@ -63,10 +63,11 @@ function Inner() {
           <Button disabled={busy || !name.trim()} onClick={add}>Add</Button>
         </div>
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
+        {!data && !error ? <div className="mt-8"><Spinner label="Loading customers" /></div> : null}
         {data && data.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No customers yet" description="Add walk-in regulars so staff can find them quickly." />
         ) : (
-          <ul className="mt-4 flex flex-col gap-2">
+          <ul className="mt-4 grid gap-2 lg:grid-cols-2">
             {data?.map((c) => (
               <li key={c.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
                 <b className="text-[15px]">{c.name}</b>

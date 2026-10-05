@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { API_SCOPES, PAYMENT_METHODS, PLANS, QUEUE_STATUSES, ROLES, VEHICLE_SIZES } from "./types.js";
+import { API_SCOPES, BILLING_PAYMENT_METHODS, PARTNER_BILLING_OPTIONS, PAYMENT_METHODS, PLANS, QUEUE_STATUSES, ROLES, VEHICLE_SIZES } from "./types.js";
 
 const name = z.string().trim().min(1).max(80);
 /** Philippine mobile in E.164, e.g. +639171234567. */
@@ -8,17 +8,27 @@ const centavos = z.number().int().min(0).max(100_000_000);
 const vehicleSize = z.enum(VEHICLE_SIZES);
 const id = z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/);
 
+const shopLocation = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  formattedAddress: z.string().trim().max(300).nullable().default(null),
+  placeId: z.string().trim().max(256).nullable().default(null),
+});
+
+
 export const createBusinessSchema = z.object({
   name,
   phoneE164: phoneE164.optional(),
-  address: z.string().trim().max(200).optional(),
+  address: z.string().trim().max(300).optional(),
+  location: shopLocation.optional(),
 });
 
 export const updateBusinessSchema = z
   .object({
     name: name.optional(),
     phoneE164: phoneE164.nullable().optional(),
-    address: z.string().trim().max(200).nullable().optional(),
+    address: z.string().trim().max(300).nullable().optional(),
+    location: shopLocation.nullable().optional(),
     riverMobileListed: z.boolean().optional(),
     bookingCapacity: z
       .object({ slotMins: z.number().int().min(15).max(240), maxBookingsPerSlot: z.number().int().min(1).max(50) })
@@ -26,6 +36,23 @@ export const updateBusinessSchema = z
     dailyTargetCentavos: centavos.nullable().optional(),
   })
   .strict();
+
+export const selectPartnerBillingSchema = z.object({
+  partnerOption: z.enum(PARTNER_BILLING_OPTIONS),
+});
+
+export const confirmBillingPaymentSchema = z.object({
+  method: z.enum(BILLING_PAYMENT_METHODS),
+  paymentRef: z.string().trim().max(120).nullable().optional(),
+  /** Optional override; defaults to the Partner price for the selected option. */
+  amountCentavos: centavos.optional(),
+});
+
+export const activateBillingSchema = z.object({
+  status: z.enum(["active", "suspended", "unpaid"]).default("active"),
+  /** ISO date; for monthly Partner. Null = lifetime / no expiry. */
+  expiresAt: z.string().datetime().nullable().optional(),
+});
 
 export const setPlanSchema = z.object({ plan: z.enum(PLANS) });
 

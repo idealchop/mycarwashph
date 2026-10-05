@@ -3,12 +3,14 @@ import { notFound } from "../lib/errors.js";
 import type { Business, Member, Plan } from "../models/types.js";
 import type { Doc, DocStore } from "../store/doc-store.js";
 import { writeAudit } from "./audit-service.js";
+import { defaultBilling } from "./billing-service.js";
 import { paths } from "./paths.js";
 
 export interface CreateBusinessInput {
   name: string;
   phoneE164?: string;
   address?: string;
+  location?: Business["location"];
 }
 
 /**
@@ -29,10 +31,12 @@ export async function createBusiness(
     plan: "partner",
     planStatus: "active",
     phoneE164: input.phoneE164 ?? user.phoneNumber ?? null,
-    address: input.address ?? null,
+    address: input.address ?? input.location?.formattedAddress ?? null,
+    location: input.location ?? null,
     riverMobile: { listed: false, listedAt: null },
     bookingCapacity: { slotMins: 60, maxBookingsPerSlot: 2 },
     settings: { dailyTargetCentavos: null },
+    billing: defaultBilling(),
     createdAt: at,
     updatedAt: at,
   };
@@ -73,6 +77,7 @@ export interface UpdateBusinessInput {
   name?: string;
   phoneE164?: string | null;
   address?: string | null;
+  location?: Business["location"];
   riverMobileListed?: boolean;
   bookingCapacity?: Business["bookingCapacity"];
   dailyTargetCentavos?: number | null;
@@ -90,6 +95,12 @@ export async function updateBusiness(
   if (input.name !== undefined) patch.name = input.name;
   if (input.phoneE164 !== undefined) patch.phoneE164 = input.phoneE164;
   if (input.address !== undefined) patch.address = input.address;
+  if (input.location !== undefined) {
+    patch.location = input.location;
+    if (input.location?.formattedAddress && input.address === undefined) {
+      patch.address = input.location.formattedAddress;
+    }
+  }
   if (input.bookingCapacity !== undefined) patch.bookingCapacity = input.bookingCapacity;
   if (input.riverMobileListed !== undefined && input.riverMobileListed !== business.riverMobile.listed) {
     patch.riverMobile = { listed: input.riverMobileListed, listedAt: input.riverMobileListed ? at : null };

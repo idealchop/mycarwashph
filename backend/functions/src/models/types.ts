@@ -7,9 +7,50 @@
 export const ROLES = ["owner", "staff"] as const;
 export type Role = (typeof ROLES)[number];
 
-/** Partner = light booking + scan app; Paid = full shop system. Prices are not set here (TBD). */
+/** Partner = light booking + scan app; Paid = full shop system. Paid prices are TBD. */
 export const PLANS = ["partner", "paid"] as const;
 export type Plan = (typeof PLANS)[number];
+
+/** Founder-set Partner prices (centavos). Paid plan prices stay TBD. */
+export const PARTNER_PRICING = {
+  monthlyCentavos: 95_000, // ₱950 / month
+  lifetimeCentavos: 1_000_000, // ₱10,000 one-time
+} as const;
+
+export const PARTNER_BILLING_OPTIONS = ["monthly", "lifetime"] as const;
+export type PartnerBillingOption = (typeof PARTNER_BILLING_OPTIONS)[number];
+
+export const BILLING_STATUSES = ["trial", "unpaid", "pending", "active", "suspended"] as const;
+export type BillingStatus = (typeof BILLING_STATUSES)[number];
+
+export const BILLING_PAYMENT_METHODS = ["gcash", "maya", "bank", "other"] as const;
+export type BillingPaymentMethod = (typeof BILLING_PAYMENT_METHODS)[number];
+
+export interface ShopLocation {
+  lat: number;
+  lng: number;
+  /** Human-readable address from Maps or typed by the owner. */
+  formattedAddress: string | null;
+  placeId: string | null;
+}
+
+export interface BusinessBilling {
+  /** Chosen Partner package; null until owner picks one. */
+  partnerOption: PartnerBillingOption | null;
+  status: BillingStatus;
+  lastPayment: {
+    amountCentavos: number;
+    method: BillingPaymentMethod;
+    paymentRef: string | null;
+    recordedAt: string;
+    recordedBy: string;
+  } | null;
+  activatedAt: string | null;
+  /** For monthly Partner; null for lifetime / unpaid. */
+  expiresAt: string | null;
+  /** Stub for future PSP (Xendit/PayMongo) — never invent live charges. */
+  checkoutProvider: "manual" | "stub" | null;
+}
 
 export const VEHICLE_SIZES = ["small", "medium", "large", "xl"] as const;
 export type VehicleSize = (typeof VEHICLE_SIZES)[number];
@@ -21,13 +62,18 @@ export interface Business {
   plan: Plan;
   planStatus: "active" | "suspended";
   phoneE164?: string | null;
+  /** Street / shop address text (also mirrored in location.formattedAddress when set via Maps). */
   address?: string | null;
+  /** Map pin for River Mobile proximity. Null until set. */
+  location?: ShopLocation | null;
   /** Opt-in to being listed and bookable in River Mobile. */
   riverMobile: { listed: boolean; listedAt: string | null };
   /** Partner availability: simple max bookings per slot. */
   bookingCapacity: { slotMins: number; maxBookingsPerSlot: number };
   /** Shop settings (Paid). dailyTargetCentavos null = not set. */
   settings: { dailyTargetCentavos: number | null };
+  /** Partner billing (Paid prices TBD). */
+  billing: BusinessBilling;
   createdAt: string;
   updatedAt: string;
 }

@@ -6,7 +6,7 @@ Web only: desktop and phone browsers, designed mobile-first.
 - **Partner** shops get a light app: receive River Mobile bookings, accept or
   decline, **Scan** to verify customers on arrival, and booking history.
 - **Paid** shops get the full system: everything in Partner plus bays, queue,
-  customers and (later) sales, messaging and growth tools. Plan prices are not
+  customers and (later) sales, messaging and growth tools. Partner pricing is **₱950/month** or **₱10,000 one-time** (Billing in Settings). Paid plan prices are not
   set yet and are not in the code.
 
 > **Standalone.** Mycarwash.ph has its own Firebase project, its own databases
@@ -14,7 +14,7 @@ Web only: desktop and phone browsers, designed mobile-first.
 > River Mobile or any other River Apps product. River Mobile connects **only
 > through the versioned public API** (`/v1`, see [docs/api.md](docs/api.md)).
 
-Status: **Phase 1** — live sales on Paid home, queue/walk-in/pay UI, team invites,
+Status: **Phase 1** (+ location/Maps, Partner billing UI, responsive dashboards) — live sales on Paid home, queue/walk-in/pay UI, team invites,
 Messages alerts, Growth metrics, `/v1` App Hosting proxy. Partner home still uses
 real bookings; Paid sales/target are live (no Sample data badges on those widgets).
 
@@ -145,6 +145,7 @@ Only `.env.example` files are committed. Never commit real values.
 | Variable | Purpose |
 |---|---|
 | `NEXT_PUBLIC_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, `_PROJECT_ID`, `_APP_ID` | Web config of the "Mycarwash PH Web" app in `mycarwashph`. On App Hosting derived from `FIREBASE_WEBAPP_CONFIG`; locally optional (defaults target the emulator demo project) |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Optional. Google Maps JS + Places for shop address pin (Philippines). Without it, Settings/onboarding still accept address + manual lat/lng |
 | `NEXT_PUBLIC_USE_EMULATORS` | `true` to use the local Auth emulator (default `true`) |
 | `NEXT_PUBLIC_AUTH_EMULATOR_URL` | Auth emulator URL (default `http://127.0.0.1:9099`) |
 | `NEXT_PUBLIC_APP_ENV` | `local`, `dev` or `prod` (label) |

@@ -19,8 +19,14 @@ export function meRoutes(deps: Deps) {
         id: business.id,
         name: business.name,
         plan: business.plan,
+        planStatus: business.planStatus,
         role,
+        address: business.address ?? null,
+        location: business.location ?? null,
+        phoneE164: business.phoneE164 ?? null,
+        riverMobileListed: business.riverMobile?.listed ?? false,
         settings: business.settings ?? { dailyTargetCentavos: null },
+        billing: business.billing ?? null,
       })),
     });
   });

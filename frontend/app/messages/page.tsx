@@ -35,10 +35,11 @@ function Inner() {
         <SectionHeader title="Messages" aside="In-app alerts" />
         <p className="mt-1 text-[13.5px] font-medium text-muted">Email/SMS delivery logs until a provider is attached (see docs/api.md).</p>
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
+        {!data && !error ? <div className="mt-8"><Spinner label="Loading messages" /></div> : null}
         {data && data.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="chat" size={64} />} title="No alerts yet" description="New River Mobile bookings and status changes show up here." />
         ) : (
-          <ul className="mt-4 flex flex-col gap-2">
+          <ul className="mt-4 grid gap-2 lg:grid-cols-2">
             {data?.map((a) => (
               <li key={a.id} className={`rounded-2xl border px-4 py-3 ${a.read ? "border-grey-200 bg-white" : "border-ink/20 bg-grey-50"}`}>
                 <div className="flex items-start justify-between gap-3">

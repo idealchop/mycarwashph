@@ -28,7 +28,7 @@ function Inner() {
       <ShopPageFrame>
         <SectionHeader title="Growth" aside="From your live data" />
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
-        {!data ? <Spinner /> : (
+        {!data && !error ? <div className="mt-8"><Spinner label="Loading growth" /></div> : data ? (
           <>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard label="Open booking requests" value={String(data.bookingsRequestedOpen)} />
@@ -41,10 +41,10 @@ function Inner() {
               <ul className="mt-2 list-disc pl-5 text-[14px] font-medium text-muted">
                 {data.comingSoon.map((c) => <li key={c}>{c}</li>)}
               </ul>
-              <p className="mt-3 text-[13px] font-medium text-muted">Partner → Paid upgrade UI will appear here when plan prices are set (TBD — not hardcoded).</p>
+              <p className="mt-3 text-[13px] font-medium text-muted">Partner pricing is ₱950/mo or ₱10,000 one-time (see Settings → Billing). Paid plan prices stay TBD.</p>
             </div>
           </>
-        )}
+        ) : null}
       </ShopPageFrame>
     </ShopShell>
   );
