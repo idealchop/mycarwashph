@@ -5,6 +5,7 @@ import { Icon3D } from "@river-apps/icons";
 import { useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
 import { Spinner } from "@/components/screen";
+import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type Customer } from "@/lib/api";
 import { useLoad } from "@/lib/use-load";
@@ -27,7 +28,14 @@ function Inner() {
 
   if (!shop) return <Spinner />;
   if (shop.plan !== "paid") {
-    return <ShopShell newBookings={newBookings} waiting={waiting}><div className="p-6 text-center font-extrabold text-[22px]">Customers is a Paid feature</div></ShopShell>;
+    return (
+      <ShopShell plan={shop.plan} newBookings={newBookings} waiting={waiting}>
+        <ShopPageFrame className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+          <h1 className="text-[22px] font-extrabold">Customers is a Paid feature</h1>
+          <p className="mt-2 text-[15px] font-medium text-muted">Available on Paid shops once plan prices are announced.</p>
+        </ShopPageFrame>
+      </ShopShell>
+    );
   }
 
   async function add() {
@@ -45,8 +53,8 @@ function Inner() {
   }
 
   return (
-    <ShopShell newBookings={newBookings} waiting={waiting}>
-      <div className="mx-auto max-w-[720px] px-4 pb-24 pt-4 lg:px-0">
+    <ShopShell plan={shop.plan} newBookings={newBookings} waiting={waiting}>
+      <ShopPageFrame>
         <SectionHeader title="Customers" aside={`${data?.length ?? 0}`} />
         <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
           <Input label="Name" hideLabel placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -67,7 +75,7 @@ function Inner() {
             ))}
           </ul>
         )}
-      </div>
+      </ShopPageFrame>
     </ShopShell>
   );
 }

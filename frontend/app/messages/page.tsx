@@ -4,6 +4,7 @@ import { Button, EmptyState, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
 import { RequireAuth } from "@/components/require-auth";
 import { Spinner } from "@/components/screen";
+import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type AlertItem } from "@/lib/api";
 import { timePHT } from "@/lib/format";
@@ -29,8 +30,8 @@ function Inner() {
   }
 
   return (
-    <ShopShell newBookings={newBookings} waiting={waiting}>
-      <div className="mx-auto max-w-[720px] px-4 pb-24 pt-4 lg:px-0">
+    <ShopShell plan={shop.plan} newBookings={newBookings} waiting={waiting}>
+      <ShopPageFrame>
         <SectionHeader title="Messages" aside="In-app alerts" />
         <p className="mt-1 text-[13.5px] font-medium text-muted">Email/SMS delivery logs until a provider is attached (see docs/api.md).</p>
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
@@ -52,7 +53,7 @@ function Inner() {
             ))}
           </ul>
         )}
-      </div>
+      </ShopPageFrame>
     </ShopShell>
   );
 }

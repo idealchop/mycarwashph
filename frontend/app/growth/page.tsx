@@ -3,6 +3,7 @@
 import { SectionHeader, StatCard } from "@river-apps/ui";
 import { RequireAuth } from "@/components/require-auth";
 import { Spinner } from "@/components/screen";
+import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type GrowthMetrics } from "@/lib/api";
 import { peso } from "@/lib/format";
@@ -23,13 +24,13 @@ function Inner() {
   if (!shop) return <Spinner />;
 
   return (
-    <ShopShell newBookings={newBookings} waiting={waiting}>
-      <div className="mx-auto max-w-[720px] px-4 pb-24 pt-4 lg:px-0">
+    <ShopShell plan={shop.plan} newBookings={newBookings} waiting={waiting}>
+      <ShopPageFrame>
         <SectionHeader title="Growth" aside="From your live data" />
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
         {!data ? <Spinner /> : (
           <>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard label="Open booking requests" value={String(data.bookingsRequestedOpen)} />
               <StatCard label="Queue today" value={String(data.queueToday)} />
               <StatCard label="Cars washed today" value={String(data.carsWashedToday)} />
@@ -44,7 +45,7 @@ function Inner() {
             </div>
           </>
         )}
-      </div>
+      </ShopPageFrame>
     </ShopShell>
   );
 }

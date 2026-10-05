@@ -4,6 +4,7 @@ import { Button, Input, SectionHeader } from "@river-apps/ui";
 import { useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
 import { Spinner } from "@/components/screen";
+import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type Invite, type Member } from "@/lib/api";
 import { useLoad } from "@/lib/use-load";
@@ -79,8 +80,8 @@ function Inner() {
   }
 
   return (
-    <ShopShell newBookings={newBookings} waiting={waiting} mobileTab="more">
-      <div className="mx-auto max-w-[720px] px-4 pb-24 pt-4 lg:px-0">
+    <ShopShell plan={shop.plan} newBookings={newBookings} waiting={waiting} mobileTab={shop.plan === "partner" ? "shop" : "more"}>
+      <ShopPageFrame narrow>
         <SectionHeader title="Settings" aside={shop.name} />
         {msg ? <p className="mt-2 text-[14px] font-semibold" role="status">{msg}</p> : null}
 
@@ -108,7 +109,7 @@ function Inner() {
             ))}
           </ul>
           {shop.role === "owner" ? (
-            <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
               <Input label="Invite phone" hideLabel placeholder="917… (+63)" value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} />
               <Input label="Invite email" hideLabel placeholder="email@…" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
               <Button disabled={busy || (!invitePhone.trim() && !inviteEmail.trim())} onClick={invite}>Invite staff</Button>
@@ -130,7 +131,7 @@ function Inner() {
           <b className="text-[15px]">Plan</b>
           <p className="mt-1 text-[14px] font-medium text-muted">Current plan: <b>{shop.plan}</b>. Prices TBD — upgrade UI will not invent amounts.</p>
         </section>
-      </div>
+      </ShopPageFrame>
     </ShopShell>
   );
 }

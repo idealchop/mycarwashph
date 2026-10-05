@@ -4,6 +4,7 @@ import { Button, EmptyState, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
 import { RequireAuth } from "@/components/require-auth";
 import { Spinner } from "@/components/screen";
+import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type Booking, type Service } from "@/lib/api";
 import { timePHT } from "@/lib/format";
@@ -35,15 +36,15 @@ function Inner() {
   }
 
   return (
-    <ShopShell newBookings={newBookings} waiting={waiting} mobileTab="home">
-      <div className="mx-auto max-w-[720px] px-4 pb-24 pt-4 lg:px-0">
+    <ShopShell plan={shop.plan} newBookings={newBookings} waiting={waiting} mobileTab={shop.plan === "partner" ? "bookings" : "home"}>
+      <ShopPageFrame>
         <SectionHeader title="Bookings" aside={`${data?.bookings.length ?? 0} total`} />
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
         {!data ? <Spinner label="Loading bookings" /> : null}
         {data && data.bookings.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No bookings yet" description="River Mobile bookings show up here when customers book your shop." />
         ) : null}
-        <ul className="mt-4 flex flex-col gap-2.5">
+        <ul className="mt-4 grid gap-2.5 lg:grid-cols-2">
           {data?.bookings.map((b) => (
             <li key={b.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -68,7 +69,7 @@ function Inner() {
             </li>
           ))}
         </ul>
-      </div>
+      </ShopPageFrame>
     </ShopShell>
   );
 }

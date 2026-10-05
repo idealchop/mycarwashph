@@ -114,9 +114,9 @@ export function PaidHome({ me, shop }: { me: MeResponse; shop: MeResponse["busin
   const props = { me, shop, data, error, views, waiting, busy: busyCount, name, total, cars, target, targetPct, hourly, peak, assign, walkIn, actionBusy: busy };
 
   return (
-    <ShopShell newBookings={data?.bookings.length ?? 0} waiting={waiting.length} mobileTab="home">
+    <ShopShell plan="paid" newBookings={data?.bookings.length ?? 0} waiting={waiting.length} mobileTab="home">
       <div className="lg:hidden"><PaidPhone {...props} /></div>
-      <div className="hidden lg:block"><PaidDesktop {...props} /></div>
+      <div className="hidden min-w-0 lg:block"><PaidDesktop {...props} /></div>
     </ShopShell>
   );
 }
@@ -233,7 +233,7 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
         </>}
       />
       {error ? <p role="alert" className="mt-3 text-[14px] font-semibold">{error}</p> : null}
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_286px]">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_286px]">
         <HeroBanner
           size="lg"
           eyebrow={<>Today · {longDatePHT(new Date())}</>}
@@ -265,7 +265,7 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
         )}
       </div>
       <SectionHeader className="mb-2.5 mt-[18px]" title="Bays" aside={`${busy} of ${views.length} busy`} />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {views.map((v) =>
           v.item ? (
             <ResourceCard key={v.bay.id} density="comfortable"
@@ -277,8 +277,8 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
           ),
         )}
       </div>
-      <div className="mt-[18px] grid gap-5 pb-6 xl:grid-cols-[1.25fr_1fr_1fr]">
-        <Card padding="none" className="px-[18px] pb-2.5 pt-4 xl:h-[282px]">
+      <div className="mt-[18px] grid gap-5 pb-6 lg:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr]">
+        <Card padding="none" className="px-[18px] pb-2.5 pt-4 lg:min-h-[282px]">
           <CardHeader title="Sales today" subtitle="By hour" />
           {hourly.length ? (
             <BarChart className="mt-3.5" data={hourly} highlightIndex={peak} tooltip={peso((hourly[peak]?.value ?? 0) * 100)} width={470} height={192} ariaLabel="Sales by hour" />
@@ -286,7 +286,7 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
             <EmptyState className="mt-8" title="No sales yet" description="Record payment on the Queue page." />
           )}
         </Card>
-        <Card padding="none" className="px-[18px] pb-2.5 pt-4 xl:h-[282px]">
+        <Card padding="none" className="px-[18px] pb-2.5 pt-4 lg:min-h-[282px]">
           <CardHeader className="mb-1.5" title="Queue" subtitle={`${waiting.length} waiting`} action={<Button size="sm" variant="ghost" href="/queue">Open</Button>} />
           {waiting.length ? (
             <QueueList label="Waiting cars" items={waiting.slice(0, 4).map((q, i) => {
@@ -301,7 +301,7 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
             })} />
           ) : <p className="pt-6 text-center text-[14px] font-medium text-muted">No cars waiting.</p>}
         </Card>
-        <Card padding="none" className="px-[18px] pb-2.5 pt-4 xl:h-[282px]">
+        <Card padding="none" className="px-[18px] pb-2.5 pt-4 lg:min-h-[282px]">
           <CardHeader className="mb-1.5" title="Recent sales" subtitle="Today" action={<Button size="sm" variant="ghost" href="/sales">All</Button>} />
           {recent.length === 0 ? <p className="pt-6 text-center text-[14px] font-medium text-muted">No sales yet today.</p> : (
             <ul aria-label="Recent sales">

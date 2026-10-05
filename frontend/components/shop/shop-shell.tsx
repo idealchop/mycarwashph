@@ -8,19 +8,19 @@ import {
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { MycarwashBrand } from "@/components/brand";
-import { PAID_TABS } from "@/components/home/common";
+import { PAID_TABS, PARTNER_TABS } from "@/components/home/common";
 
 const ic = { size: 20, strokeWidth: 1.75 } as const;
 
 const NAV = [
-  { key: "dashboard", label: "Dashboard", icon: <LayoutGrid {...ic} />, href: "/home", match: ["/home"] },
-  { key: "queue", label: "Queue", icon: <List {...ic} />, href: "/queue", match: ["/queue"] },
-  { key: "bookings", label: "Bookings", icon: <Calendar {...ic} />, href: "/bookings", match: ["/bookings"] },
-  { key: "sales", label: "Sales", icon: <ChartColumn {...ic} />, href: "/sales", match: ["/sales"] },
-  { key: "customers", label: "Customers", icon: <Users {...ic} />, href: "/customers", match: ["/customers"] },
-  { key: "messages", label: "Messages", icon: <MessageSquare {...ic} />, href: "/messages", match: ["/messages"] },
-  { key: "growth", label: "Growth", icon: <TrendingUp {...ic} />, href: "/growth", match: ["/growth"] },
-  { key: "settings", label: "Settings", icon: <Settings {...ic} />, href: "/settings", match: ["/settings"] },
+  { key: "dashboard", label: "Dashboard", icon: <LayoutGrid {...ic} />, href: "/home", match: ["/home"], plans: ["partner", "paid"] as const },
+  { key: "queue", label: "Queue", icon: <List {...ic} />, href: "/queue", match: ["/queue"], plans: ["paid"] as const },
+  { key: "bookings", label: "Bookings", icon: <Calendar {...ic} />, href: "/bookings", match: ["/bookings"], plans: ["partner", "paid"] as const },
+  { key: "sales", label: "Sales", icon: <ChartColumn {...ic} />, href: "/sales", match: ["/sales"], plans: ["paid"] as const },
+  { key: "customers", label: "Customers", icon: <Users {...ic} />, href: "/customers", match: ["/customers"], plans: ["paid"] as const },
+  { key: "messages", label: "Messages", icon: <MessageSquare {...ic} />, href: "/messages", match: ["/messages"], plans: ["partner", "paid"] as const },
+  { key: "growth", label: "Growth", icon: <TrendingUp {...ic} />, href: "/growth", match: ["/growth"], plans: ["partner", "paid"] as const },
+  { key: "settings", label: "Settings", icon: <Settings {...ic} />, href: "/settings", match: ["/settings"], plans: ["partner", "paid"] as const },
 ] as const;
 
 export function ShopShell({
@@ -28,20 +28,32 @@ export function ShopShell({
   newBookings = 0,
   waiting = 0,
   mobileTab = "home",
+  plan = "paid",
 }: {
   children: ReactNode;
   newBookings?: number;
   waiting?: number;
   mobileTab?: string;
+  plan?: "partner" | "paid";
 }) {
   const path = usePathname();
-  const active = NAV.find((n) => n.match.some((m) => path === m || path.startsWith(m + "/")))?.key ?? "dashboard";
-  const items = NAV.map((n) => ({
-    ...n,
+  const nav = NAV.filter((n) => (n.plans as readonly string[]).includes(plan));
+  const active = nav.find((n) => n.match.some((m) => path === m || path.startsWith(m + "/")))?.key ?? "dashboard";
+  const items = nav.map((n) => ({
+    key: n.key,
+    label: n.label,
+    icon: n.icon,
+    href: n.href,
     badge: n.key === "queue" ? waiting || undefined : n.key === "bookings" ? newBookings || undefined : undefined,
   }));
-  const tabs = PAID_TABS.map((t) => {
-    const href = t.key === "home" ? "/home" : t.key === "queue" ? "/queue" : t.key === "sales" ? "/sales" : t.key === "more" ? "/settings" : undefined;
+  const tabs = (plan === "partner" ? PARTNER_TABS : PAID_TABS).map((t) => {
+    const href =
+      t.key === "home" ? "/home"
+        : t.key === "queue" ? "/queue"
+          : t.key === "sales" ? "/sales"
+            : t.key === "bookings" || t.key === "history" ? "/bookings"
+              : t.key === "shop" || t.key === "more" ? "/settings"
+                : undefined;
     return { ...t, href };
   });
 
@@ -65,7 +77,7 @@ export function ShopShell({
         />
       }
       mobileTabBar={<MobileTabBar items={tabs} activeKey={mobileTab} />}
-      mainClassName="lg:px-[30px] lg:pt-6"
+      mainClassName="w-full lg:px-[30px] lg:pt-6 lg:pb-8"
     >
       {children}
     </AppShell>
