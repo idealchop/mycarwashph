@@ -198,6 +198,12 @@ firebase deploy --only auth --project mycarwashph                 # Google sign-
 
 Secrets: `firebase functions:secrets:set API_KEY_PEPPER_DEV` (and `_PROD`).
 
+Phone SMS on hosted App Hosting builds always uses real reCAPTCHA (never
+`appVerificationDisabledForTesting`). That flag is set only when talking to the
+Auth emulator locally. Firebase Auth test phone numbers remain configured for
+manual console testing if needed; real numbers go through SMS on Blaze.
+
+
 App Hosting builds the monorepo through its Turborepo support: both backends use
 root directory `frontend` (see `firebase.json`), the CLI uploads the whole repo,
 and the buildpack runs `turbo run build --filter=@mycarwash/web` (UI kit packages
