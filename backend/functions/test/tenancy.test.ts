@@ -101,7 +101,7 @@ describe("business tenancy", () => {
   it("lists only my own businesses in /me", async () => {
     const res = await request(ctx.app).get("/me").set(auth("sam"));
     expect(res.status).toBe(200);
-    expect(res.body.businesses).toEqual([{ id: shopA, name: "Alice Wash", plan: "partner", role: "staff" }]);
+    expect(res.body.businesses).toEqual([{ id: shopA, name: "Alice Wash", plan: "partner", role: "staff", settings: { dailyTargetCentavos: null } }]);
   });
 
   it("gates Paid features by plan and only lets platform admins change the plan", async () => {

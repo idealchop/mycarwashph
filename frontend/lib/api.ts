@@ -33,7 +33,13 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 export type Plan = "partner" | "paid";
 export interface MeResponse {
   user: { uid: string; phoneNumber: string | null; email: string | null; name: string | null };
-  businesses: { id: string; name: string; plan: Plan; role: "owner" | "staff" }[];
+  businesses: {
+    id: string;
+    name: string;
+    plan: Plan;
+    role: "owner" | "staff";
+    settings?: { dailyTargetCentavos: number | null };
+  }[];
 }
 export interface Booking {
   id: string;
@@ -65,10 +71,84 @@ export interface QueueItem {
   status: string;
   bayId: string | null;
   serviceIds: string[];
+  vehicleSize?: string | null;
   plate: string | null;
   source: string;
   startedAt: string | null;
+  doneAt?: string | null;
+  bookingId?: string | null;
   createdAt: string;
+}
+
+export type PaymentMethod = "cash" | "gcash" | "maya" | "other";
+
+export interface Sale {
+  id: string;
+  amountCentavos: number;
+  method: PaymentMethod;
+  paymentRef: string | null;
+  status: string;
+  serviceIds: string[];
+  plate: string | null;
+  customerName: string | null;
+  paidAt: string;
+}
+
+export interface SalesSummary {
+  date: string;
+  totalCentavos: number;
+  cars: number;
+  byHour: { hour: number; label: string; centavos: number; count: number }[];
+  recent: Sale[];
+  previousDayTotalCentavos: number;
+}
+
+export interface Member {
+  id: string;
+  uid: string;
+  role: "owner" | "staff";
+  status: string;
+  displayName: string | null;
+  phoneE164: string | null;
+  email: string | null;
+}
+
+export interface Invite {
+  id: string;
+  phoneE164: string | null;
+  email: string | null;
+  role: "owner" | "staff";
+  status: string;
+  createdAt: string;
+}
+
+export interface AlertItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  read: boolean;
+  bookingId: string | null;
+  createdAt: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phoneE164: string | null;
+  plate: string | null;
+  vehicleSize: string | null;
+}
+
+export interface GrowthMetrics {
+  date: string;
+  bookingsRequestedOpen: number;
+  bookingsAcceptedOrBeyond: number;
+  queueToday: number;
+  carsWashedToday: number;
+  salesTodayCentavos: number;
+  salesLast200Centavos: number;
+  comingSoon: string[];
 }
 export interface VerifyResult {
   booking: Booking;

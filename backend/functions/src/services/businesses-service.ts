@@ -32,6 +32,7 @@ export async function createBusiness(
     address: input.address ?? null,
     riverMobile: { listed: false, listedAt: null },
     bookingCapacity: { slotMins: 60, maxBookingsPerSlot: 2 },
+    settings: { dailyTargetCentavos: null },
     createdAt: at,
     updatedAt: at,
   };
@@ -74,6 +75,7 @@ export interface UpdateBusinessInput {
   address?: string | null;
   riverMobileListed?: boolean;
   bookingCapacity?: Business["bookingCapacity"];
+  dailyTargetCentavos?: number | null;
 }
 
 export async function updateBusiness(
@@ -91,6 +93,9 @@ export async function updateBusiness(
   if (input.bookingCapacity !== undefined) patch.bookingCapacity = input.bookingCapacity;
   if (input.riverMobileListed !== undefined && input.riverMobileListed !== business.riverMobile.listed) {
     patch.riverMobile = { listed: input.riverMobileListed, listedAt: input.riverMobileListed ? at : null };
+  }
+  if (input.dailyTargetCentavos !== undefined) {
+    patch.settings = { ...(business.settings ?? { dailyTargetCentavos: null }), dailyTargetCentavos: input.dailyTargetCentavos };
   }
   await store.update(paths.business(business.id), patch);
   await writeAudit(store, business.id, { actor: { type: "user", id: actorUid }, action: "business.update", target: paths.business(business.id), meta: { fields: Object.keys(input) } }, now);

@@ -26,6 +26,8 @@ export interface Business {
   riverMobile: { listed: boolean; listedAt: string | null };
   /** Partner availability: simple max bookings per slot. */
   bookingCapacity: { slotMins: number; maxBookingsPerSlot: number };
+  /** Shop settings (Paid). dailyTargetCentavos null = not set. */
+  settings: { dailyTargetCentavos: number | null };
   createdAt: string;
   updatedAt: string;
 }
@@ -140,6 +142,63 @@ export interface AuditLog {
   target: string;
   meta: Record<string, unknown> | null;
   at: string;
+}
+
+
+export const PAYMENT_METHODS = ["cash", "gcash", "maya", "other"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** businesses/{businessId}/sales/{saleId} — recorded when a queue item is paid. */
+export interface Sale {
+  queueItemId: string | null;
+  bookingId: string | null;
+  amountCentavos: number;
+  method: PaymentMethod;
+  /** Staff-entered reference (GCash/Maya ref, or future PSP id). */
+  paymentRef: string | null;
+  /** Optional QR payload shown to the customer (e.g. shop GCash QR string). Not a secret. */
+  paymentQrPayload: string | null;
+  status: "recorded" | "void";
+  serviceIds: string[];
+  vehicleSize: VehicleSize | null;
+  plate: string | null;
+  customerName: string | null;
+  recordedBy: string;
+  paidAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** businesses/{businessId}/invites/{inviteId} — pending staff invite. */
+export interface Invite {
+  phoneE164: string | null;
+  email: string | null;
+  role: Role;
+  status: "pending" | "accepted" | "revoked";
+  invitedBy: string;
+  acceptedUid: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** invite_index/{inviteId} — resolves an invite across shops for accept. */
+export interface InviteIndex {
+  businessId: string;
+  createdAt: string;
+}
+
+export const ALERT_TYPES = ["booking.requested", "booking.status", "queue.paid", "system"] as const;
+export type AlertType = (typeof ALERT_TYPES)[number];
+
+/** businesses/{businessId}/alerts/{alertId} — in-app owner/staff alerts (Messages). */
+export interface Alert {
+  type: AlertType;
+  title: string;
+  body: string;
+  read: boolean;
+  bookingId: string | null;
+  queueItemId: string | null;
+  createdAt: string;
 }
 
 export const API_SCOPES = [

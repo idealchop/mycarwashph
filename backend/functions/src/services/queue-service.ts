@@ -1,10 +1,11 @@
 import { notFound, unprocessable } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
-import type { Bay, QueueItem, QueueStatus, VehicleSize } from "../models/types.js";
+import type { Bay, PaymentMethod, QueueItem, QueueStatus, VehicleSize } from "../models/types.js";
 import type { DocStore, Tx } from "../store/doc-store.js";
 import type { Actor } from "./audit-service.js";
 import { writeAudit } from "./audit-service.js";
 import { paths } from "./paths.js";
+import { recordSale } from "./sales-service.js";
 
 export interface NewQueueItem {
   source: QueueItem["source"];
@@ -63,11 +64,19 @@ const NEXT: Record<QueueStatus, QueueStatus[]> = {
   cancelled: [],
 };
 
+export interface QueueSaleInput {
+  amountCentavos: number;
+  method: PaymentMethod;
+  paymentRef?: string | null;
+  paymentQrPayload?: string | null;
+  customerName?: string | null;
+}
+
 export async function updateQueueItem(
   store: DocStore,
   businessId: string,
   id: string,
-  patch: { status?: QueueStatus; bayId?: string | null },
+  patch: { status?: QueueStatus; bayId?: string | null; sale?: QueueSaleInput },
   actorUid: string,
   now: Date,
 ) {
@@ -87,11 +96,36 @@ export async function updateQueueItem(
     if (!NEXT[item.status].includes(patch.status)) {
       throw unprocessable(`Cannot move from ${item.status} to ${patch.status}.`, "invalid_transition");
     }
+    if (patch.status === "paid" && !patch.sale) {
+      throw unprocessable("Record the payment amount and method when marking paid.", "sale_required");
+    }
     update.status = patch.status;
     if (patch.status === "in_bay") update.startedAt = at;
     if (patch.status === "done") update.doneAt = at;
   }
   await store.update(path, update);
-  await writeAudit(store, businessId, { actor: { type: "user", id: actorUid }, action: "queue.update", target: path, meta: { ...patch } }, now);
-  return { ...item, ...update };
+  await writeAudit(store, businessId, { actor: { type: "user", id: actorUid }, action: "queue.update", target: path, meta: { status: patch.status, bayId: patch.bayId } }, now);
+
+  let sale = null;
+  if (patch.status === "paid" && patch.sale) {
+    sale = await recordSale(
+      store,
+      businessId,
+      {
+        queueItemId: id,
+        bookingId: item.bookingId,
+        amountCentavos: patch.sale.amountCentavos,
+        method: patch.sale.method,
+        paymentRef: patch.sale.paymentRef,
+        paymentQrPayload: patch.sale.paymentQrPayload,
+        serviceIds: item.serviceIds,
+        vehicleSize: item.vehicleSize,
+        plate: item.plate,
+        customerName: patch.sale.customerName,
+      },
+      actorUid,
+      now,
+    );
+  }
+  return { item: { ...item, ...update }, sale };
 }

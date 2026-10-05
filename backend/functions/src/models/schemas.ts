@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { API_SCOPES, PLANS, QUEUE_STATUSES, VEHICLE_SIZES } from "./types.js";
+import { API_SCOPES, PAYMENT_METHODS, PLANS, QUEUE_STATUSES, ROLES, VEHICLE_SIZES } from "./types.js";
 
 const name = z.string().trim().min(1).max(80);
 /** Philippine mobile in E.164, e.g. +639171234567. */
@@ -23,6 +23,7 @@ export const updateBusinessSchema = z
     bookingCapacity: z
       .object({ slotMins: z.number().int().min(15).max(240), maxBookingsPerSlot: z.number().int().min(1).max(50) })
       .optional(),
+    dailyTargetCentavos: centavos.nullable().optional(),
   })
   .strict();
 
@@ -60,8 +61,44 @@ export const queueCreateSchema = z.object({
 });
 
 export const queueUpdateSchema = z
-  .object({ status: z.enum(QUEUE_STATUSES).optional(), bayId: id.nullable().optional() })
+  .object({
+    status: z.enum(QUEUE_STATUSES).optional(),
+    bayId: id.nullable().optional(),
+    /** Required when moving to `paid`: sale amount + how the customer paid. */
+    sale: z
+      .object({
+        amountCentavos: centavos,
+        method: z.enum(PAYMENT_METHODS),
+        paymentRef: z.string().trim().max(80).nullable().optional(),
+        paymentQrPayload: z.string().trim().max(500).nullable().optional(),
+        customerName: z.string().trim().max(80).nullable().optional(),
+      })
+      .optional(),
+  })
   .strict();
+
+export const inviteMemberSchema = z
+  .object({
+    phoneE164: phoneE164.optional(),
+    email: z.string().trim().email().max(120).optional(),
+    role: z.enum(ROLES).default("staff"),
+  })
+  .strict()
+  .refine((v) => Boolean(v.phoneE164 || v.email), { message: "Provide a phone number or email." })
+  .refine((v) => v.role !== "owner", { message: "Cannot invite as owner." });
+
+export const recordSaleSchema = z.object({
+  queueItemId: id.nullable().optional(),
+  bookingId: id.nullable().optional(),
+  amountCentavos: centavos,
+  method: z.enum(PAYMENT_METHODS),
+  paymentRef: z.string().trim().max(80).nullable().optional(),
+  paymentQrPayload: z.string().trim().max(500).nullable().optional(),
+  serviceIds: z.array(id).max(10).default([]),
+  vehicleSize: vehicleSize.nullable().optional(),
+  plate: z.string().trim().max(12).nullable().optional(),
+  customerName: z.string().trim().max(80).nullable().optional(),
+});
 
 export const v1CreateBookingSchema = z.object({
   shopId: id,

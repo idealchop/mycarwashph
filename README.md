@@ -14,8 +14,9 @@ Web only: desktop and phone browsers, designed mobile-first.
 > River Mobile or any other River Apps product. River Mobile connects **only
 > through the versioned public API** (`/v1`, see [docs/api.md](docs/api.md)).
 
-Status: **Phase 0** (foundations) plus the start of Phase 1. Screens marked
-**"Sample data"** show placeholder numbers until the matching feature is built.
+Status: **Phase 1** — live sales on Paid home, queue/walk-in/pay UI, team invites,
+Messages alerts, Growth metrics, `/v1` App Hosting proxy. Partner home still uses
+real bookings; Paid sales/target are live (no Sample data badges on those widgets).
 
 ## Screens
 
