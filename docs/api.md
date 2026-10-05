@@ -65,7 +65,7 @@ and are not in the code.
 | `GET /businesses` | signed in | | Shops I belong to |
 | `POST /businesses` | signed in | | Create a shop; caller becomes **owner**; starts on Partner |
 | `GET /businesses/:id` | owner, staff | | Shop profile + my role |
-| `PATCH /businesses/:id` | owner | | Name, phone, address, `riverMobileListed`, `bookingCapacity` |
+| `PATCH /businesses/:id` | owner | | Name, phone, address, `location` `{lat,lng,formattedAddress,placeId}`, `riverMobileListed`, `bookingCapacity`, `dailyTargetCentavos` |
 | `PUT /businesses/:id/plan` | platform admin | | Switch `partner` / `paid` (custom claim `platformAdmin`) |
 | `GET /businesses/:id/members` | owner, staff | | Team |
 | `DELETE /businesses/:id/members/:uid` | owner | | Remove staff (owner cannot be removed) |
@@ -99,6 +99,10 @@ and are not in the code.
 | `POST /businesses/:id/alerts/:id/read` | owner, staff | | Mark alert read |
 | `GET /businesses/:id/growth` | owner, staff | | Metrics from live bookings/queue/sales |
 | `PATCH /businesses/:id` `dailyTargetCentavos` | owner | | Daily sales target (centavos, nullable) |
+| `GET /businesses/:id/billing` | owner, staff | | Billing status + Partner price catalog |
+| `POST /businesses/:id/billing/select` | owner | partner | Choose Partner `monthly` (₱950) or `lifetime` (₱10,000) |
+| `POST /businesses/:id/billing/confirm-payment` | owner | partner | Record GCash/Maya/bank payment + reference → `pending` |
+| `PUT /businesses/:id/billing/activate` | platform admin | | Mark billing `active` / `suspended` / `unpaid` |
 
 ### Scan (shop-side verification)
 
@@ -139,7 +143,7 @@ can only read bookings it created.
 | Method & path | Scope | Purpose |
 |---|---|---|
 | `GET /v1/health` | none | Liveness, `apiVersion` |
-| `GET /v1/shops/{shopId}` | `shops:read` | Listed shop detail |
+| `GET /v1/shops/{shopId}` | `shops:read` | Listed shop detail (`address`, `location` `{lat,lng,formattedAddress}`, phone) |
 | `GET /v1/shops/{shopId}/services` | `shops:read` | Active services listed on River Mobile (prices in centavos) |
 | `POST /v1/bookings` | `bookings:write` | **Receive a booking** (requires `Idempotency-Key`) |
 | `GET /v1/bookings/{bookingId}` | `bookings:read` | Booking status (only bookings this client created) |
@@ -219,3 +223,18 @@ Email/SMS are **stubs** that `console.info` until provider env vars are attached
 Sales store `method: cash | gcash | maya | other`, optional `paymentRef` and
 `paymentQrPayload` (public QR string for staff to show — not a secret). A future
 PSP can set `paymentRef` to the processor id after webhook confirmation.
+
+
+## Shop location (River Mobile)
+
+Businesses store `address` (text) and optional `location: { lat, lng, formattedAddress, placeId }`.
+The shop web app uses Google Maps Places (when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set) or
+manual lat/lng fields. Listed shops expose `address` + `location` on `GET /v1/shops/{shopId}`
+so River Mobile can detect nearby shops.
+
+## Partner billing
+
+Owners choose monthly vs lifetime Partner packages, then record a manual payment
+(GCash / Maya / bank + reference). Status flow: `trial` → `unpaid` → `pending` →
+`active` (platform admin activates). No live PSP charge without provider keys;
+`checkoutProvider: manual|stub` is reserved for Xendit/PayMongo later.

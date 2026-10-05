@@ -7,3 +7,28 @@ html,
 body {
   background: var(--color-canvas);
 }
+
+/*
+ * Laundry.ph–aligned shop density (same River tokens; looser section rhythm).
+ * Use these on Mycarwash shop shells so dashboards aren’t overcrowded.
+ */
+@layer components {
+  .shop-phone {
+    @apply mx-auto w-full max-w-[560px] pt-3;
+  }
+  .shop-section-title {
+    @apply px-5 pb-2.5 pt-6;
+  }
+  .shop-stack {
+    @apply flex flex-col gap-3.5 px-5;
+  }
+  .shop-inset {
+    @apply mx-5;
+  }
+  .shop-panel {
+    @apply rounded-card border border-grey-200 bg-white p-5 lg:p-6;
+  }
+  .shop-list-gap {
+    @apply mt-5 grid gap-3.5;
+  }
+}

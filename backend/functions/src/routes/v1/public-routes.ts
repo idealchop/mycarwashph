@@ -35,7 +35,15 @@ export function publicRoutes(deps: Deps) {
 
   r.get("/shops/:shopId", requireScope("shops:read"), async (req, res) => {
     const b = await listedShop(id(req.params.shopId));
-    res.json({ shopId: b.id, name: b.name, address: b.address ?? null, phoneE164: b.phoneE164 ?? null });
+    res.json({
+      shopId: b.id,
+      name: b.name,
+      address: b.address ?? null,
+      phoneE164: b.phoneE164 ?? null,
+      location: b.location
+        ? { lat: b.location.lat, lng: b.location.lng, formattedAddress: b.location.formattedAddress ?? null }
+        : null,
+    });
   });
 
   r.get("/shops/:shopId/services", requireScope("shops:read"), async (req, res) => {

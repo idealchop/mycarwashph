@@ -114,9 +114,9 @@ export function PaidHome({ me, shop }: { me: MeResponse; shop: MeResponse["busin
   const props = { me, shop, data, error, views, waiting, busy: busyCount, name, total, cars, target, targetPct, hourly, peak, assign, walkIn, actionBusy: busy };
 
   return (
-    <ShopShell newBookings={data?.bookings.length ?? 0} waiting={waiting.length} mobileTab="home">
+    <ShopShell plan="paid" newBookings={data?.bookings.length ?? 0} waiting={waiting.length} mobileTab="home">
       <div className="lg:hidden"><PaidPhone {...props} /></div>
-      <div className="hidden lg:block"><PaidDesktop {...props} /></div>
+      <div className="hidden min-w-0 lg:block"><PaidDesktop {...props} /></div>
     </ShopShell>
   );
 }
@@ -157,43 +157,33 @@ function FreeBay({ view, next, comfortable, onAssign, disabled }: { view: BayVie
   );
 }
 
-function PaidPhone({ me, shop, data, error, views, waiting, busy, name, total, cars, target, targetPct, hourly, peak, assign, walkIn, actionBusy }: Props) {
+function PaidPhone({ me, shop, data, error, views, waiting, busy, name, total, cars, target, targetPct, assign, walkIn, actionBusy }: Props) {
   return (
-    <div className="mx-auto max-w-[440px] pt-3">
+    <div className="shop-phone pb-4">
       <Greeting title={shop.name} name={me.user.name ?? name} alerts={data?.bookings.length ?? 0} />
       <HeroBanner
-        className="mx-4 mt-2"
+        className="shop-inset mt-3"
         size="sm"
         eyebrow={<>Today · {longDatePHT(new Date())}</>}
-        title={<>{peso(total)} · {cars} cars</>}
-        description={<>{cars} cars washed · {waiting.length} waiting</>}
-        actions={<Button href="/scan" variant="white" size="sm" className="h-[42px] px-4 text-[14.5px]" leadingIcon={<ScanLine size={18} strokeWidth={1.75} />}>Scan customer</Button>}
-        illustration={<CarIllustration size={200} />}
+        title={peso(total)}
+        titleSize="display"
+        description={<>{cars} cars · {waiting.length} waiting</>}
+        actions={<Button href="/scan" variant="white" size="sm" className="h-11 px-4 text-[14.5px]" leadingIcon={<ScanLine size={18} strokeWidth={1.75} />}>Scan customer</Button>}
+        illustration={<CarIllustration size={168} />}
+        illustrationClassName="-right-[10px] bottom-3"
       />
-      {error ? <p role="alert" className="mx-4 mt-3 text-[14px] font-semibold">{error}</p> : null}
-      <StatCard className="mx-4 mt-2.5" label="Sales today" value={peso(total)} trailing={<Badge variant="soft">{changeLabel(total, data?.summary.previousDayTotalCentavos ?? 0)}</Badge>}>
-        {hourly.length ? (
-          <BarChart className="mt-1" data={hourly} highlightIndex={peak} tooltip={peso((hourly[peak]?.value ?? 0) * 100)} width={318} height={100} ariaLabel="Sales by hour" />
-        ) : (
-          <p className="mt-2 text-[13px] font-medium text-muted">No sales recorded yet today.</p>
-        )}
-      </StatCard>
-      {target != null ? (
-        <StatCard className="mx-4 mt-2.5" label="Daily target" footer={<>
-          <span className="flex flex-col leading-[1.2]"><b className="text-[17px] font-extrabold">{peso(total)}</b><small className="text-[12px] font-semibold text-muted">of {peso(target)}</small></span>
-          <Badge variant="soft">{peso(Math.max(0, target - total))} to go</Badge>
-        </>}>
-          <div className="my-1.5 flex justify-center"><ProgressRing value={targetPct} size={100} thickness={10} label={`${targetPct}%`} labelSize={20} ariaLabel={`${targetPct}% of daily target`} /></div>
-        </StatCard>
-      ) : (
-        <p className="mx-4 mt-2 text-[13px] font-medium text-muted">Set a daily target in <a className="underline" href="/settings">Settings</a>.</p>
-      )}
-      <SectionHeader className="px-5 pb-2 pt-5" title="Bays" aside={`${busy} of ${views.length} busy`} />
-      <div className="flex flex-col gap-2.5 px-4">
+      {error ? <p role="alert" className="shop-inset mt-4 text-[14px] font-semibold">{error}</p> : null}
+      <div className="shop-inset mt-3.5 grid grid-cols-3 gap-3">
+        <StatCard className="pb-3.5" label="Waiting" value={String(waiting.length)} />
+        <StatCard className="pb-3.5" label="In bay" value={String(busy)} />
+        <StatCard className="pb-3.5" label="Target" value={target != null ? `${targetPct}%` : "—"} caption={target != null ? changeLabel(total, data?.summary.previousDayTotalCentavos ?? 0) : "Set in Settings"} />
+      </div>
+      <SectionHeader className="shop-section-title" title="Bays" aside={`${busy} of ${views.length} busy`} />
+      <div className="grid grid-cols-1 gap-3 px-5 sm:grid-cols-2">
         {views.map((v) =>
           v.item ? (
             <ResourceCard key={v.bay.id}
-              icon={<IconTile><Icon3D name={serviceIcon(v.service)} size={34} /></IconTile>}
+              icon={<IconTile size={48}><Icon3D name={serviceIcon(v.service)} size={34} /></IconTile>}
               eyebrow={`${v.bay.name} · Washing`} title={v.service} meta={v.item.plate ?? `#${v.item.queueNumber}`}
               progress={{ value: v.pct, label: `${v.minsLeft}m`, ariaLabel: `${v.bay.name}: ${v.minsLeft} minutes left` }} />
           ) : (
@@ -201,9 +191,11 @@ function PaidPhone({ me, shop, data, error, views, waiting, busy, name, total, c
           ),
         )}
       </div>
-      <SectionHeader className="px-5 pb-2 pt-5" title="Queue" aside={<Button size="sm" variant="ghost" href="/queue">Open</Button>} />
-      <div className="px-4 pb-28">
-        {waiting.length === 0 ? <p className="text-[14px] font-medium text-muted">No cars waiting. <button type="button" className="font-bold underline" disabled={actionBusy} onClick={() => void walkIn()}>Add walk-in</button></p> : (
+      <SectionHeader className="shop-section-title" title="Queue" aside={<Button size="sm" variant="ghost" href="/queue">Open</Button>} />
+      <Card padding="none" className="shop-inset mb-4 px-4 py-2">
+        {waiting.length === 0 ? (
+          <p className="px-1 py-5 text-center text-[14px] font-medium text-muted">No cars waiting. <button type="button" className="font-bold underline" disabled={actionBusy} onClick={() => void walkIn()}>Add walk-in</button></p>
+        ) : (
           <QueueList label="Waiting" items={waiting.slice(0, 4).map((q, i) => ({
             id: q.id,
             leading: <Avatar name={q.plate ?? `#${q.queueNumber}`} preset={PRESETS[i % PRESETS.length]} size={36} />,
@@ -212,6 +204,9 @@ function PaidPhone({ me, shop, data, error, views, waiting, busy, name, total, c
             trailing: `#${q.queueNumber}`,
           }))} />
         )}
+      </Card>
+      <div className="px-5 pb-24 pt-1">
+        <Button fullWidth disabled={actionBusy} onClick={() => void walkIn()} leadingIcon={<Plus size={18} strokeWidth={1.75} />}>Add walk-in</Button>
       </div>
     </div>
   );
@@ -233,7 +228,7 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
         </>}
       />
       {error ? <p role="alert" className="mt-3 text-[14px] font-semibold">{error}</p> : null}
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_286px]">
+      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_286px]">
         <HeroBanner
           size="lg"
           eyebrow={<>Today · {longDatePHT(new Date())}</>}
@@ -264,7 +259,7 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
           </Card>
         )}
       </div>
-      <SectionHeader className="mb-2.5 mt-[18px]" title="Bays" aside={`${busy} of ${views.length} busy`} />
+      <SectionHeader className="mb-3 mt-6" title="Bays" aside={`${busy} of ${views.length} busy`} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {views.map((v) =>
           v.item ? (
@@ -277,8 +272,8 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
           ),
         )}
       </div>
-      <div className="mt-[18px] grid gap-5 pb-6 xl:grid-cols-[1.25fr_1fr_1fr]">
-        <Card padding="none" className="px-[18px] pb-2.5 pt-4 xl:h-[282px]">
+      <div className="mt-6 grid gap-5 pb-8 lg:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr]">
+        <Card padding="none" className="px-[18px] pb-2.5 pt-4 lg:min-h-[318px]">
           <CardHeader title="Sales today" subtitle="By hour" />
           {hourly.length ? (
             <BarChart className="mt-3.5" data={hourly} highlightIndex={peak} tooltip={peso((hourly[peak]?.value ?? 0) * 100)} width={470} height={192} ariaLabel="Sales by hour" />
@@ -286,7 +281,7 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
             <EmptyState className="mt-8" title="No sales yet" description="Record payment on the Queue page." />
           )}
         </Card>
-        <Card padding="none" className="px-[18px] pb-2.5 pt-4 xl:h-[282px]">
+        <Card padding="none" className="px-[18px] pb-2.5 pt-4 lg:min-h-[318px]">
           <CardHeader className="mb-1.5" title="Queue" subtitle={`${waiting.length} waiting`} action={<Button size="sm" variant="ghost" href="/queue">Open</Button>} />
           {waiting.length ? (
             <QueueList label="Waiting cars" items={waiting.slice(0, 4).map((q, i) => {
@@ -301,7 +296,7 @@ function PaidDesktop({ me, shop, data, error, views, waiting, busy, name, total,
             })} />
           ) : <p className="pt-6 text-center text-[14px] font-medium text-muted">No cars waiting.</p>}
         </Card>
-        <Card padding="none" className="px-[18px] pb-2.5 pt-4 xl:h-[282px]">
+        <Card padding="none" className="px-[18px] pb-2.5 pt-4 lg:min-h-[318px]">
           <CardHeader className="mb-1.5" title="Recent sales" subtitle="Today" action={<Button size="sm" variant="ghost" href="/sales">All</Button>} />
           {recent.length === 0 ? <p className="pt-6 text-center text-[14px] font-medium text-muted">No sales yet today.</p> : (
             <ul aria-label="Recent sales">

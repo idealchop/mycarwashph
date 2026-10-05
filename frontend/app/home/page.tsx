@@ -1,23 +1,32 @@
 "use client";
 
 import { Button } from "@river-apps/ui";
+import { BrowseGate } from "@/components/browse-gate";
+import { GuestHome } from "@/components/home/guest-home";
 import { Onboarding } from "@/components/home/onboarding";
 import { PaidHome } from "@/components/home/paid-home";
 import { PartnerHome } from "@/components/home/partner-home";
-import { RequireAuth } from "@/components/require-auth";
 import { Screen, Spinner } from "@/components/screen";
+import { useAuth } from "@/lib/auth";
 import { currentShop } from "@/lib/shop";
 import { useMe } from "@/lib/use-me";
 
 export default function HomePage() {
   return (
-    <RequireAuth>
+    <BrowseGate>
       <Home />
-    </RequireAuth>
+    </BrowseGate>
   );
 }
 
 function Home() {
+  const { user } = useAuth();
+  if (!user) return <GuestHome />;
+
+  return <AuthenticatedHome />;
+}
+
+function AuthenticatedHome() {
   const { me, shop, error, reload } = useMe();
   if (error) {
     return (

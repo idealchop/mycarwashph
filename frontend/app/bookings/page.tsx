@@ -2,9 +2,14 @@
 
 import { Button, EmptyState, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
 import { Spinner } from "@/components/screen";
+import { ShopPageFrame } from "@/components/shop/page-frame";
+import { useAuthGate } from "@/components/auth/auth-gate";
+import { GuestPage } from "@/components/shop/guest-page";
 import { ShopShell } from "@/components/shop/shop-shell";
+import { useAuth } from "@/lib/auth";
+import { GUEST_BOOKINGS } from "@/lib/guest-fixtures";
 import { api, type Booking, type Service } from "@/lib/api";
 import { timePHT } from "@/lib/format";
 import { serviceNames } from "@/lib/shop";
@@ -12,11 +17,41 @@ import { useLoad } from "@/lib/use-load";
 import { useShopPage } from "@/lib/use-shop-page";
 
 export default function BookingsPage() {
-  return <RequireAuth><Inner /></RequireAuth>;
+  return <BrowseGate><Inner /></BrowseGate>;
 }
 
 function Inner() {
+  const { user } = useAuth();
+  if (!user) return <GuestBookings />;
+  return <BookingsInner />;
+}
+
+function GuestBookings() {
+  const { requireAuth } = useAuthGate();
+  return (
+    <GuestPage title="Bookings" description="Sample River Mobile requests. Accept and decline need an account." actionLabel="Sign in to manage bookings" mobileTab="bookings">
+      <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
+        {GUEST_BOOKINGS.map((b) => (
+          <li key={b.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <b className="text-[15px]">{b.customerSnapshot.name}</b>
+                <p className="text-[13px] font-medium text-muted">{b.plate} · {b.status} · sample</p>
+              </div>
+              {b.status === "requested" ? (
+                <Button size="sm" onClick={() => requireAuth(undefined, { subtitle: "Sign in to accept bookings." })}>Accept</Button>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </GuestPage>
+  );
+}
+
+function BookingsInner() {
   const { shop, newBookings, waiting, error: meError } = useShopPage();
+
   const { data, error, reload } = useLoad(async () => {
     if (!shop) return null;
     const [bookings, services] = await Promise.all([
@@ -35,17 +70,17 @@ function Inner() {
   }
 
   return (
-    <ShopShell newBookings={newBookings} waiting={waiting} mobileTab="home">
-      <div className="mx-auto max-w-[720px] px-4 pb-24 pt-4 lg:px-0">
+    <ShopShell plan={shop.plan} newBookings={newBookings} waiting={waiting} mobileTab={shop.plan === "partner" ? "bookings" : "home"}>
+      <ShopPageFrame>
         <SectionHeader title="Bookings" aside={`${data?.bookings.length ?? 0} total`} />
         {error ? <p role="alert" className="mt-3 font-semibold">{error}</p> : null}
         {!data ? <Spinner label="Loading bookings" /> : null}
         {data && data.bookings.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No bookings yet" description="River Mobile bookings show up here when customers book your shop." />
         ) : null}
-        <ul className="mt-4 flex flex-col gap-2.5">
+        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
           {data?.bookings.map((b) => (
-            <li key={b.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+            <li key={b.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <b className="text-[16px]">{serviceNames(b.serviceIds, data.services)}</b>
@@ -68,7 +103,7 @@ function Inner() {
             </li>
           ))}
         </ul>
-      </div>
+      </ShopPageFrame>
     </ShopShell>
   );
 }

@@ -2,15 +2,26 @@
 
 import { ChatIcon } from "@river-apps/icons";
 import { Button, PhoneInput } from "@river-apps/ui";
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
 import { AuthNav } from "@/components/auth-nav";
-import { AuthBadge, Screen } from "@/components/screen";
+import { AuthBadge, Screen, Spinner } from "@/components/screen";
 import { authErrorMessage, sendPhoneCode } from "@/lib/auth";
+import { setAuthReturnTo } from "@/lib/guest-mode";
 
 /** 02 · Enter phone number (+63 fixed prefix; the user types 917…, not 0917…) */
 export default function PhoneNumberPage() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <PhoneInner />
+    </Suspense>
+  );
+}
+
+function PhoneInner() {
   const router = useRouter();
+  const search = useSearchParams();
+  const next = search.get("next") || "/home";
   const [formatted, setFormatted] = useState("");
   const [e164, setE164] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,8 +33,9 @@ export default function PhoneNumberPage() {
     setBusy(true);
     setError(null);
     try {
+      setAuthReturnTo(next);
       await sendPhoneCode(e164, "send-code");
-      router.push("/sign-in/code");
+      router.push(`/sign-in/code?next=${encodeURIComponent(next)}`);
     } catch (err) {
       setError(authErrorMessage(err));
       setBusy(false);

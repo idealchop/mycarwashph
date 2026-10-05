@@ -47,6 +47,8 @@ async function user(uid, phoneNumber, displayName) {
 async function shop(id, ownerUid, name, plan, ownerName, phone) {
   await db.doc(`businesses/${id}`).set({
     name, ownerUid, plan, planStatus: "active", phoneE164: phone, address: "Quezon City (sample)",
+    location: { lat: 14.6760, lng: 121.0437, formattedAddress: "Quezon City (sample)", placeId: null },
+    billing: { partnerOption: plan === "partner" ? "monthly" : null, status: "active", lastPayment: null, activatedAt: new Date().toISOString(), expiresAt: null, checkoutProvider: "manual" },
     riverMobile: { listed: true, listedAt: at }, bookingCapacity: { slotMins: 60, maxBookingsPerSlot: 2 },
     settings: { dailyTargetCentavos: 750000 },
     createdAt: at, updatedAt: at,

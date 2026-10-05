@@ -4,17 +4,28 @@ import { ShieldIcon } from "@river-apps/icons";
 import { Button, OtpInput, formatPhilippineMobile } from "@river-apps/ui";
 import { Clock } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { AuthNav } from "@/components/auth-nav";
-import { AuthBadge, Screen } from "@/components/screen";
+import { AuthBadge, Screen, Spinner } from "@/components/screen";
 import { authErrorMessage, confirmPhoneCode, pendingPhone } from "@/lib/auth";
+import { clearGuestMode, consumeAuthReturnTo } from "@/lib/guest-mode";
 
 const RESEND_SECONDS = 45;
 
 /** 03 · Enter the 6-digit code */
 export default function CodePage() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <CodeInner />
+    </Suspense>
+  );
+}
+
+function CodeInner() {
   const router = useRouter();
+  const search = useSearchParams();
+  const nextParam = search.get("next");
   const [pending] = useState(() => pendingPhone());
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +44,11 @@ export default function CodePage() {
     setError(null);
     try {
       await confirmPhoneCode(value);
-      router.replace("/home");
+      clearGuestMode();
+      if (nextParam) {
+        try { sessionStorage.setItem("mcw_auth_return", nextParam); } catch { /* ignore */ }
+      }
+      router.replace(consumeAuthReturnTo("/home"));
     } catch (err) {
       setError(authErrorMessage(err));
       setBusy(false);

@@ -31,14 +31,60 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 }
 
 export type Plan = "partner" | "paid";
+export type PartnerBillingOption = "monthly" | "lifetime";
+export type BillingStatus = "trial" | "unpaid" | "pending" | "active" | "suspended";
+export type BillingPaymentMethod = "gcash" | "maya" | "bank" | "other";
+
+export interface ShopLocation {
+  lat: number;
+  lng: number;
+  formattedAddress: string | null;
+  placeId: string | null;
+}
+
+export interface BusinessBilling {
+  partnerOption: PartnerBillingOption | null;
+  status: BillingStatus;
+  lastPayment: {
+    amountCentavos: number;
+    method: BillingPaymentMethod;
+    paymentRef: string | null;
+    recordedAt: string;
+    recordedBy: string;
+  } | null;
+  activatedAt: string | null;
+  expiresAt: string | null;
+  checkoutProvider: "manual" | "stub" | null;
+}
+
+export interface BusinessProfile {
+  id: string;
+  name: string;
+  plan: Plan;
+  planStatus?: "active" | "suspended";
+  phoneE164?: string | null;
+  address?: string | null;
+  location?: ShopLocation | null;
+  riverMobile?: { listed: boolean; listedAt: string | null };
+  bookingCapacity?: { slotMins: number; maxBookingsPerSlot: number };
+  settings?: { dailyTargetCentavos: number | null };
+  billing?: BusinessBilling | null;
+}
+
 export interface MeResponse {
   user: { uid: string; phoneNumber: string | null; email: string | null; name: string | null };
   businesses: {
     id: string;
     name: string;
     plan: Plan;
+    planStatus?: "active" | "suspended";
     role: "owner" | "staff";
+    address?: string | null;
+    location?: ShopLocation | null;
+    phoneE164?: string | null;
+    riverMobileListed?: boolean;
     settings?: { dailyTargetCentavos: number | null };
+    billing?: BusinessBilling | null;
   }[];
 }
 export interface Booking {

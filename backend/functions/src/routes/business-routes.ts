@@ -11,7 +11,10 @@ import {
   inviteMemberSchema,
   queueCreateSchema,
   queueUpdateSchema,
+  activateBillingSchema,
+  confirmBillingPaymentSchema,
   recordSaleSchema,
+  selectPartnerBillingSchema,
   serviceSchema,
   setPlanSchema,
   updateBaySchema,
@@ -21,6 +24,13 @@ import {
 } from "../models/schemas.js";
 import { BOOKING_STATUSES, type BookingStatus } from "../models/types.js";
 import { listBookings, getBooking, publicBooking, transitionBooking, verifyScan } from "../services/bookings-service.js";
+import {
+  activateBilling,
+  confirmBillingPayment,
+  pricingCatalog,
+  requirePlatformAdmin,
+  selectPartnerBilling,
+} from "../services/billing-service.js";
 import { setPlan, updateBusiness } from "../services/businesses-service.js";
 import { createItem, listItems, updateItem } from "../services/catalog-service.js";
 import { growthMetrics } from "../services/growth-service.js";
@@ -60,6 +70,22 @@ export function businessRoutes(deps: Deps) {
   });
   r.patch("/", owner, validateBody(updateBusinessSchema), async (req, res) => {
     res.json({ data: await updateBusiness(store, getBusiness(res), getUser(res).uid, req.body, deps.now()) });
+  });
+
+  r.get("/billing", member, (_req, res) => {
+    const b = getBusiness(res);
+    res.json({ data: { billing: b.billing ?? null, plan: b.plan, planStatus: b.planStatus, pricing: pricingCatalog() } });
+  });
+  r.post("/billing/select", owner, validateBody(selectPartnerBillingSchema), async (req, res) => {
+    res.json({ data: await selectPartnerBilling(store, getBusiness(res), req.body.partnerOption, getUser(res).uid, deps.now()) });
+  });
+  r.post("/billing/confirm-payment", owner, validateBody(confirmBillingPaymentSchema), async (req, res) => {
+    res.json({ data: await confirmBillingPayment(store, getBusiness(res), req.body, getUser(res).uid, deps.now()) });
+  });
+  r.put("/billing/activate", validateBody(activateBillingSchema), async (req, res) => {
+    const u = getUser(res);
+    requirePlatformAdmin(!!u.platformAdmin);
+    res.json({ data: await activateBilling(store, param(req.params.businessId), req.body, u.uid, deps.now()) });
   });
 
   r.get("/members", member, async (_req, res) => {

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { GoogleG, MycarwashBrand } from "@/components/brand";
 import { Screen } from "@/components/screen";
 import { authErrorMessage, signInWithGoogle, useAuth } from "@/lib/auth";
+import { enterGuestMode } from "@/lib/guest-mode";
 
 /** 01 · Welcome / sign in */
 export default function WelcomePage() {
@@ -43,15 +44,26 @@ export default function WelcomePage() {
         <FloatingCard className="absolute right-4 top-[70px]" icon={<CoinIcon size={30} />} title="+₱350" subtitle="New booking" />
         <SampleDataTag className="absolute bottom-3 right-3">Illustration</SampleDataTag>
       </div>
-      <div className="px-7 pt-[26px]">
+      <div className="px-7 pt-8">
         <h1 className="text-[31px] font-extrabold leading-[1.12] tracking-[-0.03em]">Run your carwash<br />from your phone</h1>
         <p className="mt-2.5 text-[16px] font-medium text-muted">Bookings, queue and today’s sales in one simple app.</p>
       </div>
-      <div className="mt-auto flex flex-col gap-2.5 px-6 pb-10 pt-6">
+      <div className="mt-auto flex flex-col gap-3 px-6 pb-10 pt-8">
         <Button href="/sign-in/phone" fullWidth leadingIcon={<Smartphone size={20} strokeWidth={1.75} />}>Continue with phone number</Button>
         <Button fullWidth variant="secondary" leadingIcon={<GoogleG />} onClick={google} disabled={busy}>Continue with Google</Button>
+        <Button
+          fullWidth
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            enterGuestMode();
+            router.push("/home");
+          }}
+        >
+          Browse dashboard as guest
+        </Button>
         {error ? <p role="alert" className="text-center text-[13.5px] font-semibold">{error}</p> : null}
-        <p className="mt-1.5 text-center text-[12.5px] font-medium text-muted">By continuing you agree to our Terms and Privacy Policy.</p>
+        <p className="mt-1.5 text-center text-[12.5px] font-medium text-muted">Preview uses sample data only. Sign in when you accept bookings, scan, or save. By continuing you agree to our Terms and Privacy Policy.</p>
       </div>
     </Screen>
   );

@@ -3,9 +3,13 @@
 import { Button, EmptyState, Input, SectionHeader } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
 import { useMemo, useState } from "react";
-import { RequireAuth } from "@/components/require-auth";
+import { BrowseGate } from "@/components/browse-gate";
 import { Screen, Spinner } from "@/components/screen";
+import { ShopPageFrame } from "@/components/shop/page-frame";
+import { GuestPage } from "@/components/shop/guest-page";
 import { ShopShell } from "@/components/shop/shop-shell";
+import { useAuth } from "@/lib/auth";
+import { GUEST_QUEUE } from "@/lib/guest-fixtures";
 import { api, type Bay, type QueueItem, type Service } from "@/lib/api";
 import { peso } from "@/lib/format";
 import { serviceNames } from "@/lib/shop";
@@ -14,26 +18,43 @@ import { useShopPage } from "@/lib/use-shop-page";
 
 export default function QueuePage() {
   return (
-    <RequireAuth>
+    <BrowseGate>
       <QueueInner />
-    </RequireAuth>
+    </BrowseGate>
   );
 }
 
 function QueueInner() {
+  const { user } = useAuth();
+  if (!user) {
+    return (
+      <GuestPage title="Queue" description="Preview of today’s queue. Assign bay and record pay require sign-in." actionLabel="Sign in to run the queue" mobileTab="queue">
+        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
+          {GUEST_QUEUE.map((q) => (
+            <li key={q.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
+              <b className="text-[16px]">#{q.queueNumber} · {q.plate ?? "Walk-in"}</b>
+              <p className="text-[13px] font-medium text-muted">{q.status.replace("_", " ")} · sample</p>
+            </li>
+          ))}
+        </ul>
+      </GuestPage>
+    );
+  }
+  return <PaidQueueEntry />;
+}
+
+function PaidQueueEntry() {
   const { shop, error: meError, newBookings, waiting, reload: reloadMe } = useShopPage();
   if (meError) return <ErrorBox message={meError} />;
   if (!shop) return <Spinner label="Loading shop" />;
   if (shop.plan !== "paid") {
     return (
-      <ShopShell newBookings={newBookings} waiting={waiting} mobileTab="queue">
-        <Screen>
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-            <h1 className="text-[22px] font-extrabold">Queue is a Paid feature</h1>
-            <p className="text-[15px] font-medium text-muted">Upgrade when plan prices are announced. Partner shops use Scan + Bookings.</p>
-            <Button href="/home">Back home</Button>
-          </div>
-        </Screen>
+      <ShopShell plan={shop.plan} newBookings={newBookings} waiting={waiting} mobileTab="queue">
+        <ShopPageFrame className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+          <h1 className="text-[22px] font-extrabold">Queue is a Paid feature</h1>
+          <p className="mt-2 max-w-md text-[15px] font-medium text-muted">Upgrade when plan prices are announced. Partner shops use Scan + Bookings.</p>
+          <Button className="mt-4" href="/home">Back home</Button>
+        </ShopPageFrame>
       </ShopShell>
     );
   }
@@ -83,8 +104,8 @@ function PaidQueue({ shopId, newBookings, waiting, onChanged }: { shopId: string
   }
 
   return (
-    <ShopShell newBookings={newBookings} waiting={data?.queue.filter((q) => q.status === "queued").length ?? waiting} mobileTab="queue">
-      <div className="mx-auto max-w-[720px] px-4 pb-24 pt-4 lg:px-0">
+    <ShopShell plan="paid" newBookings={newBookings} waiting={data?.queue.filter((q) => q.status === "queued").length ?? waiting} mobileTab="queue">
+      <ShopPageFrame>
         <SectionHeader title="Queue" aside={data?.date} />
         <div className="mt-3 flex gap-2">
           <Input label="Plate" hideLabel placeholder="Plate (optional)" value={plate} onChange={(e) => setPlate(e.target.value)} />
@@ -95,9 +116,9 @@ function PaidQueue({ shopId, newBookings, waiting, onChanged }: { shopId: string
         {data && data.queue.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No cars in the queue" description="Add a walk-in or scan a River Mobile booking." />
         ) : null}
-        <ul className="mt-4 flex flex-col gap-2.5">
+        <ul className="mt-4 grid gap-3.5 lg:grid-cols-2">
           {data?.queue.map((q) => (
-            <li key={q.id} className="rounded-2xl border border-grey-200 bg-white px-4 py-3">
+            <li key={q.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <b className="text-[16px]">#{q.queueNumber} · {serviceNames(q.serviceIds, data.services) || "Walk-in"}</b>
@@ -143,7 +164,7 @@ function PaidQueue({ shopId, newBookings, waiting, onChanged }: { shopId: string
             </div>
           </div>
         ) : null}
-      </div>
+      </ShopPageFrame>
     </ShopShell>
   );
 }
