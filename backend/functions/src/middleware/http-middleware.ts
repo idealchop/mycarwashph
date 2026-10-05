@@ -28,9 +28,11 @@ export function limiter(config: AppConfig, limit: number): RequestHandler {
     limit,
     standardHeaders: "draft-8",
     legacyHeaders: false,
-    // req.ip can be undefined behind some proxies (and in the functions emulator).
+    // Deployed functions are private: only the App Hosting /api proxy can call them,
+    // and it passes the browser's IP in X-Mycarwash-Client-Ip (otherwise every user
+    // would share the proxy's IP). req.ip can be undefined in the functions emulator.
     keyGenerator: (req) => {
-      const ip = req.ip ?? req.header("x-forwarded-for")?.split(",")[0]?.trim();
+      const ip = req.header("x-mycarwash-client-ip")?.trim() || req.ip || req.header("x-forwarded-for")?.split(",")[0]?.trim();
       return ip ? ipKeyGenerator(ip) : "unknown";
     },
     message: { status: 429, code: "rate_limited", title: "Too many requests. Please slow down." },

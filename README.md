@@ -178,10 +178,13 @@ function binds its database with `getFirestore(app, databaseId)`. There is no
 project), so a person who signs in on dev also exists on prod, but their shops
 and memberships live in separate databases.
 
-The web app does not read Firestore directly (it goes through the API), so the
-frontend only needs the API base URL per environment. The Firebase web config is
-injected by App Hosting (`FIREBASE_WEBAPP_CONFIG`, mapped in
-`frontend/next.config.ts`); nothing is committed.
+The web app does not read Firestore directly. The browser calls same-origin
+`/api/*`; the App Hosting Next.js server forwards those to the private shop API
+Cloud Run service (Google ID token from the backend service account + the user's
+Firebase ID token). That keeps the functions private under the organisation's
+Domain restricted sharing policy. The partner API (`/v1`) stays private until
+River Mobile integration. The Firebase web config is injected by App Hosting
+(`FIREBASE_WEBAPP_CONFIG`, mapped in `frontend/next.config.ts`); nothing is committed.
 
 Deploy (from the repo root, logged in to the Firebase CLI with access to `mycarwashph`):
 

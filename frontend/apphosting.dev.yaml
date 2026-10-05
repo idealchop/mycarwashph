@@ -1,9 +1,11 @@
 # Environment "dev" (backend mycarwash-dev): Firestore database mycarwash-dev
-# via the *Dev functions.
+# through the private mycarwashApiDev function, reached via the /api proxy.
 env:
   - variable: NEXT_PUBLIC_APP_ENV
     value: dev
     availability: [BUILD, RUNTIME]
-  - variable: NEXT_PUBLIC_API_BASE_URL
-    value: https://asia-southeast1-mycarwashph.cloudfunctions.net/mycarwashApiDev
-    availability: [BUILD, RUNTIME]
+  # Browser calls same-origin /api/*; the Next.js server forwards to this private
+  # Cloud Run URL with the backend service account's ID token (runtime only).
+  - variable: API_UPSTREAM_URL
+    value: https://mycarwashapidev-o4uz6gedqa-as.a.run.app
+    availability: [RUNTIME]

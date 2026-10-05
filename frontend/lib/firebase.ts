@@ -33,7 +33,10 @@ export function firebaseAuth(): Auth {
   auth.languageCode = "en";
   if (useEmulators) {
     connectAuthEmulator(auth, authEmulatorUrl, { disableWarnings: true });
-    // The Auth emulator does not verify reCAPTCHA; real projects do (invisible verifier).
+  }
+  // Dev only: skip reCAPTCHA so Firebase Auth test phone numbers work in headless /
+  // Playwright and on devices where the invisible verifier hangs. Never on prod.
+  if (useEmulators || process.env.NEXT_PUBLIC_APP_ENV === "dev") {
     auth.settings.appVerificationDisabledForTesting = true;
   }
   return auth;

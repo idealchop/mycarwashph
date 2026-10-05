@@ -8,7 +8,7 @@ import { createApp, createPublicApp } from "./app.js";
 import { FirebaseTokenVerifier } from "./auth/token-verifier.js";
 import { brand } from "./config/brand.js";
 import { loadConfig } from "./config/env.js";
-import { ENVIRONMENTS, type EnvName } from "./config/environments.js";
+import { APP_HOSTING_SERVICE_ACCOUNT, ENVIRONMENTS, type EnvName } from "./config/environments.js";
 import type { Deps } from "./deps.js";
 import { FirestoreStore } from "./store/firestore-store.js";
 
@@ -61,16 +61,18 @@ function lazy(build: () => Handler): Handler {
   };
 }
 
+/** Shop API: private, invoked only by the App Hosting backend's /api proxy (org policy forbids allUsers). */
 function shopApi(env: EnvName) {
   return onRequest(
-    { region: brand.region, invoker: "public", secrets: [peppers[env]], memory: "256MiB", maxInstances: 10 },
+    { region: brand.region, invoker: [APP_HOSTING_SERVICE_ACCOUNT], secrets: [peppers[env]], memory: "256MiB", maxInstances: 10 },
     lazy(() => createApp(depsFor(env)) as unknown as Handler),
   );
 }
 
+/** Partner API (/v1): private until River Mobile integration needs a public entry point (Phase 1). */
 function partnerApi(env: EnvName) {
   return onRequest(
-    { region: brand.region, invoker: "public", secrets: [peppers[env]], memory: "256MiB", maxInstances: 10 },
+    { region: brand.region, invoker: "private", secrets: [peppers[env]], memory: "256MiB", maxInstances: 10 },
     lazy(() => createPublicApp(depsFor(env)) as unknown as Handler),
   );
 }

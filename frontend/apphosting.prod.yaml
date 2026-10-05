@@ -1,5 +1,5 @@
 # Environment "prod" (backend mycarwash-prod): Firestore database mycarwash-prod
-# via the *Prod functions.
+# through the private mycarwashApiProd function, reached via the /api proxy.
 runConfig:
   minInstances: 0
   maxInstances: 4
@@ -7,6 +7,8 @@ env:
   - variable: NEXT_PUBLIC_APP_ENV
     value: prod
     availability: [BUILD, RUNTIME]
-  - variable: NEXT_PUBLIC_API_BASE_URL
-    value: https://asia-southeast1-mycarwashph.cloudfunctions.net/mycarwashApiProd
-    availability: [BUILD, RUNTIME]
+  # Browser calls same-origin /api/*; the Next.js server forwards to this private
+  # Cloud Run URL with the backend service account's ID token (runtime only).
+  - variable: API_UPSTREAM_URL
+    value: https://mycarwashapiprod-o4uz6gedqa-as.a.run.app
+    availability: [RUNTIME]

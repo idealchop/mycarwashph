@@ -2,21 +2,11 @@
 
 import { firebaseAuth } from "./firebase";
 
-import { useEmulators } from "./firebase";
-
-const FUNCTIONS = "https://asia-southeast1-mycarwashph.cloudfunctions.net";
-
 /**
- * API base URL. Set NEXT_PUBLIC_API_BASE_URL per environment (apphosting.<env>.yaml).
- * Fallbacks: the emulator (dev function) locally, otherwise pick dev or prod from
- * the App Hosting hostname so a backend works even before its environment is set.
+ * Same-origin proxy (app/api/[...path]/route.ts) to the private shop API function
+ * of this environment. NEXT_PUBLIC_API_BASE_URL can point elsewhere if needed.
  */
-function apiBase(): string {
-  if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (useEmulators) return "http://127.0.0.1:5001/demo-mycarwash/asia-southeast1/mycarwashApiDev";
-  const host = typeof window === "undefined" ? "" : window.location.hostname;
-  return host.startsWith("mycarwash-dev--") || host === "localhost" ? `${FUNCTIONS}/mycarwashApiDev` : `${FUNCTIONS}/mycarwashApiProd`;
-}
+const apiBase = () => process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) {
@@ -24,7 +14,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Calls the shop API function (mycarwashApiDev / mycarwashApiProd) with the signed-in user's Firebase ID token. */
+/** Calls the shop API (via /api) with the signed-in user's Firebase ID token. */
 export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const user = firebaseAuth().currentUser;
   if (!user) throw new ApiError(401, "unauthorized", "Please sign in.");

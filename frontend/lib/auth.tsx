@@ -54,14 +54,22 @@ export async function confirmPhoneCode(code: string) {
 
 /* ---------- Google sign-in ---------- */
 
-/** Popup on desktop; redirect on phones where popups are often blocked. */
+/**
+ * Popup everywhere (it also works on phones when started from a tap). Redirect is
+ * only a fallback when the browser blocks the popup: with authDomain
+ * mycarwashph.firebaseapp.com, redirects break on browsers that partition
+ * third-party storage (Safari, Chrome), while popups are unaffected.
+ */
 export async function signInWithGoogle() {
   const auth = firebaseAuth();
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
-  const isPhone = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
-  if (isPhone) await signInWithRedirect(auth, provider);
-  else await signInWithPopup(auth, provider);
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    if ((err as { code?: string })?.code === "auth/popup-blocked") await signInWithRedirect(auth, provider);
+    else throw err;
+  }
 }
 
 export const signOut = () => fbSignOut(firebaseAuth());
@@ -73,7 +81,9 @@ export function authErrorMessage(err: unknown): string {
   if (code.includes("code-expired")) return "That code expired. Please request a new one.";
   if (code.includes("invalid-phone-number")) return "Please enter a valid PH mobile number.";
   if (code.includes("too-many-requests")) return "Too many tries. Please wait a few minutes.";
-  if (code.includes("popup-closed")) return "Google sign-in was closed before finishing.";
+  if (code.includes("popup-closed") || code.includes("cancelled-popup-request")) return "Google sign-in was closed before finishing.";
+  if (code.includes("unauthorized-domain")) return "This site is not allowed to sign in yet. Please contact support.";
+  if (code.includes("captcha")) return "We couldn’t verify you’re not a robot. Please try again.";
   if (code.includes("network-request-failed")) return "No connection. Check your internet and try again.";
   return "Something went wrong. Please try again.";
 }
