@@ -12,10 +12,17 @@ the dev functions use Firestore database `mycarwash-dev`, the prod functions
 | Shop API | Shop web app (owners, staff) | Firebase ID token | `mycarwashApiDev` | `mycarwashApiProd` |
 | Partner API (`/v1`) | River Mobile backend (server to server) | API key (placeholder) | `mycarwashPublicApiDev` | `mycarwashPublicApiProd` |
 
-Base URLs: `https://asia-southeast1-mycarwashph.cloudfunctions.net/<function>`
-(e.g. `.../mycarwashPublicApiDev/v1/health`). Emulator:
+**Access (org policy):** Cloud Functions are **private** (no `allUsers` invoker).
+Browsers and partners reach them through App Hosting same-origin proxies:
+
+| Caller | Path on App Hosting | Upstream function |
+|---|---|---|
+| Shop web app | `/api/*` | `mycarwashApiDev` / `mycarwashApiProd` |
+| River Mobile | `/v1/*` | `mycarwashPublicApiDev` / `mycarwashPublicApiProd` |
+
+Direct Cloud Run URLs remain for the proxy only (Google ID token). Emulator:
 `http://127.0.0.1:5001/demo-mycarwash/asia-southeast1/<function>`.
-Proposed later: the partner API behind `https://api.mycarwash.ph`.
+Custom domain: see [custom-domain.md](./custom-domain.md).
 
 ## Conventions
 
@@ -79,6 +86,19 @@ and are not in the code.
 | `POST /businesses/:id/queue` | owner, staff | paid | Staff-created walk-in; allocates the daily number |
 | `PATCH /businesses/:id/queue/:queueItemId` | owner, staff | paid | Assign bay, move `queued → in_bay → done → paid → closed` |
 | `GET /businesses/:id/audit-logs` | owner | | Last 100 audit entries |
+| `POST /businesses/:id/members/invites` | owner | | Invite staff by PH phone and/or email |
+| `GET /businesses/:id/members/invites` | owner | | Pending invites |
+| `DELETE /businesses/:id/members/invites/:inviteId` | owner | | Revoke invite |
+| `GET /invites/:inviteId` | signed in | | Invite preview |
+| `POST /invites/:inviteId/accept` | signed in | | Accept invite (phone/email must match) |
+| `GET /businesses/:id/sales` | owner, staff | paid | List sales (newest first) |
+| `GET /businesses/:id/sales/summary?date=` | owner, staff | paid | Today totals, by hour, recent |
+| `POST /businesses/:id/sales` | owner, staff | paid | Record a sale manually |
+| `PATCH /businesses/:id/queue/:id` + `sale` | owner, staff | paid | When status → `paid`, body must include `sale` |
+| `GET /businesses/:id/alerts` | owner, staff | | In-app Messages / alerts |
+| `POST /businesses/:id/alerts/:id/read` | owner, staff | | Mark alert read |
+| `GET /businesses/:id/growth` | owner, staff | | Metrics from live bookings/queue/sales |
+| `PATCH /businesses/:id` `dailyTargetCentavos` | owner | | Daily sales target (centavos, nullable) |
 
 ### Scan (shop-side verification)
 
@@ -186,3 +206,16 @@ and availability; list and cancel bookings; signed shop QR with time window;
 webhooks to River Mobile (`booking.accepted`, `.declined`, `.checked_in`,
 `.completed`, `.cancelled`, `.no_show`, HMAC-SHA256 signed, retried, delivery log);
 idempotency key expiry; OpenAPI spec and Swagger UI; admin console for API clients.
+
+
+## Notifications
+
+`notifyShop` always writes `businesses/{id}/alerts/{alertId}` (Messages UI).
+Email/SMS are **stubs** that `console.info` until provider env vars are attached
+(e.g. SendGrid / SMS gateway). No provider secrets are committed.
+
+## Payments
+
+Sales store `method: cash | gcash | maya | other`, optional `paymentRef` and
+`paymentQrPayload` (public QR string for staff to show — not a secret). A future
+PSP can set `paymentRef` to the processor id after webhook confirmation.

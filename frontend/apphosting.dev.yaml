@@ -9,3 +9,7 @@ env:
   - variable: API_UPSTREAM_URL
     value: https://mycarwashapidev-o4uz6gedqa-as.a.run.app
     availability: [RUNTIME]
+  - variable: PUBLIC_API_UPSTREAM_URL
+    value: https://mycarwashpublicapidev-o4uz6gedqa-as.a.run.app
+    availability: [RUNTIME]
+

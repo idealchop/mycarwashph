@@ -10,7 +10,13 @@ export class FakeVerifier implements TokenVerifier {
   async verify(token: string): Promise<AuthUser> {
     const [prefix, uid, flag] = token.split(":");
     if (prefix !== "test" || !uid) throw new Error("bad token");
-    return { uid, phoneNumber: "+639171234567", platformAdmin: flag === "admin" };
+    return {
+      uid,
+      phoneNumber: "+639171234567",
+      email: `${uid}@example.com`,
+      name: uid,
+      platformAdmin: flag === "admin",
+    };
   }
 }
 

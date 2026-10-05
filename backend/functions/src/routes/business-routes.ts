@@ -8,8 +8,10 @@ import { manilaDayKey } from "../lib/time.js";
 import {
   baySchema,
   customerSchema,
+  inviteMemberSchema,
   queueCreateSchema,
   queueUpdateSchema,
+  recordSaleSchema,
   serviceSchema,
   setPlanSchema,
   updateBaySchema,
@@ -21,9 +23,13 @@ import { BOOKING_STATUSES, type BookingStatus } from "../models/types.js";
 import { listBookings, getBooking, publicBooking, transitionBooking, verifyScan } from "../services/bookings-service.js";
 import { setPlan, updateBusiness } from "../services/businesses-service.js";
 import { createItem, listItems, updateItem } from "../services/catalog-service.js";
+import { growthMetrics } from "../services/growth-service.js";
+import { createInvite, listInvites, revokeInvite } from "../services/invites-service.js";
 import { listMembers, removeMember } from "../services/members-service.js";
+import { listAlerts, markAlertRead } from "../services/notify-service.js";
 import { paths } from "../services/paths.js";
 import { createQueueItem, listQueue, updateQueueItem } from "../services/queue-service.js";
+import { listSales, recordSale, salesSummary } from "../services/sales-service.js";
 
 const param = (v: unknown) => {
   if (typeof v !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(v)) throw badRequest("Invalid id.");
@@ -37,12 +43,11 @@ const param = (v: unknown) => {
 export function businessRoutes(deps: Deps) {
   const { store } = deps;
   const r = Router({ mergeParams: true });
-  const member = requireMembership(store); // owner or staff
+  const member = requireMembership(store);
   const owner = requireMembership(store, ["owner"]);
   const paid = requirePlan("paid");
   const user = (res: Parameters<typeof getUser>[0]) => ({ type: "user" as const, id: getUser(res).uid });
 
-  // Platform admin only (River Apps staff): plan changes. Not a shop member route.
   r.put("/plan", validateBody(setPlanSchema), async (req, res) => {
     const u = getUser(res);
     if (!u.platformAdmin) throw forbidden("Only River Apps admins can change a shop's plan.");
@@ -50,7 +55,6 @@ export function businessRoutes(deps: Deps) {
     res.json({ data: business });
   });
 
-  // ---- Business profile
   r.get("/", member, (_req, res) => {
     res.json({ data: getBusiness(res), membership: { role: getMember(res).role } });
   });
@@ -58,16 +62,26 @@ export function businessRoutes(deps: Deps) {
     res.json({ data: await updateBusiness(store, getBusiness(res), getUser(res).uid, req.body, deps.now()) });
   });
 
-  // ---- Members (invites are Phase 1)
   r.get("/members", member, async (_req, res) => {
     res.json({ data: await listMembers(store, getBusiness(res).id) });
+  });
+  r.post("/members/invites", owner, validateBody(inviteMemberSchema), async (req, res) => {
+    const b = getBusiness(res);
+    const invite = await createInvite(store, b.id, req.body, getUser(res).uid, deps.now());
+    res.status(201).json({ data: invite });
+  });
+  r.get("/members/invites", owner, async (_req, res) => {
+    res.json({ data: await listInvites(store, getBusiness(res).id) });
+  });
+  r.delete("/members/invites/:inviteId", owner, async (req, res) => {
+    await revokeInvite(store, getBusiness(res).id, param(req.params.inviteId), getUser(res).uid, deps.now());
+    res.status(204).end();
   });
   r.delete("/members/:uid", owner, async (req, res) => {
     await removeMember(store, getBusiness(res).id, param(req.params.uid), getUser(res).uid, deps.now());
     res.status(204).end();
   });
 
-  // ---- Services (menu). Staff can read; only owners edit prices.
   r.get("/services", member, async (_req, res) => {
     res.json({ data: await listItems(store, paths.services(getBusiness(res).id), "name") });
   });
@@ -77,11 +91,9 @@ export function businessRoutes(deps: Deps) {
   });
   r.patch("/services/:serviceId", owner, validateBody(updateServiceSchema), async (req, res) => {
     const b = getBusiness(res);
-    const path = paths.service(b.id, param(req.params.serviceId));
-    res.json({ data: await updateItem(store, b.id, path, req.body, getUser(res).uid, "service.update", deps.now()) });
+    res.json({ data: await updateItem(store, b.id, paths.service(b.id, param(req.params.serviceId)), req.body, getUser(res).uid, "service.update", deps.now()) });
   });
 
-  // ---- Bays (Paid)
   r.get("/bays", member, paid, async (_req, res) => {
     res.json({ data: await listItems(store, paths.bays(getBusiness(res).id), "sortOrder") });
   });
@@ -91,11 +103,9 @@ export function businessRoutes(deps: Deps) {
   });
   r.patch("/bays/:bayId", owner, paid, validateBody(updateBaySchema), async (req, res) => {
     const b = getBusiness(res);
-    const path = paths.bay(b.id, param(req.params.bayId));
-    res.json({ data: await updateItem(store, b.id, path, req.body, getUser(res).uid, "bay.update", deps.now()) });
+    res.json({ data: await updateItem(store, b.id, paths.bay(b.id, param(req.params.bayId)), req.body, getUser(res).uid, "bay.update", deps.now()) });
   });
 
-  // ---- Customers (Paid)
   r.get("/customers", member, paid, async (_req, res) => {
     res.json({ data: await listItems(store, paths.customers(getBusiness(res).id), "name") });
   });
@@ -104,7 +114,6 @@ export function businessRoutes(deps: Deps) {
     res.status(201).json({ data: await createItem(store, b.id, paths.customers(b.id), req.body, getUser(res).uid, "customer.create", deps.now()) });
   });
 
-  // ---- Bookings (both plans)
   r.get("/bookings", member, async (req, res) => {
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     if (status && !BOOKING_STATUSES.includes(status as BookingStatus)) throw badRequest("Unknown status filter.");
@@ -122,7 +131,6 @@ export function businessRoutes(deps: Deps) {
     });
   }
 
-  // ---- Queue (Paid)
   r.get("/queue", member, paid, async (req, res) => {
     const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
     res.json({ data: await listQueue(store, getBusiness(res).id, date), date });
@@ -133,10 +141,36 @@ export function businessRoutes(deps: Deps) {
   });
   r.patch("/queue/:queueItemId", member, paid, validateBody(queueUpdateSchema), async (req, res) => {
     const b = getBusiness(res);
-    res.json({ data: await updateQueueItem(store, b.id, param(req.params.queueItemId), req.body, getUser(res).uid, deps.now()) });
+    const result = await updateQueueItem(store, b.id, param(req.params.queueItemId), req.body, getUser(res).uid, deps.now());
+    res.json({ data: result.item, sale: result.sale });
   });
 
-  // ---- Audit log (owner)
+  r.get("/sales", member, paid, async (req, res) => {
+    const limit = typeof req.query.limit === "string" ? Number(req.query.limit) : 100;
+    res.json({ data: await listSales(store, getBusiness(res).id, { limit: Number.isFinite(limit) ? Math.min(limit, 200) : 100 }) });
+  });
+  r.get("/sales/summary", member, paid, async (req, res) => {
+    const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
+    res.json({ data: await salesSummary(store, getBusiness(res).id, date) });
+  });
+  r.post("/sales", member, paid, validateBody(recordSaleSchema), async (req, res) => {
+    const b = getBusiness(res);
+    const sale = await recordSale(store, b.id, req.body, getUser(res).uid, deps.now());
+    res.status(201).json({ data: sale });
+  });
+
+  r.get("/alerts", member, async (_req, res) => {
+    res.json({ data: await listAlerts(store, getBusiness(res).id) });
+  });
+  r.post("/alerts/:alertId/read", member, async (req, res) => {
+    await markAlertRead(store, getBusiness(res).id, param(req.params.alertId));
+    res.status(204).end();
+  });
+
+  r.get("/growth", member, async (_req, res) => {
+    res.json({ data: await growthMetrics(store, getBusiness(res).id, deps.now()) });
+  });
+
   r.get("/audit-logs", owner, requireRole("owner"), async (_req, res) => {
     const b = getBusiness(res);
     res.json({ data: await store.list(paths.auditLogs(b.id), { orderBy: { field: "at", direction: "desc" }, limit: 100 }) });

@@ -6,6 +6,7 @@ import type { ApiBookingIndex, Booking, BookingStatus, Business, Service, Vehicl
 import type { Doc, DocStore } from "../store/doc-store.js";
 import type { Actor } from "./audit-service.js";
 import { writeAudit } from "./audit-service.js";
+import { notifyShop } from "./notify-service.js";
 import { allocateQueueItem } from "./queue-service.js";
 import { paths } from "./paths.js";
 
@@ -58,6 +59,17 @@ export async function transitionBooking(
   if (to === "accepted") patch.acceptedBy = actor.id;
   await store.update(paths.booking(business.id, bookingId), patch);
   await writeAudit(store, business.id, { actor, action: `booking.${to}`, target: paths.booking(business.id, bookingId), meta: null }, now);
+  await notifyShop(
+    store,
+    business.id,
+    {
+      type: "booking.status",
+      title: `Booking ${to.replace("_", " ")}`,
+      body: `${booking.reference} is now ${to}.`,
+      bookingId,
+    },
+    now,
+  );
   // Phase 1: enqueue booking.<status> webhook to the API client (signed, retried).
   return publicBooking({ ...booking, ...patch });
 }
@@ -152,7 +164,18 @@ export async function createApiBooking(store: DocStore, clientId: string, input:
     tx.create(paths.apiBookingIndex(bookingId), { ...index });
     await writeAudit(store, input.shopId, { actor: { type: "api_client", id: clientId }, action: "booking.create", target: paths.booking(input.shopId, bookingId), meta: null }, now, tx);
   });
-  // Phase 1: notify the owner (SMS + email + in-app) about the new booking.
+  await notifyShop(
+    store,
+    input.shopId,
+    {
+      type: "booking.requested",
+      title: "New River Mobile booking",
+      body: `${input.customer.name} requested a booking (${booking.reference}).`,
+      bookingId,
+      phoneE164: business.phoneE164 ?? null,
+    },
+    now,
+  );
   return {
     bookingId,
     reference: booking.reference,

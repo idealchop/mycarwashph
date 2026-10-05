@@ -69,10 +69,10 @@ function shopApi(env: EnvName) {
   );
 }
 
-/** Partner API (/v1): private until River Mobile integration needs a public entry point (Phase 1). */
+/** Partner API (/v1): private; only App Hosting /v1 proxy may invoke (org policy forbids allUsers). */
 function partnerApi(env: EnvName) {
   return onRequest(
-    { region: brand.region, invoker: "private", secrets: [peppers[env]], memory: "256MiB", maxInstances: 10 },
+    { region: brand.region, invoker: [APP_HOSTING_SERVICE_ACCOUNT], secrets: [peppers[env]], memory: "256MiB", maxInstances: 10 },
     lazy(() => createPublicApp(depsFor(env)) as unknown as Handler),
   );
 }
