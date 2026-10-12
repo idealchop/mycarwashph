@@ -36,6 +36,7 @@ export async function createBusiness(
     riverMobile: { listed: false, listedAt: null },
     bookingCapacity: { slotMins: 60, maxBookingsPerSlot: 2 },
     settings: { dailyTargetCentavos: null },
+    photoUrls: [],
     billing: defaultBilling(),
     createdAt: at,
     updatedAt: at,
@@ -81,6 +82,7 @@ export interface UpdateBusinessInput {
   riverMobileListed?: boolean;
   bookingCapacity?: Business["bookingCapacity"];
   dailyTargetCentavos?: number | null;
+  photoUrls?: string[];
 }
 
 export async function updateBusiness(
@@ -107,6 +109,10 @@ export async function updateBusiness(
   }
   if (input.dailyTargetCentavos !== undefined) {
     patch.settings = { ...(business.settings ?? { dailyTargetCentavos: null }), dailyTargetCentavos: input.dailyTargetCentavos };
+  }
+  if (input.photoUrls !== undefined) {
+    const cleaned = [...new Set(input.photoUrls.filter((u) => typeof u === "string" && u.startsWith("https://")))].slice(0, 6);
+    patch.photoUrls = cleaned;
   }
   await store.update(paths.business(business.id), patch);
   await writeAudit(store, business.id, { actor: { type: "user", id: actorUid }, action: "business.update", target: paths.business(business.id), meta: { fields: Object.keys(input) } }, now);

@@ -7,6 +7,7 @@ import {
 import { LogIn, ScanLine } from "lucide-react";
 import { GuestBanner } from "@/components/auth/guest-banner";
 import { useAuthGate } from "@/components/auth/auth-gate";
+import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { GUEST_BOOKINGS, GUEST_ME, GUEST_QUEUE, GUEST_SALES_SUMMARY, GUEST_SHOP } from "@/lib/guest-fixtures";
 import { SAMPLE_TARGET } from "@/lib/sample-data";
@@ -32,11 +33,11 @@ export function GuestHome() {
   return (
     <ShopShell plan="paid" newBookings={GUEST_BOOKINGS.filter((b) => b.status === "requested").length} waiting={waiting.length} mobileTab="home">
       <div className="lg:hidden">
-        <div className="mb-4 lg:mb-5"><GuestBanner /></div>
+        <div className="mb-4"><GuestBanner /></div>
         <div className="shop-phone pb-4">
           <Greeting title={shop.name} name="Guest" alerts={1} />
           <HeroBanner
-            className="shop-inset mt-3"
+            className="mt-3"
             size="sm"
             eyebrow={<>Preview · {longDatePHT(new Date())}</>}
             title={<>{peso(summary.totalCentavos)} · {summary.cars} cars</>}
@@ -48,13 +49,13 @@ export function GuestHome() {
             }
             illustration={<CarIllustration size={200} />}
           />
-          <div className="shop-inset mt-3.5 grid grid-cols-3 gap-3">
+          <div className="mt-3.5 grid grid-cols-3 gap-3">
             <StatCard className="pb-3.5" label="Cars" value={String(summary.cars)} />
             <StatCard className="pb-3.5" label="Waiting" value={String(waiting.length)} />
             <StatCard className="pb-3.5" label="Target" value={`${SAMPLE_TARGET.pct}%`} caption="Sample" />
           </div>
           <SectionHeader className="shop-section-title" title="Queue" aside="Sample" />
-          <div className="shop-inset mb-4">
+          <div className="mb-4">
             <Card padding="none" className="px-4 py-2">
               <QueueList
                 label="Waiting"
@@ -76,7 +77,8 @@ export function GuestHome() {
       </div>
 
       <div className="hidden min-w-0 lg:block">
-        <div className="mb-4 lg:mb-5"><GuestBanner /></div>
+        <ShopPageFrame wide className="!pt-0 lg:!pt-0">
+        <div className="mb-4"><GuestBanner /></div>
         <Topbar
           title="Preview your shop dashboard"
           subtitle="Sample data · sign in to connect your carwash"
@@ -202,6 +204,7 @@ export function GuestHome() {
           </Card>
         </div>
         <p className="sr-only">{me.user.name} preview for {shop.name}</p>
+        </ShopPageFrame>
       </div>
     </ShopShell>
   );

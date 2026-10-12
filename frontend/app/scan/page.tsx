@@ -119,12 +119,12 @@ function ScanInner() {
     const checkedIn = b.checkedInAt ? new Date(b.checkedInAt) : new Date();
     return (
       <Screen style={{ background: "linear-gradient(180deg,#F2F2F4 0%,#fff 46%)" }}>
-        <div className="flex h-14 flex-none items-center justify-between px-5">
+        <div className="flex h-14 flex-none items-center justify-between px-4">
           <IconButton label="Close" icon={<X size={22} strokeWidth={1.75} />} onClick={() => router.push("/home")} />
           <span className="text-[15px] font-bold">Scan result</span>
           <span className="w-11" />
         </div>
-        <SuccessState className="px-6" title="Booking verified" description={`Checked in at ${timePHT(checkedIn.toISOString())} · ${longDatePHT(checkedIn)}`} />
+        <SuccessState className="px-4" title="Booking verified" description={`Checked in at ${timePHT(checkedIn.toISOString())} · ${longDatePHT(checkedIn)}`} />
         <Card padding="sm" className="mx-5 mt-5 flex items-center gap-3 p-3.5">
           <Avatar name={b.customerSnapshot.name} preset="rose" size={48} />
           <span className="flex flex-1 flex-col gap-0.5"><b className="text-[16px]">{b.customerSnapshot.name}</b><StatusDot>River Mobile booking</StatusDot></span>
@@ -142,7 +142,7 @@ function ScanInner() {
             </Card>
           ))}
         </div>
-        <div className="mt-auto flex flex-col gap-2.5 px-6 pb-10 pt-6">
+        <div className="mt-auto flex flex-col gap-2.5 px-4 pb-10 pt-6">
           <Button fullWidth onClick={() => router.push("/home")}>Done</Button>
           <Button fullWidth variant="secondary" leadingIcon={<ScanLine size={20} strokeWidth={1.75} />} onClick={() => { setResult(null); setPayload(""); }}>Scan another customer</Button>
         </div>
@@ -152,12 +152,12 @@ function ScanInner() {
 
   return (
     <Screen>
-      <div className="flex h-14 flex-none items-center justify-between px-5">
+      <div className="flex h-14 flex-none items-center justify-between px-4">
         <IconButton label="Close" icon={<X size={22} strokeWidth={1.75} />} onClick={() => router.push("/home")} />
         <span className="text-[15px] font-bold">Scan customer</span>
         <span className="w-11" />
       </div>
-      <div className="px-6 pt-2">
+      <div className="px-4 pt-2">
         <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[32px] bg-ink">
           {camera ? <video ref={videoRef} className="size-full object-cover" muted playsInline /> : <ScanLine size={96} strokeWidth={1.25} className="text-on-ink-muted" />}
           <span aria-hidden className="pointer-events-none absolute inset-10 rounded-[24px] border-2 border-dashed border-white/40" />
@@ -169,7 +169,7 @@ function ScanInner() {
           </Button>
         ) : null}
       </div>
-      <form onSubmit={submit} className="mt-auto flex flex-col gap-3 px-6 pb-10 pt-6">
+      <form onSubmit={submit} className="mt-auto flex flex-col gap-3 px-4 pb-10 pt-6">
         <Input label="Or type the code" placeholder="MCW1.…" value={payload} onChange={(e) => setPayload(e.target.value)} error={error ?? undefined} autoCapitalize="characters" />
         <Button type="submit" fullWidth disabled={busy || !payload.trim() || !shop}>{busy ? "Checking…" : "Verify booking"}</Button>
       </form>

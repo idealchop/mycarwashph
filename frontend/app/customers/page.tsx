@@ -7,6 +7,7 @@ import { BrowseGate } from "@/components/browse-gate";
 import { GuestPage } from "@/components/shop/guest-page";
 import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
+import { ShopContentCard } from "@/components/shop/content-card";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type Customer } from "@/lib/api";
@@ -81,14 +82,16 @@ function Inner() {
         {data && data.length === 0 ? (
           <EmptyState className="mt-8" illustration={<Icon3D name="car" size={64} />} title="No customers yet" description="Add walk-in regulars so staff can find them quickly." />
         ) : (
-          <ul className="mt-5 grid gap-3.5 lg:grid-cols-2">
-            {data?.map((c) => (
-              <li key={c.id} className="rounded-card border border-grey-200 bg-white px-5 py-4">
-                <b className="text-[15px]">{c.name}</b>
-                <p className="text-[13px] font-medium text-muted">{c.phoneE164 ?? "No phone"}{c.plate ? ` · ${c.plate}` : ""}</p>
-              </li>
-            ))}
-          </ul>
+          <ShopContentCard>
+            <ul className="divide-y divide-grey-200">
+              {data?.map((c) => (
+                <li key={c.id} className="py-3.5">
+                  <b className="text-[15px]">{c.name}</b>
+                  <p className="text-[13px] font-medium text-muted">{c.phoneE164 ?? "No phone"}{c.plate ? ` · ${c.plate}` : ""}</p>
+                </li>
+              ))}
+            </ul>
+          </ShopContentCard>
         )}
       </ShopPageFrame>
     </ShopShell>

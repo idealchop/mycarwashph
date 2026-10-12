@@ -6,6 +6,7 @@ import { BrowseGate } from "@/components/browse-gate";
 import { GuestPage } from "@/components/shop/guest-page";
 import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
+import { ShopContentCard } from "@/components/shop/content-card";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type Sale, type SalesSummary } from "@/lib/api";
@@ -67,17 +68,19 @@ function Inner() {
             {data.list.length === 0 ? (
               <EmptyState className="mt-8" illustration={<Icon3D name="coin" size={64} />} title="No sales recorded yet" description="Mark a queue item as paid to record a sale." />
             ) : (
-              <ul className="mt-5 flex flex-col gap-2">
-                {data.list.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between rounded-card border border-grey-200 bg-white px-5 py-4">
-                    <div>
-                      <b className="text-[15px]">{s.customerName ?? s.plate ?? "Sale"}</b>
-                      <p className="text-[12.5px] font-medium text-muted">{s.method.toUpperCase()}{s.paymentRef ? ` · ${s.paymentRef}` : ""} · {timePHT(s.paidAt)}</p>
-                    </div>
-                    <b className="text-[16px]">{peso(s.amountCentavos)}</b>
-                  </li>
-                ))}
-              </ul>
+              <ShopContentCard>
+                <ul className="divide-y divide-grey-200">
+                  {data.list.map((s) => (
+                    <li key={s.id} className="flex items-center justify-between py-3.5">
+                      <div>
+                        <b className="text-[15px]">{s.customerName ?? s.plate ?? "Sale"}</b>
+                        <p className="text-[12.5px] font-medium text-muted">{s.method.toUpperCase()}{s.paymentRef ? ` · ${s.paymentRef}` : ""} · {timePHT(s.paidAt)}</p>
+                      </div>
+                      <b className="text-[16px]">{peso(s.amountCentavos)}</b>
+                    </li>
+                  ))}
+                </ul>
+              </ShopContentCard>
             )}
           </>
         )}

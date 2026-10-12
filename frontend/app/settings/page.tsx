@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
 import { LocationPicker } from "@/components/shop/location-picker";
 import { ShopPageFrame } from "@/components/shop/page-frame";
+import { ShopPhotos } from "@/components/shop/shop-photos";
 import { ShopShell } from "@/components/shop/shop-shell";
 import {
   api,
@@ -34,7 +35,11 @@ export default function SettingsPage() {
 function Inner() {
   const { user } = useAuth();
   if (!user) {
-    return <GuestPage title="Settings" description="Profile, location, team and billing stay private." actionLabel="Sign in to open Settings" mobileTab="more" />;
+    return (
+      <GuestPage title="Settings" description="Profile, location, team and billing stay private. Shop photos are visible as a preview — upload needs sign-in." actionLabel="Sign in to open Settings" mobileTab="more">
+        <ShopPhotos key="guest-preview" businessId="guest-preview" photoUrls={[]} canEdit={false} />
+      </GuestPage>
+    );
   }
   return <SettingsInner />;
 }
@@ -208,6 +213,14 @@ function SettingsInner() {
                 ) : null}
               </div>
             </section>
+
+            <ShopPhotos
+              key={`${shop.id}-${(profile?.photoUrls ?? []).join("|")}`}
+              businessId={shop.id}
+              photoUrls={profile?.photoUrls ?? []}
+              canEdit={shop.role === "owner"}
+              onSaved={() => reload()}
+            />
 
             {shop.plan === "paid" && shop.role === "owner" ? (
               <section className="mt-6 shop-panel">

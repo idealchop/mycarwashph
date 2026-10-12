@@ -34,6 +34,11 @@ export const updateBusinessSchema = z
       .object({ slotMins: z.number().int().min(15).max(240), maxBookingsPerSlot: z.number().int().min(1).max(50) })
       .optional(),
     dailyTargetCentavos: centavos.nullable().optional(),
+    /** Replace the full shop photo URL list (HTTPS only, max 6). */
+    photoUrls: z
+      .array(z.string().url().refine((u) => u.startsWith("https://"), "Photo URLs must be https"))
+      .max(6)
+      .optional(),
   })
   .strict();
 

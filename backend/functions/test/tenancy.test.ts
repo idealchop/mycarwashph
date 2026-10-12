@@ -105,6 +105,7 @@ describe("business tenancy", () => {
       id: shopA, name: "Alice Wash", plan: "partner", planStatus: "active", role: "staff",
       address: null, location: null, phoneE164: expect.any(String), riverMobileListed: false,
       settings: { dailyTargetCentavos: null },
+      photoUrls: [],
       billing: expect.objectContaining({ status: "trial", partnerOption: null }),
     }]);
   });

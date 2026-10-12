@@ -7,6 +7,7 @@ import {
 import { Bell, Check, LogOut, ScanLine, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopShell } from "@/components/shop/shop-shell";
 import { api, type Booking, type MeResponse, type Service } from "@/lib/api";
 import { signOut } from "@/lib/auth";
@@ -66,7 +67,11 @@ export function PartnerHome({ me, shop }: { me: MeResponse; shop: MeResponse["bu
   return (
     <ShopShell plan="partner" newBookings={newCount} waiting={0} mobileTab="home">
       <div className="lg:hidden"><PartnerPhone {...props} /></div>
-      <div className="hidden min-w-0 lg:block"><PartnerDesktop {...props} /></div>
+      <div className="hidden min-w-0 lg:block">
+        <ShopPageFrame wide className="!pt-0 lg:!pt-0">
+          <PartnerDesktop {...props} />
+        </ShopPageFrame>
+      </div>
     </ShopShell>
   );
 }
@@ -123,7 +128,7 @@ function PartnerPhone({ me, shop, bookings, services, error, dayList, counts, se
     <div className="shop-phone pb-4">
       <Greeting title={`Hi, ${firstName(me.user.name, shop.name)} 👋`} name={me.user.name ?? shop.name} alerts={newCount} />
       <HeroBanner
-        className="shop-inset mt-3"
+        className="mt-3"
         eyebrow="River Mobile"
         title="Scan River Mobile customers"
         description="Check in bookings fast."
@@ -133,7 +138,7 @@ function PartnerPhone({ me, shop, bookings, services, error, dayList, counts, se
         illustrationClassName="-right-[58px] bottom-3"
       />
       <SectionHeader className="shop-section-title" title="Schedule" aside={now.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "long", year: "numeric" })} />
-      <DateStrip className="px-5" items={weekStrip(now, counts)} selectedKey={selected} onSelect={setSelected} />
+      <DateStrip className="px-0" items={weekStrip(now, counts)} selectedKey={selected} onSelect={setSelected} />
       <SectionHeader className="shop-section-title" title={isToday ? "Today" : "Bookings"} aside={`${dayList.length} booking${dayList.length === 1 ? "" : "s"}`} />
       <div className="shop-stack pb-28">
         {error ? <p role="alert" className="px-1 text-[14px] font-semibold">{error}</p> : null}
