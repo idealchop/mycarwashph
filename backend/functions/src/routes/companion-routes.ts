@@ -81,7 +81,12 @@ export function companionRoutes(deps: Deps) {
     if (!getUser(res).platformAdmin && !deps.config.devTools) throw forbidden("Weekly tips run automatically on Mondays.");
     const ai = requireAi(deps);
     const b = getBusiness(res);
-    const out = await generateWeeklyTips(store, ai, b, { now: deps.now(), env: env(), trigger: "manual" });
+    let out;
+    try {
+      out = await generateWeeklyTips(store, ai, b, { now: deps.now(), env: env(), trigger: "manual" });
+    } catch (err) {
+      throw new HttpError(502, "companion_failed", "River couldn't write tips right now.", { reason: (err as Error).message.slice(0, 200) });
+    }
     const alerts = await detectAlerts(store, b, deps.now());
     if (out.status === "skipped") throw new HttpError(422, "not_enough_data", "Not enough cars yet. Record a few days of walk-ins and sales first.");
     res.status(201).json({ data: { insight: insightView(out.insight, tierOf(b)), alerts: alerts.length } });
