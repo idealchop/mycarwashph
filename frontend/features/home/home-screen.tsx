@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuthGate } from "@/components/auth/auth-gate";
 import { PageBack } from "@/components/shop/page-back";
+import { CompanionCard } from "@/features/companion/companion-card";
 import { SalesChartCard, type SalesRow } from "@/features/sales/sales-chart";
 import { useAuth } from "@/lib/auth";
 import { greeting as greetingFor, peso } from "@/lib/format";
@@ -150,6 +151,7 @@ export function HomeScreen() {
           <StatCard className="pb-3" label="Unpaid" value={peso(fig.unpaid) || "₱0"} />
         </div>
         {needsSetup ? <SetupCard className="mx-4 mt-3" /> : null}
+        <CompanionCard className="mx-4 mt-3" />
         <SalesChartCard className="mx-4 mt-3" series={series} sales={fig.sales} />
         <SectionHeader className="px-5 pb-1 pt-4" title="Bookings to accept" aside={aside} />
         {note ? <p className="mx-4 mb-2 text-[13px] font-semibold">{note}</p> : null}
@@ -211,6 +213,7 @@ export function HomeScreen() {
           </Link>
           <StatCard className="pb-3" label="Unpaid" value={peso(fig.unpaid) || "₱0"} />
         </div>
+        <CompanionCard className="mt-5" />
         <SalesChartCard className="mt-5" series={series} sales={fig.sales} />
         <Card padding="none" className="mt-5 px-[18px] pb-4 pt-4">
           <CardHeader className="mb-3" title="Bookings to accept" subtitle={aside} action={<Link href="/queue?channel=online" className={linkCls}>All bookings</Link>} />

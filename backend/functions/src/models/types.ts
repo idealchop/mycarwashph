@@ -91,6 +91,8 @@ export interface Business {
   logoUrl?: string | null;
   /** Billing for the Pro / Lifetime upgrade. */
   billing: BusinessBilling;
+  /** Last owner-triggered AI Insights refresh (server-side 24h rate limit). */
+  insightsRefreshedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
