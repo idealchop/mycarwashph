@@ -37,7 +37,10 @@ function Chat({ shopId }: { shopId: string }) {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shopId]);
-  useEffect(() => endRef.current?.scrollIntoView({ block: "end" }), [state?.messages.length, busy]);
+  useEffect(() => {
+    // Block body: newer Chrome returns a Promise from scrollIntoView, which React would call as a cleanup.
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [state?.messages.length, busy]);
 
   const send = async (q: string) => {
     const value = q.trim();
