@@ -3,25 +3,22 @@
 import Link from "next/link";
 import { CarIllustration } from "@river-apps/icons";
 import { AppShell, Button, MobileTabBar, Sidebar } from "@river-apps/ui";
-import {
-  Calendar, ChartColumn, CircleHelp, LayoutGrid, List, MessageSquare, Settings, TrendingUp, Users,
-} from "lucide-react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { MycarwashBrand } from "@/components/brand";
+import { NavIcon3D } from "@/components/nav-icon";
 import { PAID_TABS, PARTNER_TABS } from "@/components/home/common";
 
-const ic = { size: 20, strokeWidth: 1.75 } as const;
 
 const NAV = [
-  { key: "dashboard", label: "Dashboard", icon: <LayoutGrid {...ic} />, href: "/home", match: ["/home"], plans: ["partner", "paid"] as const },
-  { key: "queue", label: "Queue", icon: <List {...ic} />, href: "/queue", match: ["/queue"], plans: ["paid"] as const },
-  { key: "bookings", label: "Bookings", icon: <Calendar {...ic} />, href: "/bookings", match: ["/bookings"], plans: ["partner", "paid"] as const },
-  { key: "sales", label: "Sales", icon: <ChartColumn {...ic} />, href: "/sales", match: ["/sales"], plans: ["paid"] as const },
-  { key: "customers", label: "Customers", icon: <Users {...ic} />, href: "/customers", match: ["/customers"], plans: ["paid"] as const },
-  { key: "messages", label: "Messages", icon: <MessageSquare {...ic} />, href: "/messages", match: ["/messages"], plans: ["partner", "paid"] as const },
-  { key: "growth", label: "Growth", icon: <TrendingUp {...ic} />, href: "/growth", match: ["/growth"], plans: ["partner", "paid"] as const },
-  { key: "settings", label: "Settings", icon: <Settings {...ic} />, href: "/settings", match: ["/settings"], plans: ["partner", "paid"] as const },
+  { key: "dashboard", label: "Dashboard", icon: <NavIcon3D name="house" />, href: "/home", match: ["/home"], plans: ["partner", "paid"] as const },
+  { key: "queue", label: "Queue", icon: <NavIcon3D name="ticket" />, href: "/queue", match: ["/queue"], plans: ["paid"] as const },
+  { key: "bookings", label: "Bookings", icon: <NavIcon3D name="calendar" />, href: "/bookings", match: ["/bookings"], plans: ["partner", "paid"] as const },
+  { key: "sales", label: "Sales", icon: <NavIcon3D name="cash" />, href: "/sales", match: ["/sales"], plans: ["paid"] as const },
+  { key: "customers", label: "Customers", icon: <NavIcon3D name="people" />, href: "/customers", match: ["/customers"], plans: ["paid"] as const },
+  { key: "messages", label: "Messages", icon: <NavIcon3D name="chat" />, href: "/messages", match: ["/messages"], plans: ["partner", "paid"] as const },
+  { key: "growth", label: "Growth", icon: <NavIcon3D name="sparkle" />, href: "/growth", match: ["/growth"], plans: ["partner", "paid"] as const },
+  { key: "settings", label: "Settings", icon: <NavIcon3D name="sliders" />, href: "/settings", match: ["/settings"], plans: ["partner", "paid"] as const },
 ] as const;
 
 export function ShopShell({
@@ -66,7 +63,7 @@ export function ShopShell({
           brand={<MycarwashBrand />}
           items={[...items]}
           activeKey={active}
-          secondaryItems={[{ key: "help", label: "Help", icon: <CircleHelp {...ic} /> }]}
+          secondaryItems={[{ key: "help", label: "Help", icon: <NavIcon3D name="document" /> }]}
           footer={
             <div className="relative rounded-[22px] bg-grey-100 px-4 pb-5 pt-[78px]">
               <div className="absolute inset-x-0 -top-9 flex justify-center"><CarIllustration size={180} /></div>

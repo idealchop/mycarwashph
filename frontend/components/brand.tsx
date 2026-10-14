@@ -1,15 +1,27 @@
-import { LogoMark } from "@river-apps/ui";
+import Image from "next/image";
 
-/** Mycarwash.ph wordmark with the water-drop glyph. */
+/** River app icon (teal squircle, 1024px source so it stays crisp on retina). */
+export function RiverIcon({ size = 34, priority = true }: { size?: number; priority?: boolean }) {
+  return (
+    <Image
+      src="/brand/river-icon-1024.png"
+      alt=""
+      aria-hidden
+      width={size}
+      height={size}
+      priority={priority}
+      quality={90}
+      className="flex-none select-none"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+/** Mycarwash.ph wordmark with the River app icon. */
 export function MycarwashBrand({ size = 34 }: { size?: number }) {
   return (
     <span className="inline-flex items-center gap-2.5">
-      <LogoMark size={size}>
-        <svg viewBox="0 0 24 24" aria-hidden>
-          <path d="M12 3 17.2 10.6A6.4 6.4 0 1 1 6.8 10.6Z" fill="#fff" />
-          <path d="M9.3 14.4a2.9 2.9 0 0 0 2.2 2.7" stroke="#0A0A0A" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-        </svg>
-      </LogoMark>
+      <RiverIcon size={size} />
       <span className="text-[19px] font-extrabold tracking-[-0.02em]">
         Mycarwash<span className="font-semibold text-subtle">.ph</span>
       </span>
