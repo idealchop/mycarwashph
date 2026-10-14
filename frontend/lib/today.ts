@@ -70,7 +70,7 @@ export function useToday(shop: Shop | null) {
       jobs.push({
         id: b.id, kind: "booking", channel: "online", status, ref: b.reference, who: b.customerSnapshot.name, plate: b.plate,
         serviceName: namesOf(b.serviceIds, data.services), slotLabel: time(b.scheduledStart), bayName: null,
-        price: priceOf(b.serviceIds, b.vehicleSize, data.services), paid: status === "paid", createdAt: b.scheduledStart, booking: b,
+        price: priceOf(b.serviceIds, b.vehicleSize, data.services), paid: false, createdAt: b.scheduledStart, booking: b,
       });
     }
     for (const q of data.queue) {
