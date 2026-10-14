@@ -5,14 +5,16 @@ import type { CompanionModel, ModelUsage } from "./model.js";
 import { companionSystemPrompt } from "./companion-prompt.js";
 import { makeToolRunner, TOOL_DECLS } from "./tools.js";
 import { claimQuestion, companionPaths, PARTNER_MONTHLY_QUESTIONS, questionsUsed, recordAiCost, releaseQuestion, tierOf, type Tier } from "./store.js";
-import type { InsightTip } from "./prompt.js";
 
 /** businesses/{id}/companion/threads/messages/{id} */
 export interface CompanionMessage {
   role: "owner" | "companion";
   kind: "chat" | "tip" | "alert";
   text: string;
-  tips?: InsightTip[];
+  /** Older weekly-tip messages stored the tips as a list; new ones keep everything in text. */
+  tips?: { title: string; body: string }[];
+  /** Partner tip message with more tips waiting on Pro or Lifetime. */
+  locked?: boolean;
   weekId?: string;
   uid?: string;
   model?: string;
@@ -26,6 +28,17 @@ const HISTORY = 12;
 
 /** One continuous thread per shop, newest page first; `before` (an ISO createdAt) pages further back. */
 export async function listMessages(store: DocStore, businessId: string, limit = 50, before?: string) {
+  return listRaw(store, businessId, limit, before);
+}
+
+/** The page the owner sees (alerts hidden for Partner), oldest first, plus whether older messages exist. */
+export async function messagePage(store: DocStore, businessId: string, tier: Tier, limit: number, before?: string) {
+  const rows = await listRaw(store, businessId, limit + 1, before);
+  const page = rows.slice(-limit);
+  return { messages: page.filter((m) => visible(m, tier)).map((m) => messageView(m, tier)), hasMore: rows.length > limit };
+}
+
+async function listRaw(store: DocStore, businessId: string, limit: number, before?: string) {
   const rows = await store.list<CompanionMessage>(companionPaths.messages(businessId), {
     ...(before ? { where: [["createdAt", "<", before] as [string, "<", unknown]] } : {}),
     orderBy: { field: "createdAt", direction: "desc" },
@@ -34,16 +47,23 @@ export async function listMessages(store: DocStore, businessId: string, limit = 
   return rows.reverse();
 }
 
-/** Server-side gating of a message for the shop's tier: Partner sees 1 tip of the weekly set, no alerts. */
+/**
+ * What the app shows: plain text bubbles, same as Barbers.ph (no cards, no blurred tips).
+ * Older tip messages that stored a list are flattened to text; Partner shops see their first tip only.
+ * Alerts are Pro/Lifetime (Partner shops never get new ones; old ones are hidden).
+ */
 export function messageView(m: CompanionMessage & { id: string }, tier: Tier) {
-  const base = { id: m.id, role: m.role, kind: m.kind, text: m.text, weekId: m.weekId, createdAt: m.createdAt };
-  if (m.kind === "tip") {
-    const tips = m.tips ?? [];
-    return tier === "full" ? { ...base, tips, lockedCount: 0 } : { ...base, tips: tips.slice(0, 1), lockedCount: Math.max(0, tips.length - 1) };
+  const base = { id: m.id, role: m.role, kind: m.kind, text: m.text, weekId: m.weekId, createdAt: m.createdAt, locked: m.locked ?? false };
+  if (m.kind === "tip" && m.tips?.length) {
+    const shown = tier === "full" ? m.tips : m.tips.slice(0, 1);
+    const hidden = m.tips.length - shown.length;
+    const text = `${m.text ? `${m.text}\n\n` : ""}${shown.map((t, i) => `${i + 1}. ${t.title}: ${t.body}`).join("\n")}${hidden ? `\n\n${hidden} more tips are waiting for you on Pro or Lifetime.` : ""}`;
+    return { ...base, text, locked: hidden > 0 };
   }
-  if (m.kind === "alert" && tier !== "full") return { ...base, text: "", locked: true };
   return base;
 }
+
+const visible = (m: CompanionMessage, tier: Tier) => !(m.kind === "alert" && tier !== "full");
 
 export async function quotaFor(store: DocStore, business: Doc<Business>, now: Date) {
   const tier = tierOf(business);
@@ -72,10 +92,10 @@ export async function askCompanion(
   const ownerId = store.newId();
   await store.set(companionPaths.message(business.id, ownerId), { ...ownerMsg });
 
-  const tools = makeToolRunner({ store, business, uid: input.uid, now, canSetGoals: tier === "full" });
+  const tools = makeToolRunner({ store, business, uid: input.uid, now, paid: tier === "full", lastUserText: input.text });
   const turns = history
-    .filter((m) => m.kind === "chat" || (tier === "full" && m.text))
-    .map((m) => ({ role: m.role === "owner" ? ("user" as const) : ("model" as const), text: m.kind === "tip" ? `${m.text}\n${(m.tips ?? []).map((t) => `- ${t.title}: ${t.body}`).join("\n")}` : m.text }));
+    .filter((m) => visible(m, tier))
+    .map((m) => ({ role: m.role === "owner" ? ("user" as const) : ("model" as const), text: `${m.kind === "tip" ? "[Weekly tip] " : m.kind === "alert" ? "[Alert] " : ""}${messageView({ ...m, id: "" }, tier).text}` }));
   turns.push({ role: "user", text: input.text });
   // Gemini needs the conversation to start with a user turn.
   while (turns.length && turns[0]!.role !== "user") turns.shift();
@@ -89,7 +109,7 @@ export async function askCompanion(
         tier,
       }),
       turns,
-      tools: tier === "full" ? TOOL_DECLS : TOOL_DECLS.filter((t) => t.name !== "setGoal"),
+      tools: TOOL_DECLS,
       callTool: (name, args) => tools.run(name, args),
     });
   } catch (err) {

@@ -1,13 +1,11 @@
 import { logger } from "firebase-functions/logger";
-import type { Bay, Booking, Business, QueueItem, Sale, Service } from "../../models/types.js";
+import type { Business } from "../../models/types.js";
 import type { DocStore } from "../../store/doc-store.js";
-import { paths } from "../paths.js";
-import type { InsightsInput } from "./metrics.js";
 import { estimateCostUsd, USD_TO_PHP, type ModelUsage } from "./model.js";
 
 /**
  * AI Companion storage, all under businesses/{id}/:
- *   insights/{weekId}                      weekly tips + metrics snapshot + cost
+ *   insights/{weekId}                      record of that week's Monday tips run (tips, alerts, cost)
  *   companion/threads/messages/{msgId}     chat (owner, companion, tip, alert)
  *   companion/goals                        { goals: Goal[] }
  *   companion/usage                        per-month / per-week question counts and Gemini cost
@@ -54,18 +52,6 @@ export function weekIdFor(now: Date): string {
 export function monthKeyFor(now: Date): string {
   const { y, m } = manilaParts(now);
   return `${y}-${String(m).padStart(2, "0")}`;
-}
-
-/** Loads the raw shop docs the aggregations need (most recent first, capped). */
-export async function loadShopData(store: DocStore, businessId: string, now: Date): Promise<InsightsInput> {
-  const [sales, queue, bookings, services, bays] = await Promise.all([
-    store.list<Sale>(paths.sales(businessId), { orderBy: { field: "paidAt", direction: "desc" }, limit: 5000 }),
-    store.list<QueueItem>(paths.queue(businessId), { orderBy: { field: "createdAt", direction: "desc" }, limit: 5000 }),
-    store.list<Booking>(paths.bookings(businessId), { orderBy: { field: "scheduledStart", direction: "desc" }, limit: 3000 }),
-    store.list<Service>(paths.services(businessId)),
-    store.list<Bay>(paths.bays(businessId)),
-  ]);
-  return { now, sales, queue, bookings, services, bays };
 }
 
 export interface UsageBucket {

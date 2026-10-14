@@ -1,186 +1,242 @@
-import type { Business, Sale } from "../../models/types.js";
+import type { Bay, Booking, Business, QueueItem, Sale, Service } from "../../models/types.js";
 import type { Doc, DocStore } from "../../store/doc-store.js";
+import { paths } from "../paths.js";
 import { listMyBusinesses } from "../businesses-service.js";
 import { goalProgress, listGoals, saveGoal } from "./goals.js";
-import { computeMetrics, type InsightsInput } from "./metrics.js";
 import type { ToolDecl } from "./model.js";
-import { asPeriod, PERIODS, rangeFor, type Period } from "./periods.js";
-import { loadShopData, tierOf } from "./store.js";
+import { asPeriod, PERIODS, rangeFor } from "./periods.js";
 
 /**
- * Companion tools. All READ-ONLY over the owner's own shop (the business id is
- * bound server-side, never taken from the model), except setGoal, which writes
- * only companion/goals. Customer PII (names, phones, plates) is returned only by
- * inactiveCustomers/getBookings when includeDetails=true, which the prompt allows
- * only when the owner explicitly asks.
+ * Read-only view of one shop for the Companion (same approach as Barbers.ph data.ts): the raw
+ * docs are loaded once per question and the tools count over them. Nothing here writes
+ * business data; the only write is setGoal (companion/goals). Money is returned in pesos.
  */
-const periodParam = { type: "string", enum: [...PERIODS], description: "Manila calendar period. Default last_7_days." };
+export interface ShopData {
+  now: Date;
+  sales: Doc<Sale>[];
+  queue: Doc<QueueItem>[];
+  bookings: Doc<Booking>[];
+  services: Doc<Service>[];
+  bays: Doc<Bay>[];
+}
+
+export async function loadShopData(store: DocStore, businessId: string, now: Date): Promise<ShopData> {
+  const [sales, queue, bookings, services, bays] = await Promise.all([
+    store.list<Sale>(paths.sales(businessId), { orderBy: { field: "paidAt", direction: "desc" }, limit: 5000 }),
+    store.list<QueueItem>(paths.queue(businessId), { orderBy: { field: "createdAt", direction: "desc" }, limit: 5000 }),
+    store.list<Booking>(paths.bookings(businessId), { orderBy: { field: "scheduledStart", direction: "desc" }, limit: 3000 }),
+    store.list<Service>(paths.services(businessId)),
+    store.list<Bay>(paths.bays(businessId)),
+  ]);
+  return { now, sales, queue, bookings, services, bays };
+}
+
+const pesos = (c: number) => Math.round(c) / 100;
+const ms = (iso: string | null | undefined) => (iso ? Date.parse(iso) : NaN);
+const within = (iso: string | null | undefined, from: Date, to: Date) => {
+  const t = ms(iso);
+  // End is inclusive so a car added at this very moment counts in "today".
+  return t >= from.getTime() && t <= to.getTime();
+};
+const tally = <T>(rows: T[], key: (r: T) => string) => rows.reduce<Record<string, number>>((m, r) => ((m[key(r)] = (m[key(r)] ?? 0) + 1), m), {});
+const fmt = (iso: string, opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Manila", ...opts }).format(new Date(iso));
+const weekday = (iso: string) => fmt(iso, { weekday: "short" });
+const hour = (iso: string) => fmt(iso, { hour: "numeric" });
+const day = (iso: string) => fmt(iso, { weekday: "short", month: "short", day: "numeric" });
+
+/** Every queue status, shown separately. A walk-in is any queue item not created from a booking. */
+const QUEUE_KEYS = ["queued", "in_bay", "done", "paid", "closed", "cancelled"] as const;
+const queueCounts = (rows: QueueItem[]) => {
+  const out: Record<string, number> = Object.fromEntries(QUEUE_KEYS.map((k) => [k, 0]));
+  for (const r of rows) out[r.status] = (out[r.status] ?? 0) + 1;
+  return out;
+};
+const SERVED_QUEUE = new Set(["done", "paid", "closed"]);
+const SERVED_BOOKING = new Set(["completed", "done", "paid", "closed"]);
+
+function priceOf(d: ShopData, ids: string[], size: string | null | undefined) {
+  return ids.reduce((t, id) => {
+    const s = d.services.find((x) => x.id === id);
+    return t + (s?.pricesBySize?.[(size ?? "medium") as "medium"] ?? s?.pricesBySize?.medium ?? 0);
+  }, 0);
+}
+
+/** A car that was actually washed: queue items done/paid/closed, completed bookings not in the queue, and sales without a queue item. */
+interface Visit { at: string; serviceIds: string[]; size: string | null; plate: string | null; bayId: string | null; startedAt: string | null; doneAt: string | null; centavos: number; paid: boolean }
+
+function visits(d: ShopData, from: Date, to: Date): Visit[] {
+  const saleByQueue = new Map(d.sales.filter((s) => s.status === "recorded" && s.queueItemId).map((s) => [s.queueItemId!, s]));
+  const queueIds = new Set(d.queue.map((q) => q.id));
+  const bookingInQueue = new Set(d.queue.map((q) => q.bookingId).filter(Boolean));
+  const out: Visit[] = [];
+  for (const q of d.queue) {
+    if (!SERVED_QUEUE.has(q.status)) continue;
+    const at = q.doneAt ?? q.updatedAt ?? q.createdAt;
+    if (!within(at, from, to)) continue;
+    const sale = saleByQueue.get(q.id);
+    out.push({ at, serviceIds: q.serviceIds, size: q.vehicleSize, plate: q.plate, bayId: q.bayId, startedAt: q.startedAt, doneAt: q.doneAt, centavos: sale?.amountCentavos ?? priceOf(d, q.serviceIds, q.vehicleSize), paid: q.status !== "done" });
+  }
+  for (const b of d.bookings) {
+    if (!SERVED_BOOKING.has(b.status) || bookingInQueue.has(b.id) || !within(b.updatedAt, from, to)) continue;
+    out.push({ at: b.updatedAt, serviceIds: b.serviceIds, size: b.vehicleSize, plate: b.plate, bayId: null, startedAt: null, doneAt: b.updatedAt, centavos: priceOf(d, b.serviceIds, b.vehicleSize), paid: b.status !== "completed" && b.status !== "done" });
+  }
+  for (const s of d.sales) {
+    if (s.status !== "recorded" || (s.queueItemId && queueIds.has(s.queueItemId)) || !within(s.paidAt, from, to)) continue;
+    out.push({ at: s.paidAt, serviceIds: s.serviceIds, size: s.vehicleSize, plate: s.plate, bayId: null, startedAt: null, doneAt: s.paidAt, centavos: s.amountCentavos, paid: true });
+  }
+  return out;
+}
+
+const periodOf = (args: Record<string, unknown>, now: Date) => rangeFor(asPeriod(args.period), now);
+
+export function getSales(d: ShopData, args: Record<string, unknown>) {
+  const r = periodOf(args, d.now);
+  const prevFrom = new Date(r.from.getTime() - (r.to.getTime() - r.from.getTime()));
+  const paidIn = (from: Date, to: Date) => d.sales.filter((s) => s.status === "recorded" && within(s.paidAt, from, to));
+  const cur = paidIn(r.from, r.to), prev = paidIn(prevFrom, r.from);
+  const sum = (xs: Sale[]) => pesos(xs.reduce((a, s) => a + s.amountCentavos, 0));
+  const served = visits(d, r.from, r.to);
+  const unpaid = served.filter((v) => !v.paid);
+  const byDay: Record<string, { salesPhp: number; cars: number }> = {};
+  for (const s of cur) { const k = day(s.paidAt); byDay[k] ??= { salesPhp: 0, cars: 0 }; byDay[k].salesPhp += pesos(s.amountCentavos); byDay[k].cars++; }
+  const salesPhp = sum(cur);
+  return {
+    period: r.period, label: r.label,
+    salesPhp, paidCars: cur.length, carsServed: served.length, avgTicketPhp: cur.length ? Math.round(salesPhp / cur.length) : 0,
+    unpaidCars: unpaid.length, unpaidPhp: pesos(unpaid.reduce((a, v) => a + v.centavos, 0)),
+    previousPeriodSalesPhp: sum(prev), previousPeriodPaidCars: prev.length,
+    paymentMixPhp: cur.reduce<Record<string, number>>((m, s) => ((m[s.method] = (m[s.method] ?? 0) + pesos(s.amountCentavos)), m), {}),
+    byDay,
+    note: "salesPhp = payments recorded. carsServed = cars finished (done, paid or closed), paid or not.",
+  };
+}
+
+/** Walk-ins (queue) and River Mobile bookings in a period, every status counted separately. */
+export function getBookings(d: ShopData, args: Record<string, unknown>) {
+  const r = periodOf(args, d.now);
+  const queue = d.queue.filter((q) => within(q.createdAt, r.from, r.to));
+  const walkIns = queue.filter((q) => q.source !== "booking");
+  const scanned = queue.filter((q) => q.source === "booking");
+  const bookings = d.bookings.filter((b) => within(b.scheduledStart, r.from, r.to));
+  const arrivals = [...queue.map((q) => q.createdAt), ...bookings.filter((b) => !b.queueItemId).map((b) => b.scheduledStart)];
+  return {
+    period: r.period, label: r.label,
+    walkIns: { total: walkIns.length, active: walkIns.filter((q) => q.status !== "cancelled").length, byStatus: queueCounts(walkIns) },
+    bookingsInQueue: { total: scanned.length, byStatus: queueCounts(scanned) },
+    queueNow: d.queue.filter((q) => q.status === "queued" || q.status === "in_bay").reduce((m, q) => ((m[q.status] = (m[q.status] ?? 0) + 1), m), { queued: 0, in_bay: 0 } as Record<string, number>),
+    bookings: { total: bookings.length, byStatus: tally(bookings, (b) => b.status), bySource: tally(bookings, (b) => b.source) },
+    byHour: tally(arrivals, hour), byWeekday: tally(arrivals, weekday),
+    walkInsByWeekday: tally(walkIns.map((q) => q.createdAt), weekday),
+    ...(args.includeDetails === true
+      ? { details: bookings.slice(0, 30).map((b) => ({ reference: b.reference, when: b.scheduledStart, status: b.status, customer: b.customerSnapshot?.name ?? null, plate: b.plate })) }
+      : {}),
+    note: "Walk-in statuses: queued = waiting, in_bay = being washed, done = finished not yet paid, paid/closed = paid, cancelled.",
+  };
+}
+
+export function topServices(d: ShopData, args: Record<string, unknown>) {
+  const r = periodOf(args, d.now);
+  const m = new Map<string, { service: string; cars: number; salesPhp: number }>();
+  for (const v of visits(d, r.from, r.to)) {
+    const ids = v.serviceIds.length ? v.serviceIds : ["_"];
+    for (const id of ids) {
+      const name = d.services.find((s) => s.id === id)?.name ?? "Other";
+      const row = m.get(name) ?? { service: name, cars: 0, salesPhp: 0 };
+      row.cars++; row.salesPhp += pesos(v.centavos / ids.length);
+      m.set(name, row);
+    }
+  }
+  const sizes = tally(visits(d, r.from, r.to).filter((v) => v.size), (v) => v.size!);
+  return { period: r.period, label: r.label, services: [...m.values()].sort((a, b) => b.salesPhp - a.salesPhp).slice(0, Math.max(1, Math.min(20, Number(args.limit) || 10))), vehicleSizes: sizes };
+}
+
+/** Per bay (washer station): cars, sales, average wash minutes, average wait. */
+export function staffPerformance(d: ShopData, args: Record<string, unknown>) {
+  const r = periodOf(args, d.now);
+  const m = new Map<string, { bay: string; cars: number; salesPhp: number; mins: number[] }>();
+  for (const v of visits(d, r.from, r.to)) {
+    const name = d.bays.find((b) => b.id === v.bayId)?.name ?? "No bay";
+    const row = m.get(name) ?? { bay: name, cars: 0, salesPhp: 0, mins: [] };
+    row.cars++; row.salesPhp += pesos(v.centavos);
+    if (v.startedAt && v.doneAt && ms(v.doneAt) > ms(v.startedAt)) row.mins.push((ms(v.doneAt) - ms(v.startedAt)) / 60_000);
+    m.set(name, row);
+  }
+  const waits = d.queue.filter((q) => within(q.createdAt, r.from, r.to) && q.startedAt).map((q) => (ms(q.startedAt) - ms(q.createdAt)) / 60_000).filter((x) => x >= 0);
+  return {
+    period: r.period, label: r.label,
+    bays: [...m.values()].map((x) => ({ bay: x.bay, cars: x.cars, salesPhp: Math.round(x.salesPhp), avgWashMins: x.mins.length ? Math.round(x.mins.reduce((a, b) => a + b, 0) / x.mins.length) : null })).sort((a, b) => b.cars - a.cars),
+    avgWaitMins: waits.length ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length) : null,
+    note: "Per bay; washers are not tracked per car yet.",
+  };
+}
+
+/** Returning customers (by plate) who haven't come back in N days. Plates only when the owner asked. */
+export function inactiveCustomers(d: ShopData, args: Record<string, unknown>, allowDetails: boolean) {
+  const days = Math.min(180, Math.max(7, Number(args.days) || 30));
+  const last = new Map<string, { last: number; visits: number }>();
+  for (const v of visits(d, new Date(0), d.now)) {
+    if (!v.plate) continue;
+    const row = last.get(v.plate) ?? { last: 0, visits: 0 };
+    row.visits++; row.last = Math.max(row.last, ms(v.at));
+    last.set(v.plate, row);
+  }
+  const cutoff = d.now.getTime() - days * 86_400_000;
+  const lapsed = [...last.entries()].filter(([, r]) => r.last < cutoff).sort((a, b) => b[1].visits - a[1].visits);
+  const show = allowDetails && args.includeDetails === true;
+  return {
+    days, inactiveCount: lapsed.length, knownCustomers: last.size, regularsLapsed: lapsed.filter(([, r]) => r.visits >= 2).length,
+    customers: show ? lapsed.slice(0, 25).map(([plate, r]) => ({ plate, visits: r.visits, lastVisit: new Date(r.last).toISOString().slice(0, 10) })) : undefined,
+    detailsHidden: !show,
+  };
+}
+
+const periodParam = { type: "string", enum: [...PERIODS], description: "Manila calendar period. 'today' for today. Default last_7_days." };
+const withPeriod = (extra: Record<string, unknown> = {}) => ({ type: "object", properties: { period: periodParam, ...extra } });
 
 export const TOOL_DECLS: ToolDecl[] = [
-  { name: "getSales", description: "Revenue, cars served, average ticket, payment mix and daily breakdown for a period, plus the previous equal period for comparison.", parameters: { type: "object", properties: { period: periodParam } } },
-  { name: "getBookings", description: "Bookings for a period: counts by status (completed, no_show, cancelled...) and source (River Mobile, online link, staff). includeDetails=true lists each booking with customer name ONLY if the owner explicitly asked for names/details.", parameters: { type: "object", properties: { period: periodParam, includeDetails: { type: "boolean" } } } },
-  { name: "topServices", description: "Best-selling services/packages by cars and revenue for a period.", parameters: { type: "object", properties: { period: periodParam } } },
-  { name: "serviceMix", description: "Service/package mix and vehicle size mix (shares in percent) for a period, useful for upsell and pricing advice.", parameters: { type: "object", properties: { period: periodParam } } },
-  { name: "staffPerformance", description: "Per-bay (washer station) performance: cars, revenue, average service minutes for a period.", parameters: { type: "object", properties: { period: periodParam } } },
-  { name: "carsPerHour", description: "Throughput: average cars per active hour, the peak hour, busiest days and hours for a period.", parameters: { type: "object", properties: { period: periodParam } } },
-  { name: "queuePeaks", description: "Queue: peak number of cars waiting at once and when, average wait minutes and average service minutes for a period.", parameters: { type: "object", properties: { period: periodParam } } },
-  { name: "branchComparison", description: "Compares all shops (branches) this owner owns: revenue and cars for the period. Use for multi-shop questions.", parameters: { type: "object", properties: { period: periodParam } } },
-  { name: "inactiveCustomers", description: "Returning customers (by plate) who have not come back in N days (default 30). Returns counts; includeDetails=true lists plates and last visit ONLY if the owner explicitly asked to see who.", parameters: { type: "object", properties: { days: { type: "integer" }, includeDetails: { type: "boolean" } } } },
-  { name: "goalProgress", description: "The owner's saved goals (e.g. ₱50,000 per month) and progress, projection and needed daily pace.", parameters: { type: "object", properties: {} } },
-  { name: "setGoal", description: "Saves or replaces an owner goal when the owner clearly states one (e.g. 'goal ko 50k a month'). metric revenue (target in pesos) or cars; period month or week.", parameters: { type: "object", properties: { metric: { type: "string", enum: ["revenue", "cars"] }, period: { type: "string", enum: ["month", "week"] }, target: { type: "number" } }, required: ["metric", "period", "target"] } },
+  { name: "getSales", description: "Sales (PHP) from recorded payments, paid cars, cars served (finished, paid or not), unpaid cars and amount, average ticket, payment mix and day-by-day totals vs the previous equal period.", parameters: withPeriod() },
+  { name: "getBookings", description: "Walk-ins and bookings: walk-in counts by every status (queued, in_bay, done, paid, closed, cancelled), cars in the queue right now, River Mobile bookings by status and source, arrivals by hour and weekday. Use for 'ilang walk-ins/kotse/booking'. includeDetails=true lists bookings with customer names ONLY if the owner explicitly asked for names.", parameters: withPeriod({ includeDetails: { type: "boolean" } }) },
+  { name: "topServices", description: "Best-selling services/packages by revenue and cars, plus vehicle size mix, for a period.", parameters: withPeriod({ limit: { type: "integer" } }) },
+  { name: "staffPerformance", description: "Per-bay cars, sales, average wash minutes, and the average wait before a car starts.", parameters: withPeriod() },
+  { name: "branchComparison", description: "Sales and cars per shop (branch) this owner owns, side by side.", parameters: withPeriod() },
+  { name: "inactiveCustomers", description: "Customers (by plate) who haven't come back in N days (default 30). includeDetails=true lists plates ONLY when the owner explicitly asks who.", parameters: { type: "object", properties: { days: { type: "integer" }, includeDetails: { type: "boolean" } } } },
+  { name: "goalProgress", description: "The owner's saved goals and progress (actual, projection, needed per day).", parameters: { type: "object", properties: {} } },
+  { name: "setGoal", description: "Save a goal the owner states (e.g. 'goal ko 50k a month'). metric revenue (pesos) or cars; period month or week. Only Companion memory; never business data.", parameters: { type: "object", properties: { metric: { type: "string", enum: ["revenue", "cars"] }, period: { type: "string", enum: ["month", "week"] }, target: { type: "number" } }, required: ["metric", "period", "target"] } },
 ];
+/** Same split as Barbers: multi-branch comparison and goals are Pro or Lifetime. */
+export const PRO_ONLY = new Set(["branchComparison", "setGoal"]);
+const DETAIL_ASK = /\b(name|names|plate|plates|who|list|sino|sinu|pangalan|plaka|contact|number|numero)\b/i;
 
-const pesos = (c: number) => Math.round(c / 100);
-const inRange = (iso: string, from: Date, to: Date) => {
-  const t = Date.parse(iso);
-  return t >= from.getTime() && t < to.getTime();
-};
-
-function slice(data: InsightsInput, from: Date, to: Date): InsightsInput {
-  return {
-    ...data,
-    now: to,
-    sales: data.sales.filter((s) => inRange(s.paidAt, from, to)),
-    queue: data.queue.filter((q) => inRange(q.createdAt, from, to)),
-    bookings: data.bookings.filter((b) => inRange(b.scheduledStart, from, to)),
-  };
-}
-
-function spanDays(from: Date, to: Date) {
-  return Math.max(1, Math.ceil((to.getTime() - from.getTime()) / 86_400_000));
-}
-
-function salesSummary(sales: Doc<Sale>[]) {
-  const rec = sales.filter((s) => s.status === "recorded");
-  const total = rec.reduce((a, s) => a + s.amountCentavos, 0);
-  return { revenuePesos: pesos(total), cars: rec.length, avgTicketPesos: rec.length ? pesos(total / rec.length) : 0 };
-}
-
-export interface ToolContext {
-  store: DocStore;
-  business: Doc<Business>;
-  uid: string;
-  now: Date;
-  /** Goals are a Pro/Lifetime feature. */
-  canSetGoals: boolean;
-}
+export interface ToolContext { store: DocStore; business: Doc<Business>; uid: string; now: Date; paid: boolean; lastUserText: string }
 
 export function makeToolRunner(ctx: ToolContext) {
-  let cached: Promise<InsightsInput> | null = null;
+  let cached: Promise<ShopData> | null = null;
   const data = () => (cached ??= loadShopData(ctx.store, ctx.business.id, ctx.now));
-  const periodOf = (args: Record<string, unknown>): { p: Period; from: Date; to: Date; label: string } => {
-    const r = rangeFor(asPeriod(args.period), ctx.now);
-    return { p: r.period, from: r.from, to: r.to, label: r.label };
-  };
-  const metricsFor = async (args: Record<string, unknown>) => {
-    const { p, from, to, label } = periodOf(args);
-    const d = await data();
-    return { period: p, label, m: computeMetrics(slice(d, from, to), spanDays(from, to)) };
-  };
-
   const run = async (name: string, args: Record<string, unknown>): Promise<unknown> => {
+    if (!ctx.paid && PRO_ONLY.has(name)) return { error: "This needs Pro or Lifetime. Tell the owner they can upgrade in Account > Plan & billing." };
     switch (name) {
-      case "getSales": {
-        const { p, from, to, label } = periodOf(args);
-        const d = await data();
-        const prevFrom = new Date(from.getTime() - (to.getTime() - from.getTime()));
-        const cur = d.sales.filter((s) => inRange(s.paidAt, from, to));
-        const prev = salesSummary(d.sales.filter((s) => inRange(s.paidAt, prevFrom, from)));
-        const byDay = new Map<string, { revenue: number; cars: number }>();
-        for (const s of cur.filter((x) => x.status === "recorded")) {
-          const day = new Date(s.paidAt).toLocaleDateString("en-US", { timeZone: "Asia/Manila", weekday: "short", month: "short", day: "numeric" });
-          const row = byDay.get(day) ?? { revenue: 0, cars: 0 };
-          row.revenue += s.amountCentavos;
-          row.cars++;
-          byDay.set(day, row);
-        }
-        const methods = new Map<string, number>();
-        for (const s of cur) if (s.status === "recorded") methods.set(s.method, (methods.get(s.method) ?? 0) + pesos(s.amountCentavos));
-        const now = salesSummary(cur);
-        return {
-          period: p, label, ...now,
-          previousPeriod: prev,
-          changePct: prev.revenuePesos ? Math.round(((now.revenuePesos - prev.revenuePesos) / prev.revenuePesos) * 1000) / 10 : null,
-          paymentMixPesos: Object.fromEntries(methods),
-          byDay: [...byDay.entries()].map(([day, r]) => ({ day, revenuePesos: pesos(r.revenue), cars: r.cars })),
-        };
-      }
-      case "getBookings": {
-        const { p, from, to, label } = periodOf(args);
-        const rows = (await data()).bookings.filter((b) => inRange(b.scheduledStart, from, to));
-        const count = (key: (b: (typeof rows)[number]) => string) => rows.reduce<Record<string, number>>((a, b) => ((a[key(b)] = (a[key(b)] ?? 0) + 1), a), {});
-        return {
-          period: p, label, total: rows.length, byStatus: count((b) => b.status), bySource: count((b) => b.source),
-          ...(args.includeDetails === true
-            ? { details: rows.slice(0, 30).map((b) => ({ reference: b.reference, when: b.scheduledStart, status: b.status, customer: b.customerSnapshot?.name ?? null, plate: b.plate })) }
-            : {}),
-        };
-      }
-      case "topServices": {
-        const { period, label, m } = await metricsFor(args);
-        return { period, label, topServices: m.topServices };
-      }
-      case "serviceMix": {
-        const { period, label, m } = await metricsFor(args);
-        return { period, label, serviceMix: m.topServices.map((s) => ({ name: s.name, sharePct: s.sharePct })), vehicleSizeMix: m.vehicleSizeMix, avgTicketPesos: m.last28.avgTicketPesos };
-      }
-      case "staffPerformance": {
-        const { period, label, m } = await metricsFor(args);
-        return { period, label, bays: m.bays, note: "Per bay; staff are not tracked per car yet." };
-      }
-      case "carsPerHour": {
-        const { period, label, m } = await metricsFor(args);
-        return { period, label, carsPerHour: m.carsPerHour, busiestDays: m.busiestDays, busiestHours: m.busiestHours };
-      }
-      case "queuePeaks": {
-        const { period, label, m } = await metricsFor(args);
-        return { period, label, queue: m.queue, walkIns: m.last28.walkIns, bookings: m.last28.bookings };
-      }
+      case "getSales": return getSales(await data(), args);
+      case "getBookings": return getBookings(await data(), { ...args, includeDetails: args.includeDetails === true && DETAIL_ASK.test(ctx.lastUserText) });
+      case "topServices": return topServices(await data(), args);
+      case "staffPerformance": return staffPerformance(await data(), args);
+      case "inactiveCustomers": return inactiveCustomers(await data(), args, DETAIL_ASK.test(ctx.lastUserText));
       case "branchComparison": {
-        const { p, from, to, label } = periodOf(args);
         const owned = (await listMyBusinesses(ctx.store, ctx.uid)).filter((x) => x.role === "owner");
         const shops = [];
         for (const { business } of owned) {
           const d = business.id === ctx.business.id ? await data() : await loadShopData(ctx.store, business.id, ctx.now);
-          shops.push({ shop: business.name, current: business.id === ctx.business.id, ...salesSummary(d.sales.filter((s) => inRange(s.paidAt, from, to))) });
+          const s = getSales(d, args);
+          shops.push({ shop: business.name, current: business.id === ctx.business.id, salesPhp: s.salesPhp, carsServed: s.carsServed, avgTicketPhp: s.avgTicketPhp, previousPeriodSalesPhp: s.previousPeriodSalesPhp });
         }
-        return { period: p, label, shops, combined: { revenuePesos: shops.reduce((a, s) => a + s.revenuePesos, 0), cars: shops.reduce((a, s) => a + s.cars, 0) } };
+        return { period: asPeriod(args.period), shops };
       }
-      case "inactiveCustomers": {
-        const days = Math.min(180, Math.max(7, Number(args.days) || 30));
-        const d = await data();
-        const last = new Map<string, { at: number; visits: number }>();
-        for (const s of d.sales) {
-          if (!s.plate || s.status !== "recorded") continue;
-          const t = Date.parse(s.paidAt);
-          const row = last.get(s.plate) ?? { at: 0, visits: 0 };
-          last.set(s.plate, { at: Math.max(row.at, t), visits: row.visits + 1 });
-        }
-        const cutoff = ctx.now.getTime() - days * 86_400_000;
-        const lapsed = [...last.entries()].filter(([, r]) => r.visits >= 2 && r.at < cutoff).sort((a, b) => b[1].visits - a[1].visits);
-        return {
-          days,
-          returningCustomers: [...last.values()].filter((r) => r.visits >= 2).length,
-          inactiveReturningCustomers: lapsed.length,
-          ...(args.includeDetails === true
-            ? { details: lapsed.slice(0, 20).map(([plate, r]) => ({ plate, visits: r.visits, lastVisit: new Date(r.at).toISOString().slice(0, 10) })) }
-            : {}),
-        };
-      }
-      case "goalProgress": {
-        const goals = await listGoals(ctx.store, ctx.business.id);
-        if (!goals.length) return { goals: [], note: "No goals saved yet." };
-        return { goals: goalProgress(goals, await data()) };
-      }
+      case "goalProgress": return { goals: goalProgress(await listGoals(ctx.store, ctx.business.id), await data()) };
       case "setGoal": {
-        if (!ctx.canSetGoals) return { error: "Goals are a Pro and Lifetime feature. Tell the owner they can upgrade in Settings > Plans." };
-        const goal = await saveGoal(ctx.store, ctx.business.id, { metric: args.metric as "revenue" | "cars", period: args.period as "month" | "week", target: Number(args.target) }, ctx.now);
-        return { saved: goal, progress: goalProgress([goal], await data())[0] };
+        const goal = await saveGoal(ctx.store, ctx.business.id, { metric: args.metric as "revenue", period: args.period as "month", target: Number(args.target) }, ctx.now);
+        return { saved: goal, progress: goalProgress([goal], await data()) };
       }
-      default:
-        return { error: `Unknown tool ${name}` };
+      default: return { error: `Unknown tool ${name}` };
     }
   };
-  return { run, tier: tierOf(ctx.business) };
+  return { run };
 }
-

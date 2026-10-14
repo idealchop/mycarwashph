@@ -1,38 +1,40 @@
-# AI Companion (owner chat + weekly tips)
+# AI Companion (chat only, same as Barbers.ph)
 
-Approved by Jimboy, Oct 14, 2026 (spec v2, replaces "AI Insights").
+Oct 15, 2026: this replaces the earlier "AI Insights" design (insight cards, blurred tips, rule-based alerts) with the Barbers.ph approach: one chat thread per shop.
 
-## What
-- `/companion` chat page (owners only), reached from the Home card (latest tip) and Account > Features. Nav stays Home, Queue, Moments.
-- River: friendly English/Taglish persona + PH car wash consultant (pricing, promos, staffing, operations, retention, compliance, marketing).
-- Monday 07:00 Asia/Manila tips (3-5) saved to `businesses/{id}/insights/{weekId}` and posted as a chat message.
-- Alerts (deterministic, no model cost): last 7 days vs 28-day baseline (revenue drop/jump, queue wait spike, no-show spike), posted as chat messages, once per type per week. Daily 20:00 sweep + after the Monday job.
-- Goals (e.g. ₱50,000 / month) with progress, projection and needed daily pace.
+## What the owner sees
+- `/companion`: one continuous chat per shop (owners only). Older messages load as the owner scrolls up. Reached from the Home button and Account > Features.
+- Every message is a plain text bubble. Monday tips come as one message tagged "Monday tips". Pro/Lifetime alerts come as messages tagged "Heads up". There are no cards and no insights page.
+- Hidden on prod: `COMPANION_ENABLED=1` (apphosting.dev.yaml) → `NEXT_PUBLIC_COMPANION_ENABLED`. When it is off, /companion redirects to /home.
 
-## How
-- Gemini 2.5 Flash on Vertex AI (`@google/genai`, `vertexai: true`), region `asia-southeast1`, default service account, thinking budget 0.
-- Chat uses function calling over READ-ONLY tools bound server-side to the owner's shop: getSales, getBookings, topServices, serviceMix, staffPerformance (per bay), carsPerHour, queuePeaks, branchComparison, inactiveCustomers, goalProgress, plus setGoal (writes only `companion/goals`).
-- Customer PII (names/plates) is returned only with `includeDetails=true`, which the prompt allows only when the owner explicitly asks. Weekly tips send aggregates only.
-- Storage: `businesses/{id}/companion/threads/messages/{id}`, `companion/goals`, `companion/usage` (per-month/week questions, tokens, cost). Firestore rules deny all client access; everything goes through the API.
-- Cost: structured `ai_usage` log line per call (businessId, tokens, costUsd, week/month running totals) + `costUsd` on each message/insight. Pricing constants in `services/companion/model.ts`.
+## How (mirrors Barbers lib/server/companion)
+- Gemini 2.5 Flash on Vertex AI (asia-southeast1), with function calling over read-only tools. `services/companion/tools.ts` loads the shop's raw docs (sales, queue, bookings, services, bays) once per question, and the tools count over them:
+  - `getSales`: recorded payments, plus cars served and cars done-but-unpaid.
+  - `getBookings`: walk-ins by every queue status (queued, in_bay, done, paid, closed, cancelled), cars in the queue now, and River Mobile bookings by status and source.
+  - `topServices`, `staffPerformance` (per bay), `inactiveCustomers`, `goalProgress`.
+  - `branchComparison` and `setGoal` are Pro/Lifetime only.
+- Customer names and plates are returned only when the owner explicitly asks.
+- Monday tips (`tips-service.ts`, same as Barbers `weeklyTips`): the tool numbers are sent as JSON and the model returns `{tips, alerts}`. The tips are posted as one plain `tip` message (Partner: first tip plus "N more tips are waiting for you on Pro or Lifetime"). Alerts are Pro/Lifetime only. `insights/{weekId}` keeps a record of the run (idempotent per week).
 
-## Tiers (server-enforced)
-- Partner: 10 questions / month (transactional quota), 1 tip of the weekly set (others stripped server-side, blurred in UI), no alerts, no goals.
-- Pro / Lifetime (`plan: "paid"`): unlimited chat, all tips, alerts, goals; `/me/companion/combined` for multi-shop owners; `branchComparison` tool.
+## Storage (`businesses/{id}/…`, server-only)
+- `companion/threads/messages/{id}`: the thread.
+- `companion/goals`.
+- `companion/usage`: questions, tokens and cost per month and week, plus an `ai_usage` log line.
+- `insights/{weekId}`: record of each Monday run.
+
+## Tiers
+- Partner: 10 questions a month and 1 Monday tip.
+- Pro / Lifetime: unlimited questions, all tips, alerts, goals and branch comparison.
+
+## API
+- `GET /businesses/:id/companion`: newest page, goals and quota.
+- `GET …/companion/messages?before=`: older messages.
+- `POST …/companion/messages`: ask a question.
+- `POST …/companion/weekly`: this week's tips for the owner's shop (`force` only on dev).
 
 ## Functions
 | Function | Schedule | Notes |
 | --- | --- | --- |
-| mycarwashCompanionWeeklyDev / Prod | Mon 07:00 PH | Prod exits early unless `INSIGHTS_PROD_ENABLED=true` |
-| mycarwashCompanionAlertsDev / Prod | daily 20:00 PH | same guard |
-Chat: `POST /businesses/:id/companion/messages` on mycarwashApi{Dev,Prod} (prod returns 503 while guarded).
+| mycarwashCompanionWeeklyDev / Prod | Mon 07:00 PH | Prod exits early unless `COMPANION_ENABLED=1` or `INSIGHTS_PROD_ENABLED=true` |
 
-Enable prod: set `INSIGHTS_PROD_ENABLED=true` in `backend/functions/.env.mycarwashph`, redeploy functions.
-
-## Dev tools
-`/companion` shows "Dev tools" on the dev backend only: seed ~30 days of demo data (as Pro or Partner) and run the Monday job for that shop. The API routes return 404/403 outside dev.
-
-## Follow-ups
-- Push/email delivery of tips and alerts (no provider yet).
-- Per-staff performance (cars are tracked per bay, not per washer).
-- Streaming replies; multiple threads.
+Removed Oct 15, 2026: `mycarwashCompanionAlertsDev/Prod` (rule-based daily alerts; Barbers has none).
