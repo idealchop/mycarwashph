@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ChatIcon } from "@river-apps/icons";
 import { Button, PhoneInput } from "@river-apps/ui";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -68,6 +69,7 @@ function PhoneInner() {
         </div>
         <div className="mt-auto px-6 pb-10 pt-6">
           <Button id="send-code" type="submit" fullWidth disabled={busy || !e164}>{busy ? "Sending…" : "Send code"}</Button>
+          <p className="mt-3 text-center text-[12.5px] font-medium text-muted">By continuing you agree to our <Link href="/terms" className="font-semibold text-ink underline underline-offset-2">Terms</Link> and <Link href="/privacy" className="font-semibold text-ink underline underline-offset-2">Privacy Policy</Link>.</p>
         </div>
       </form>
     </Screen>

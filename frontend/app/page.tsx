@@ -3,6 +3,7 @@
 import { CoinIcon, CarIllustration } from "@river-apps/icons";
 import { Button, FloatingCard, ProgressRing, SampleDataTag } from "@river-apps/ui";
 import { Smartphone } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GoogleG, MycarwashBrand } from "@/components/brand";
@@ -63,7 +64,7 @@ export default function WelcomePage() {
           Browse dashboard as guest
         </Button>
         {error ? <p role="alert" className="text-center text-[13.5px] font-semibold">{error}</p> : null}
-        <p className="mt-1.5 text-center text-[12.5px] font-medium text-muted">Preview uses sample data only. Sign in when you accept bookings, scan, or save. By continuing you agree to our Terms and Privacy Policy.</p>
+        <p className="mt-1.5 text-center text-[12.5px] font-medium text-muted">Preview uses sample data only. Sign in when you accept bookings, scan, or save. By continuing you agree to our <Link href="/terms" className="font-semibold text-ink underline underline-offset-2">Terms</Link> and <Link href="/privacy" className="font-semibold text-ink underline underline-offset-2">Privacy Policy</Link>.</p>
       </div>
     </Screen>
   );

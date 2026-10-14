@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { CarIllustration } from "@river-apps/icons";
 import { AppShell, Button, MobileTabBar, Sidebar } from "@river-apps/ui";
 import {
@@ -72,6 +73,10 @@ export function ShopShell({
               <b className="block text-[14.5px]">River Mobile bookings</b>
               <small className="mb-3.5 mt-1 block text-[12.5px] font-semibold text-ink/55">{newBookings} new to review</small>
               <Button size="sm" fullWidth href="/bookings">View bookings</Button>
+              <div className="mt-3 flex justify-center gap-3 text-[11.5px] font-semibold text-ink/55">
+                <Link href="/terms" className="hover:text-ink hover:underline">Terms</Link>
+                <Link href="/privacy" className="hover:text-ink hover:underline">Privacy</Link>
+              </div>
             </div>
           }
         />
