@@ -29,6 +29,23 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   turbopack: { root: fileURLToPath(new URL("..", import.meta.url)) },
   env: webConfigEnv(),
+  // River Maps is a source-only workspace package (vendored from idealchop/river-maps).
+  transpilePackages: ["@river/map"],
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          // Camera for Scan, geolocation for the map pin; nothing else.
+          { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(), payment=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

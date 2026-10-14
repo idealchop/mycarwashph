@@ -15,14 +15,18 @@
     "@river-apps/icons": "workspace:*",
     "@river-apps/tokens": "workspace:*",
     "@river-apps/ui": "workspace:*",
+    "@river/map": "workspace:*",
     "firebase": "12.19.0",
     "lucide-react": "1.51.0",
+    "maplibre-gl": "5.24.0",
     "next": "16.3.8",
+    "pmtiles": "4.5.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
+    "@types/geojson": "7946.0.16",
     "@types/node": "22.20.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",

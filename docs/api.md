@@ -228,9 +228,11 @@ PSP can set `paymentRef` to the processor id after webhook confirmation.
 ## Shop location (River Mobile)
 
 Businesses store `address` (text) and optional `location: { lat, lng, formattedAddress, placeId }`.
-The shop web app uses Google Maps Places (when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set) or
-manual lat/lng fields. Listed shops expose `address` + `location` on `GET /v1/shops/{shopId}`
-so River Mobile can detect nearby shops.
+The shop web app sets the pin with **River Maps** (MapLibre GL + River's self-hosted Philippines
+PMTiles, vendored as `packages/river-map` from `idealchop/river-maps@f7989dc`): owners drag the pin,
+tap the map or use the device location; `placeId` is `null` (no Google Places). Listed shops expose
+`address`, `location` and `photoUrls` on `GET /v1/shops/{shopId}` so River Mobile can find nearby
+shops and draw them on the same River style.
 
 ## Partner billing
 

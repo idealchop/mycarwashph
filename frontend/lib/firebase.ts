@@ -19,8 +19,15 @@ const config = {
 };
 
 /** Emulators by default in development; deployed builds set NEXT_PUBLIC_USE_EMULATORS=false. */
+const hostedEnv = process.env.NEXT_PUBLIC_APP_ENV === "dev" || process.env.NEXT_PUBLIC_APP_ENV === "prod";
 export const useEmulators =
+  !hostedEnv &&
   (process.env.NEXT_PUBLIC_USE_EMULATORS ?? (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "false" : "true")) === "true";
+
+if (hostedEnv && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY && typeof window !== "undefined") {
+  // App Hosting should inject FIREBASE_WEBAPP_CONFIG at build time (next.config.ts).
+  console.error("[mycarwash] Firebase web config missing on a hosted build; sign-in will fail.");
+}
 const authEmulatorUrl = process.env.NEXT_PUBLIC_AUTH_EMULATOR_URL ?? "http://127.0.0.1:9099";
 const storageEmulatorHost = process.env.NEXT_PUBLIC_STORAGE_EMULATOR_HOST ?? "127.0.0.1";
 const storageEmulatorPort = Number(process.env.NEXT_PUBLIC_STORAGE_EMULATOR_PORT ?? 9199);
