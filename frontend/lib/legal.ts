@@ -17,7 +17,7 @@ export type LegalDoc = {
 };
 
 export const LEGAL_ENTITY = {
-  company: "River Tech Inc.",
+  company: "River Technology Inc.",
   brand: "River Apps",
   app: "Mycarwash.ph",
   marketplace: "River Mobile",
