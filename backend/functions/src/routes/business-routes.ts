@@ -93,6 +93,22 @@ export function businessRoutes(deps: Deps) {
       res.status(201).json({ data: { url } });
     },
   );
+  // Moment photos: same upload as shop photos but not counted against the 6 listing photos.
+  r.post(
+    "/moment-photos",
+    member,
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: "5mb" }),
+    async (req, res) => {
+      const b = getBusiness(res);
+      if (!deps.photos) throw new HttpError(503, "photos_unavailable", "Photo uploads are not configured.");
+      const type = (req.header("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+      const ext = PHOTO_TYPES[type];
+      if (!ext || !Buffer.isBuffer(req.body) || req.body.length === 0) throw badRequest("Send a JPG, PNG, or WebP image.");
+      const name = `${getUser(res).uid}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const url = await deps.photos.save(`businesses/${b.id}/moments/${name}`, req.body, type);
+      res.status(201).json({ data: { url } });
+    },
+  );
   r.delete("/photos", owner, validateBody(z.object({ url: z.string().url() })), async (req, res) => {
     const b = getBusiness(res);
     const path = deps.photos?.pathFromUrl(req.body.url);

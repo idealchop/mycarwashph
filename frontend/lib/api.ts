@@ -15,13 +15,13 @@ export class ApiError extends Error {
 }
 
 /** Calls the shop API (via /api) with the signed-in user's Firebase ID token. */
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function api<T>(path: string, init: { method?: string; body?: unknown; guest?: boolean } = {}): Promise<T> {
   const user = firebaseAuth().currentUser;
-  if (!user) throw new ApiError(401, "unauthorized", "Please sign in.");
-  const token = await user.getIdToken();
+  if (!user && !init.guest) throw new ApiError(401, "unauthorized", "Please sign in.");
+  const token = user ? await user.getIdToken() : null;
   const res = await fetch(`${apiBase()}${path}`, {
     method: init.method ?? "GET",
-    headers: { Authorization: `Bearer ${token}`, ...(init.body ? { "Content-Type": "application/json" } : {}) },
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.body ? { "Content-Type": "application/json" } : {}) },
     body: init.body ? JSON.stringify(init.body) : undefined,
   });
   if (res.status === 204) return undefined as T;
@@ -88,6 +88,8 @@ export interface MeResponse {
     riverMobileListed?: boolean;
     settings?: { dailyTargetCentavos: number | null };
     photoUrls?: string[];
+    logoUrl?: string | null;
+    hours?: string | null;
     billing?: BusinessBilling | null;
   }[];
 }

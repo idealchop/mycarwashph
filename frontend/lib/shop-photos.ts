@@ -11,13 +11,13 @@ const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
  * Upload one shop photo through the shop API (owner check happens there; Storage
  * rules cannot read our named Firestore databases). Returns the HTTPS download URL.
  */
-export async function uploadShopPhoto(businessId: string, file: File): Promise<string> {
+export async function uploadShopPhoto(businessId: string, file: File, kind: "photos" | "moment-photos" = "photos"): Promise<string> {
   const user = firebaseAuth().currentUser;
   if (!user) throw new Error("Sign in to upload shop photos.");
   if (!ALLOWED.has(file.type)) throw new Error("Use a JPG, PNG, or WebP image.");
   if (file.size > MAX_SHOP_PHOTO_BYTES) throw new Error("Each photo must be under 5 MB.");
   const token = await user.getIdToken();
-  const res = await fetch(`${apiBase()}/businesses/${businessId}/photos`, {
+  const res = await fetch(`${apiBase()}/businesses/${businessId}/${kind}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type },
     body: file,

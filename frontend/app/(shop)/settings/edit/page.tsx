@@ -13,15 +13,8 @@ import { currentShop } from "@/lib/shop";
 import { useShop } from "@/lib/shop-context";
 import { uploadShopPhoto } from "@/lib/shop-photos";
 import { useLoad } from "@/lib/use-load";
+import { DEFAULT_SERVICE } from "@/lib/default-service";
 
-/** Published on the first save so River Mobile has something to book. */
-const DEFAULT_SERVICE = {
-  name: "Basic Wash",
-  durationMins: 30,
-  pricesBySize: { small: 20000, medium: 25000, large: 30000, xl: 35000 },
-  active: true,
-  listedOnRiverMobile: true,
-};
 
 /**
  * Edit shop (also the first-time set-up: there is no separate onboarding).
@@ -36,7 +29,7 @@ export default function EditShopPage() {
   const ready = !loading && (!shop || profile);
   return (
     <ShopPageFrame narrow>
-      <PageHeader title={shop ? "Edit shop" : "Set up your shop"} subtitle={shop ? undefined : "Saving creates your shop and publishes a Basic Wash."} back="/settings" />
+      <PageHeader title={shop ? "Edit shop" : "Set up your shop"} subtitle={shop ? undefined : "Saving creates your shop and publishes a Basic Wash."} back="/account" />
       {ready ? <EditForm key={profile?.id ?? "new"} profile={profile ?? null} canEdit={!shop || shop.role === "owner"} /> : <LoadingBlock />}
     </ShopPageFrame>
   );

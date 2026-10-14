@@ -27,6 +27,8 @@ export function meRoutes(deps: Deps) {
         riverMobileListed: business.riverMobile?.listed ?? false,
         settings: business.settings ?? { dailyTargetCentavos: null },
         photoUrls: business.photoUrls ?? [],
+        logoUrl: business.logoUrl ?? null,
+        hours: business.hours ?? null,
         billing: business.billing ?? null,
       })),
     });
