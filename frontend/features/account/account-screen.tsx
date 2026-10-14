@@ -1,6 +1,6 @@
 "use client";
 
-import { CarIllustration } from "@river-apps/icons";
+import { CarIllustration, SparkleIcon } from "@river-apps/icons";
 import { Car, ChevronRight, CreditCard, FileText, History, LogOut, MapPin, Package, Pencil, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -138,6 +138,14 @@ export function AccountScreen() {
 
         <Card padding="none" className="overflow-visible px-2 py-1.5">
           <b className="block px-2.5 pt-3 text-[16px]">Features</b>
+          <Link href="/companion" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
+            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><SparkleIcon size={26} /></span>
+            <span className="min-w-0 flex-1">
+              <b className="block truncate text-[15px]">AI Companion</b>
+              <small className="block truncate text-[13px] font-medium text-muted">Ask about your numbers, weekly tips{paid ? ", goals" : ""}</small>
+            </span>
+            <Badge variant="soft" size="sm">{paid ? "Unlimited" : "10/mo"}</Badge>
+          </Link>
           <Link href="/settings/shops" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
             <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><MapPin size={18} strokeWidth={1.75} /></span>
             <span className="min-w-0 flex-1">

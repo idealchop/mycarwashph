@@ -1,5 +1,6 @@
 import type { TokenVerifier } from "./auth/token-verifier.js";
 import type { AppConfig } from "./config/env.js";
+import type { CompanionModel } from "./services/companion/model.js";
 import type { PhotoStore } from "./services/photo-store.js";
 import type { DocStore } from "./store/doc-store.js";
 
@@ -11,4 +12,6 @@ export interface Deps {
   now: () => Date;
   /** Shop photo storage (Admin SDK). Optional so the emulator/tests can run without it. */
   photos?: PhotoStore;
+  /** Gemini (Vertex AI) for AI Companion. Optional so tests inject a fake. */
+  ai?: CompanionModel;
 }

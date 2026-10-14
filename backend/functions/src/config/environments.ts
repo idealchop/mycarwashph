@@ -26,6 +26,15 @@ export interface EnvDefinition {
   pepperSecret: string;
   /** Web origins allowed by CORS (App Hosting URL, custom domain, local dev). */
   allowedOrigins: string[];
+  /**
+   * AI Companion (owner chat, Monday tips, alerts). Prod is OFF until Jimboy
+   * approves: the prod scheduler and the chat API exit without calling Gemini.
+   * Enable with INSIGHTS_PROD_ENABLED=true in backend/functions/.env.mycarwashph
+   * and redeploy functions.
+   */
+  companionEnabled: boolean;
+  /** Dev-only tools such as demo data seeding. */
+  devTools: boolean;
 }
 
 export const PROJECT_ID = "mycarwashph";
@@ -53,6 +62,8 @@ export const ENVIRONMENTS: Record<EnvName, EnvDefinition> = {
     name: "dev",
     databaseId: "mycarwash-dev",
     pepperSecret: "API_KEY_PEPPER_DEV",
+    companionEnabled: true,
+    devTools: true,
     allowedOrigins: [
       "https://mycarwash-dev--mycarwashph.asia-southeast1.hosted.app",
       "http://localhost:3000",
@@ -63,6 +74,8 @@ export const ENVIRONMENTS: Record<EnvName, EnvDefinition> = {
     name: "prod",
     databaseId: "mycarwash-prod",
     pepperSecret: "API_KEY_PEPPER_PROD",
+    companionEnabled: process.env.INSIGHTS_PROD_ENABLED === "true",
+    devTools: false,
     allowedOrigins: [
       "https://mycarwash-prod--mycarwashph.asia-southeast1.hosted.app",
       "https://mycarwash.ph",

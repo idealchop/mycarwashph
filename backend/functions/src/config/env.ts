@@ -8,10 +8,16 @@ export interface AppConfig {
   apiKeyPepper: string;
   /** Disable rate limiting (unit tests only). */
   disableRateLimit: boolean;
+  /** Environment name used in logs (dev / prod / test). */
+  envName?: string;
+  /** AI Companion on/off for this environment (prod stays off until approved). */
+  companionEnabled?: boolean;
+  /** Dev-only tools (demo data seeding). Never true in prod. */
+  devTools?: boolean;
 }
 
 export function loadConfig(
-  defaults: { allowedOrigins: string[]; apiKeyPepper: string },
+  defaults: { allowedOrigins: string[]; apiKeyPepper: string; envName?: string; companionEnabled?: boolean; devTools?: boolean },
   env: NodeJS.ProcessEnv = process.env,
 ): AppConfig {
   const origins = env.ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean);
@@ -19,5 +25,8 @@ export function loadConfig(
     allowedOrigins: origins?.length ? origins : defaults.allowedOrigins,
     apiKeyPepper: defaults.apiKeyPepper,
     disableRateLimit: env.DISABLE_RATE_LIMIT === "true",
+    envName: defaults.envName,
+    companionEnabled: defaults.companionEnabled ?? false,
+    devTools: defaults.devTools ?? false,
   };
 }

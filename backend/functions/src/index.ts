@@ -4,13 +4,18 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { defineSecret } from "firebase-functions/params";
+import { logger } from "firebase-functions/logger";
 import { onRequest } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import { createApp, createPublicApp } from "./app.js";
 import { FirebaseTokenVerifier } from "./auth/token-verifier.js";
 import { brand } from "./config/brand.js";
 import { loadConfig } from "./config/env.js";
 import { APP_HOSTING_SERVICE_ACCOUNT, ENVIRONMENTS, type EnvName } from "./config/environments.js";
 import type { Deps } from "./deps.js";
+import { runDailyAlerts } from "./services/companion/alerts.js";
+import { VertexCompanionModel } from "./services/companion/model.js";
+import { runWeeklyCompanion } from "./services/companion/tips-service.js";
 import { FirebasePhotoStore } from "./services/photo-store.js";
 import { FirestoreStore } from "./store/firestore-store.js";
 
@@ -45,7 +50,8 @@ function depsFor(env: EnvName): Deps {
     deps = {
       store: new FirestoreStore(db),
       verifier: new FirebaseTokenVerifier(getAuth(firebaseApp)),
-      config: loadConfig({ allowedOrigins: def.allowedOrigins, apiKeyPepper: pepper(env) }),
+      config: loadConfig({ allowedOrigins: def.allowedOrigins, apiKeyPepper: pepper(env), envName: env, companionEnabled: def.companionEnabled, devTools: def.devTools }),
+      ai: new VertexCompanionModel(),
       now: () => new Date(),
       photos: new FirebasePhotoStore(getStorage(firebaseApp).bucket(process.env.SHOP_PHOTOS_BUCKET || "mycarwashph.firebasestorage.app")),
     };
@@ -88,3 +94,50 @@ export const mycarwashPublicApiDev = partnerApi("dev");
 export const mycarwashApiProd = shopApi("prod");
 /** River Mobile partner API (/v1), prod database. */
 export const mycarwashPublicApiProd = partnerApi("prod");
+
+/** Firestore store for scheduled jobs (no secrets needed). */
+function jobStore(env: EnvName) {
+  const db = getFirestore(firebaseApp, ENVIRONMENTS[env].databaseId);
+  return new FirestoreStore(db);
+}
+
+/**
+ * AI Companion Monday tips, 07:00 Asia/Manila. Prod is guarded: unless
+ * ENVIRONMENTS.prod.companionEnabled (INSIGHTS_PROD_ENABLED=true) the job logs
+ * and exits without reading shops or calling Gemini.
+ */
+function weeklyTips(env: EnvName) {
+  return onSchedule(
+    { schedule: "0 7 * * 1", timeZone: brand.timeZone, region: brand.region, memory: "512MiB", timeoutSeconds: 540, maxInstances: 1, retryCount: 0 },
+    async () => {
+      if (!ENVIRONMENTS[env].companionEnabled) {
+        logger.info("companion_weekly_disabled", { env });
+        return;
+      }
+      await runWeeklyCompanion(jobStore(env), new VertexCompanionModel(), { now: new Date(), env });
+    },
+  );
+}
+
+/** Daily alert sweep, 20:00 Manila (deterministic, no Gemini). Same prod guard. */
+function dailyAlerts(env: EnvName) {
+  return onSchedule(
+    { schedule: "0 20 * * *", timeZone: brand.timeZone, region: brand.region, memory: "256MiB", timeoutSeconds: 300, maxInstances: 1, retryCount: 0 },
+    async () => {
+      if (!ENVIRONMENTS[env].companionEnabled) {
+        logger.info("companion_alerts_disabled", { env });
+        return;
+      }
+      await runDailyAlerts(jobStore(env), { now: new Date(), env });
+    },
+  );
+}
+
+/** AI Companion weekly tips, dev database. */
+export const mycarwashCompanionWeeklyDev = weeklyTips("dev");
+/** AI Companion weekly tips, prod database (guarded off until approved). */
+export const mycarwashCompanionWeeklyProd = weeklyTips("prod");
+/** AI Companion alerts, dev database. */
+export const mycarwashCompanionAlertsDev = dailyAlerts("dev");
+/** AI Companion alerts, prod database (guarded off until approved). */
+export const mycarwashCompanionAlertsProd = dailyAlerts("prod");
