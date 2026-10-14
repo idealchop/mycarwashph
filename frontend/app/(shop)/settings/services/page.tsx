@@ -7,7 +7,7 @@ export default function ServicesPage() {
   return (
     <ShopPage
       title="Services"
-      back="/settings"
+      back="/account"
       icon="bubbles"
       empty={{ title: "No services yet", description: "Saving your shop publishes a Basic Wash. Add more washes and prices here after." }}
     >

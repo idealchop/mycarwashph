@@ -14,7 +14,7 @@ export default function BillingPage() {
   return (
     <ShopPage
       title="Billing"
-      back="/settings"
+      back="/account"
       icon="coin"
       empty={{ title: "Plans for every car wash", description: `Partner: ${PARTNER_PRICING.monthlyLabel} monthly or ${PARTNER_PRICING.lifetimeLabel} one-time. Set up your shop to choose.` }}
     >

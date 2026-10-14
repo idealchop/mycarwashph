@@ -104,6 +104,8 @@ describe("business tenancy", () => {
     expect(res.body.businesses).toEqual([{
       id: shopA, name: "Alice Wash", plan: "partner", planStatus: "active", role: "staff",
       address: null, location: null, phoneE164: expect.any(String), riverMobileListed: false,
+      logoUrl: null,
+      hours: null,
       settings: { dailyTargetCentavos: null },
       photoUrls: [],
       billing: expect.objectContaining({ status: "trial", partnerOption: null }),

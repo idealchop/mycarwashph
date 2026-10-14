@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from "./middleware/error-middleware.js"
 import { cors, limiter } from "./middleware/http-middleware.js";
 import { businessRoutes } from "./routes/business-routes.js";
 import { meRoutes } from "./routes/me-routes.js";
+import { momentsRoutes } from "./routes/moments-routes.js";
 import { publicRoutes } from "./routes/v1/public-routes.js";
 
 function base() {
@@ -22,6 +23,8 @@ export function createApp(deps: Deps) {
   app.use(cors(deps.config));
   app.get("/health", (_req, res) => void res.json({ ok: true, service: `${brand.slug}-api` }));
   app.use(limiter(deps.config, 300));
+  // Moments is readable by guests, so it mounts before requireAuth.
+  app.use(momentsRoutes(deps));
   app.use(requireAuth(deps.verifier));
   app.use(meRoutes(deps));
   app.use("/businesses/:businessId", businessRoutes(deps));
