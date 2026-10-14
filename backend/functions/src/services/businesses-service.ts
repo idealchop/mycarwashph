@@ -83,6 +83,8 @@ export interface UpdateBusinessInput {
   bookingCapacity?: Business["bookingCapacity"];
   dailyTargetCentavos?: number | null;
   photoUrls?: string[];
+  hours?: string | null;
+  logoUrl?: string | null;
 }
 
 export async function updateBusiness(
@@ -103,6 +105,8 @@ export async function updateBusiness(
       patch.address = input.location.formattedAddress;
     }
   }
+  if (input.hours !== undefined) patch.hours = input.hours;
+  if (input.logoUrl !== undefined) patch.logoUrl = input.logoUrl && input.logoUrl.startsWith("https://") ? input.logoUrl : null;
   if (input.bookingCapacity !== undefined) patch.bookingCapacity = input.bookingCapacity;
   if (input.riverMobileListed !== undefined && input.riverMobileListed !== business.riverMobile.listed) {
     patch.riverMobile = { listed: input.riverMobileListed, listedAt: input.riverMobileListed ? at : null };

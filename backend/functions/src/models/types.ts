@@ -74,6 +74,10 @@ export interface Business {
   settings: { dailyTargetCentavos: number | null };
   /** Storefront / interior photo HTTPS URLs for River Mobile (max 6). */
   photoUrls: string[];
+  /** Opening hours as free text, e.g. "Mon–Sat 8 AM–6 PM". */
+  hours?: string | null;
+  /** Shop logo HTTPS URL. */
+  logoUrl?: string | null;
   /** Partner billing (Paid prices TBD). */
   billing: BusinessBilling;
   createdAt: string;

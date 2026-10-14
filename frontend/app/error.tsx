@@ -18,7 +18,7 @@ export default function RouteError({ error, reset }: { error: Error & { digest?:
           {error.digest ? <span className="mt-2 block font-mono text-[12px]">Ref: {error.digest}</span> : null}
         </p>
         <div className="mt-3 flex gap-2">
-          <Button variant="secondary" href="/home">Dashboard</Button>
+          <Button variant="secondary" href="/home">Home</Button>
           <Button onClick={() => reset()}>Try again</Button>
         </div>
       </div>

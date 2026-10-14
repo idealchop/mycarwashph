@@ -1,165 +1,104 @@
 "use client";
-
-import { Button } from "@river-apps/ui";
-import { Smartphone, X } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { GoogleG } from "@/components/brand";
-import { authErrorMessage, signInWithGoogle, useAuth } from "@/lib/auth";
-import { clearGuestMode, setAuthReturnTo } from "@/lib/guest-mode";
-
-type Pending = (() => void) | null;
-
-type AuthGateContextValue = {
-  /** If signed in, runs `action` immediately; otherwise opens the login sheet and runs it after success. */
-  requireAuth: (action?: () => void, opts?: { subtitle?: string }) => void;
-  openAuth: (opts?: { subtitle?: string; after?: () => void }) => void;
-  isAuthenticated: boolean;
-};
-
-const AuthGateContext = createContext<AuthGateContextValue | null>(null);
-
 /**
- * Mirrors River Mobile `useAuthGate` + `AuthGateSheet`: browse as guest;
- * mutating actions open a sign-in sheet and resume after login.
+ * Guest browse + login-on-action (River Mobile AuthGate pattern, as in Barbers.ph).
+ * Guests can open every page. Controls marked `data-auth="action"` (and forms whose
+ * submit button is marked) open the sign-in sheet instead of running; once signed in,
+ * the same action is replayed so the guest continues where they were.
  */
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useAuth } from "@/lib/auth";
+import { AuthGateSheet } from "./auth-gate-sheet";
+
+type Ctx = {
+  isAuthenticated: boolean;
+  /** Runs `after` now when signed in; otherwise opens the sheet and runs it after sign-in. */
+  requireAuth: (after?: () => void, opts?: { subtitle?: string }) => void;
+  openAuth: (opts?: { subtitle?: string; after?: () => void }) => void;
+};
+const AuthGateContext = createContext<Ctx | null>(null);
+
+export function useAuthGate(): Ctx {
+  const v = useContext(AuthGateContext);
+  return v ?? { isAuthenticated: true, requireAuth: (after) => after?.(), openAuth: (o) => o?.after?.() };
+}
+
+const SELECTOR = '[data-auth="action"]';
+/** Pages that only exist to sign in; after login the user goes Home from these. */
+const AUTH_PAGES = ["/", "/sign-in", "/welcome"];
+
 export function AuthGateProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const pathname = usePathname();
-  const [wantOpen, setWantOpen] = useState(false);
-  const [subtitle, setSubtitle] = useState("Sign in to manage bookings, scan customers, and save changes.");
-  const pendingRef = useRef<Pending>(null);
-  const prevUser = useRef(user);
+  const router = useRouter();
+  const pathname = usePathname() || "/";
+  const authed = Boolean(user);
+  const authedRef = useRef(authed);
+  useEffect(() => { authedRef.current = authed; }, [authed]);
+  const [open, setOpen] = useState(false);
+  const [subtitle, setSubtitle] = useState<string | undefined>(undefined);
+  const pending = useRef<(() => void) | null>(null);
+  const replaying = useRef(false);
 
-  // When auth flips from signed-out → signed-in, clear guest and resume pending action.
+  // Signed in from a sign-in or welcome page: land on Home. Elsewhere stay put.
   useEffect(() => {
-    const was = prevUser.current;
-    prevUser.current = user;
-    if (!was && user) {
-      clearGuestMode();
-      setWantOpen(false);
-      const next = pendingRef.current;
-      pendingRef.current = null;
-      if (next) requestAnimationFrame(() => next());
+    if (authed && AUTH_PAGES.some((p) => pathname === p || (p !== "/" && pathname.startsWith(`${p}/`)))) router.replace("/home");
+  }, [authed, pathname, router]);
+
+  const requireAuth = useCallback((after?: () => void, opts?: { subtitle?: string }) => {
+    if (authedRef.current) { after?.(); return; }
+    pending.current = after ?? null;
+    setSubtitle(opts?.subtitle);
+    setOpen(true);
+  }, []);
+  const openAuth = useCallback((opts?: { subtitle?: string; after?: () => void }) => requireAuth(opts?.after, opts), [requireAuth]);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (authedRef.current || replaying.current) return;
+      const el = (e.target as Element | null)?.closest?.(SELECTOR) as HTMLElement | null;
+      if (!el || el.closest('[aria-labelledby="auth-gate-title"]')) return;
+      if ((el as HTMLButtonElement).disabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+      requireAuth(() => {
+        if (!el.isConnected) return;
+        replaying.current = true;
+        try { el.click(); } finally { replaying.current = false; }
+      });
     }
-  }, [user]);
+    function onSubmit(e: SubmitEvent) {
+      if (authedRef.current || replaying.current) return;
+      const form = e.target as HTMLFormElement;
+      const sub = e.submitter as HTMLElement | null;
+      if (!(sub?.matches(SELECTOR) || form.matches(SELECTOR))) return;
+      e.preventDefault();
+      e.stopPropagation();
+      requireAuth(() => {
+        if (!form.isConnected) return;
+        replaying.current = true;
+        try { form.requestSubmit(sub && sub.isConnected ? (sub as HTMLButtonElement) : undefined); } finally { replaying.current = false; }
+      });
+    }
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("submit", onSubmit, true);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("submit", onSubmit, true);
+    };
+  }, [requireAuth]);
 
-  const open = wantOpen && !user;
-
-  const openAuth = useCallback(
-    (opts?: { subtitle?: string; after?: () => void }) => {
-      if (user) {
-        opts?.after?.();
-        return;
-      }
-      pendingRef.current = opts?.after ?? null;
-      if (opts?.subtitle) setSubtitle(opts.subtitle);
-      setAuthReturnTo(pathname || "/home");
-      setWantOpen(true);
-    },
-    [user, pathname],
-  );
-
-  const requireAuth = useCallback(
-    (action?: () => void, opts?: { subtitle?: string }) => {
-      if (user) {
-        action?.();
-        return;
-      }
-      openAuth({ subtitle: opts?.subtitle, after: action });
-    },
-    [user, openAuth],
-  );
-
-  const onClose = useCallback(() => {
-    setWantOpen(false);
-    pendingRef.current = null;
+  const close = useCallback(() => { pending.current = null; setOpen(false); }, []);
+  const onAuthenticated = useCallback(() => {
+    setOpen(false);
+    const next = pending.current;
+    pending.current = null;
+    if (next) requestAnimationFrame(() => requestAnimationFrame(next));
   }, []);
 
   return (
-    <AuthGateContext.Provider value={{ requireAuth, openAuth, isAuthenticated: !!user }}>
+    <AuthGateContext.Provider value={{ isAuthenticated: authed, requireAuth, openAuth }}>
       {children}
-      <LoginGateModal open={open} subtitle={subtitle} onClose={onClose} />
+      <AuthGateSheet open={open} subtitle={subtitle} onClose={close} onAuthenticated={onAuthenticated} />
     </AuthGateContext.Provider>
-  );
-}
-
-export function useAuthGate(): AuthGateContextValue {
-  const ctx = useContext(AuthGateContext);
-  if (!ctx) throw new Error("useAuthGate must be used within AuthGateProvider");
-  return ctx;
-}
-
-function LoginGateModal({ open, subtitle, onClose }: { open: boolean; subtitle: string; onClose: () => void }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  if (!open) return null;
-
-  async function google() {
-    setBusy(true);
-    setError(null);
-    try {
-      setAuthReturnTo(pathname || "/home");
-      await signInWithGoogle();
-    } catch (err) {
-      setError(authErrorMessage(err));
-      setBusy(false);
-    }
-  }
-
-  function phone() {
-    setAuthReturnTo(pathname || "/home");
-    onClose();
-    router.push(`/sign-in/phone?next=${encodeURIComponent(pathname || "/home")}`);
-  }
-
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
-      <button type="button" className="absolute inset-0 bg-black/45" aria-label="Dismiss" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-t-[28px] bg-white shadow-card sm:rounded-[28px]">
-        <div className="relative flex items-center justify-center bg-ink px-5 pb-8 pt-7">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute left-4 top-4 flex size-9 items-center justify-center rounded-full bg-white/20 text-white"
-            aria-label="Close"
-          >
-            <X size={16} strokeWidth={2.2} />
-          </button>
-          <b className="text-[15px] font-extrabold tracking-tight text-white">Mycarwash.ph</b>
-        </div>
-        <div className="px-6 pb-7 pt-5">
-          <h2 id="auth-gate-title" className="text-[22px] font-extrabold tracking-[-0.02em]">
-            Sign up or log in
-          </h2>
-          <p className="mt-1.5 text-[13.5px] font-medium text-muted">{subtitle}</p>
-          <div className="mt-5 flex flex-col gap-2.5">
-            <Button fullWidth leadingIcon={<Smartphone size={20} strokeWidth={1.75} />} onClick={phone} disabled={busy}>
-              Continue with phone number
-            </Button>
-            <Button fullWidth variant="secondary" leadingIcon={<GoogleG />} onClick={() => void google()} disabled={busy}>
-              Continue with Google
-            </Button>
-          </div>
-          {error ? (
-            <p role="alert" className="mt-3 text-center text-[13.5px] font-semibold">
-              {error}
-            </p>
-          ) : null}
-          <p className="mt-4 text-center text-[12.5px] font-medium text-muted">You can keep browsing the preview after you close this.</p>
-        </div>
-      </div>
-    </div>
   );
 }
