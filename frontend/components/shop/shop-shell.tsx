@@ -24,7 +24,7 @@ function PartnerPlanCard() {
   return (
     <div className="rounded-card bg-grey-100 p-4">
       <b className="block text-[14.5px]">You’re on Partner</b>
-      <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">Paid adds the queue, walk-ins, sales and the shop QR.</small>
+      <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">Pro adds the queue, walk-ins, sales and the shop QR.</small>
       <Button size="sm" variant="secondary" fullWidth href="/settings/billing">See plans</Button>
     </div>
   );

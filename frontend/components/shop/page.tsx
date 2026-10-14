@@ -61,6 +61,7 @@ export function ShopPage({
   actions,
   icon,
   empty,
+  emptyExtra,
   children,
 }: {
   title: ReactNode;
@@ -70,6 +71,8 @@ export function ShopPage({
   icon?: IconName;
   /** Copy for the set-up prompt when there is no shop yet. */
   empty: { title: string; description: string };
+  /** Shown under the set-up prompt for guests and new owners. */
+  emptyExtra?: ReactNode;
   children: (shop: NonNullable<ReturnType<typeof useShop>["shop"]>) => ReactNode;
 }) {
   const { loading, shop, error, reload } = useShop();
@@ -86,7 +89,10 @@ export function ShopPage({
       ) : shop ? (
         children(shop)
       ) : (
-        <SetUpShop icon={icon} title={empty.title} description={empty.description} />
+        <>
+          <SetUpShop icon={icon} title={empty.title} description={empty.description} />
+          {emptyExtra}
+        </>
       )}
     </ShopPageFrame>
   );

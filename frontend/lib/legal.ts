@@ -101,8 +101,9 @@ export const TERMS: LegalDoc = {
       title: "6. Plans, fees and payments",
       blocks: [
         { list: [
-          `<b>Partner (free):</b> for receiving and verifying ${E.marketplace} customers via Scan, with a public listing.`,
-          "<b>Paid plans:</b> add shop management tools such as queue, sales, customers, staff and growth features. Paid access is offered as a monthly subscription (currently ₱950/month) or a one-time payment (currently ₱10,000). Current prices, what is included and billing terms are shown in the app before you pay.",
+          `<b>Partner:</b> the entry tier, for receiving and verifying ${E.marketplace} customers via Scan, with a public listing.`,
+          "<b>Pro:</b> all features (walk-ins, bays, queue, sales, shop QR and growth tools) for 1 shop, as a monthly subscription (currently ₱499/month).",
+          "<b>Lifetime:</b> all features with a one-time payment, currently ₱10,000 for 1–5 locations or ₱20,000 for 5+ locations. Current prices, what is included and billing terms are shown in the app before you pay.",
           "Monthly plans renew automatically until you cancel; cancellation takes effect at the end of the current period. Fees paid are not refundable except where the law requires it or we state otherwise.",
           "Online payments are processed by our payment processor; River does not store your full card number.",
           "We may change plans or prices with notice in the app before the change applies to you.",

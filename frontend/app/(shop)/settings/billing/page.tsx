@@ -4,7 +4,7 @@ import { Badge, Button, Input } from "@river-apps/ui";
 import { useState } from "react";
 import { LoadingBlock, ShopPage } from "@/components/shop/page";
 import { api, type BillingPaymentMethod, type BusinessBilling, type MeResponse, type PartnerBillingOption } from "@/lib/api";
-import { PARTNER_PRICING, pesoFromCentavos } from "@/lib/pricing";
+import { PLAN_TIERS, pesoFromCentavos, planLabel, tierFor, tierLabel } from "@/lib/pricing";
 import { useShop } from "@/lib/shop-context";
 import { useLoad } from "@/lib/use-load";
 
@@ -13,10 +13,11 @@ type Shop = MeResponse["businesses"][number];
 export default function BillingPage() {
   return (
     <ShopPage
-      title="Billing"
+      title="Plan & billing"
       back="/account"
       icon="coin"
-      empty={{ title: "Plans for every car wash", description: `Partner: ${PARTNER_PRICING.monthlyLabel} monthly or ${PARTNER_PRICING.lifetimeLabel} one-time. Set up your shop to choose.` }}
+      emptyExtra={<PublicTiers />}
+      empty={{ title: "Plans for every car wash", description: "Start on Partner. Go Pro for ₱499/month or Lifetime from ₱10,000 one-time. Set up your shop to choose." }}
     >
       {(s) => <Billing shop={s} />}
     </ShopPage>
@@ -51,7 +52,7 @@ function Billing({ shop }: { shop: Shop }) {
   }
 
   async function selectOption(option: PartnerBillingOption) {
-    await run(`Selected ${option === "monthly" ? PARTNER_PRICING.monthlyLabel : PARTNER_PRICING.lifetimeLabel}.`, async () => {
+    await run(`Selected ${tierLabel(option)}.`, async () => {
       await api(`/businesses/${shop.id}/billing/select`, { method: "POST", body: { partnerOption: option } });
     });
   }
@@ -72,45 +73,18 @@ function Billing({ shop }: { shop: Shop }) {
       {msg ? <p className="mt-3 text-[14px] font-semibold" role="status">{msg}</p> : null}
             <section className="mt-6 shop-panel">
               <div className="flex items-center justify-between gap-3">
-                <b className="text-[15px]">Billing</b>
+                <b className="text-[15px]">Upgrade from Partner</b>
                 <Badge variant="soft">{billing?.status ?? "trial"}</Badge>
               </div>
               <p className="mt-1 text-[13px] font-medium text-muted">
-                Current plan: <b className="capitalize">{shop.plan}</b>
+                Current plan: <b>{planLabel(shop.plan, billing?.partnerOption)}</b>
                 {shop.planStatus ? ` · ${shop.planStatus}` : ""}.
               </p>
 
               {shop.plan === "partner" ? (
                 <>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      disabled={busy || shop.role !== "owner"}
-                      onClick={() => void selectOption("monthly")}
-                      className={`rounded-card border px-5 py-5 text-left transition ${
-                        billing?.partnerOption === "monthly" ? "border-ink bg-ink text-white" : "border-grey-200 bg-grey-50"
-                      }`}
-                    >
-                      <b className="block text-[15px]">Monthly</b>
-                      <span className="mt-1 block text-[20px] font-extrabold">{PARTNER_PRICING.monthlyLabel}</span>
-                      <span className={`mt-1 block text-[12.5px] font-medium ${billing?.partnerOption === "monthly" ? "text-white/70" : "text-muted"}`}>
-                        Founder Partner pricing
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy || shop.role !== "owner"}
-                      onClick={() => void selectOption("lifetime")}
-                      className={`rounded-card border px-5 py-5 text-left transition ${
-                        billing?.partnerOption === "lifetime" ? "border-ink bg-ink text-white" : "border-grey-200 bg-grey-50"
-                      }`}
-                    >
-                      <b className="block text-[15px]">One-time</b>
-                      <span className="mt-1 block text-[20px] font-extrabold">{PARTNER_PRICING.lifetimeLabel}</span>
-                      <span className={`mt-1 block text-[12.5px] font-medium ${billing?.partnerOption === "lifetime" ? "text-white/70" : "text-muted"}`}>
-                        Lifetime Partner access
-                      </span>
-                    </button>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <TierCards selected={billing?.partnerOption ?? null} disabled={busy || shop.role !== "owner"} onPick={(id) => void selectOption(id)} />
                   </div>
 
                   {shop.role === "owner" && billing?.partnerOption ? (
@@ -119,11 +93,7 @@ function Billing({ shop }: { shop: Shop }) {
                       <p className="mt-1 text-[13px] font-medium text-muted">
                         Pay via GCash, Maya, or bank, then enter the reference. Amount due:{" "}
                         <b>
-                          {pesoFromCentavos(
-                            billing.partnerOption === "monthly"
-                              ? PARTNER_PRICING.monthlyCentavos
-                              : PARTNER_PRICING.lifetimeCentavos,
-                          )}
+                          {pesoFromCentavos(tierFor(billing.partnerOption).centavos)} for {tierLabel(billing.partnerOption)}
                         </b>
                         . Status becomes <b>pending</b> until River Apps confirms (no live PSP charge yet).
                       </p>
@@ -146,10 +116,6 @@ function Billing({ shop }: { shop: Shop }) {
                           Confirm paid
                         </Button>
                       </div>
-                      <p className="mt-3 text-[12.5px] font-medium text-muted">
-                        Future: Xendit / PayMongo checkout stub lives behind <code className="font-mono">checkoutProvider</code> — attach keys later;
-                        never invent live charges.
-                      </p>
                     </div>
                   ) : null}
 
@@ -162,11 +128,52 @@ function Billing({ shop }: { shop: Shop }) {
                 </>
               ) : (
                 <p className="mt-3 text-[14px] font-medium text-muted">
-                  Paid plan pricing is <b>TBD</b> — this screen will not invent amounts. Partner shops use the packages above.
+                  You’re on <b>{planLabel(shop.plan, billing?.partnerOption)}</b>: walk-ins, bays, the queue, sales and the shop QR are all on.
                 </p>
               )}
             </section>
 
     </>
+  );
+}
+
+/** Partner is the entry tier; upgrades show the original price struck through. */
+function TierCards({ selected, disabled, onPick }: { selected: PartnerBillingOption | null; disabled?: boolean; onPick?: (id: PartnerBillingOption) => void }) {
+  return (
+    <>
+      {PLAN_TIERS.map((t) => {
+        const on = selected === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick?.(t.id)}
+            aria-pressed={on}
+            className={`rounded-card border px-5 py-5 text-left transition ${on ? "border-ink bg-ink text-white" : "border-grey-200 bg-grey-50"}`}
+          >
+            <b className="block text-[15px]">{t.name}</b>
+            <span className={`block text-[12.5px] font-semibold ${on ? "text-white/70" : "text-muted"}`}>{t.locations}</span>
+            <span className="mt-2 flex items-baseline gap-2">
+              <s className={`text-[14px] font-semibold ${on ? "text-white/60" : "text-muted"}`} aria-label={`was ${pesoFromCentavos(t.originalCentavos)}`}>{pesoFromCentavos(t.originalCentavos)}</s>
+              <span className="text-[22px] font-extrabold">{pesoFromCentavos(t.centavos)}</span>
+            </span>
+            <span className={`block text-[12.5px] font-medium ${on ? "text-white/70" : "text-muted"}`}>{t.cadence === "month" ? "per month" : "one-time"} · {t.blurb}</span>
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
+function PublicTiers() {
+  return (
+    <section className="mt-6 shop-panel">
+      <b className="text-[15px]">Plans</b>
+      <p className="mt-1 text-[13px] font-medium text-muted">Every shop starts on <b>Partner</b>: River Mobile bookings, Scan and the queue.</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <TierCards selected={null} disabled />
+      </div>
+    </section>
   );
 }

@@ -1,6 +1,6 @@
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
 import {
-  PARTNER_PRICING,
+  PLAN_PRICING,
   type BillingPaymentMethod,
   type BillingStatus,
   type Business,
@@ -22,18 +22,28 @@ export function defaultBilling(): Business["billing"] {
 }
 
 export function partnerPriceCentavos(option: PartnerBillingOption): number {
-  return option === "monthly" ? PARTNER_PRICING.monthlyCentavos : PARTNER_PRICING.lifetimeCentavos;
+  return PLAN_PRICING[option].centavos;
 }
+
+const peso = (c: number) => `₱${(c / 100).toLocaleString("en-US")}`;
 
 export function pricingCatalog() {
   return {
+    currency: "PHP",
     partner: {
-      monthlyCentavos: PARTNER_PRICING.monthlyCentavos,
-      lifetimeCentavos: PARTNER_PRICING.lifetimeCentavos,
-      currency: "PHP",
-      label: { monthly: "₱950 / month", lifetime: "₱10,000 one-time" },
+      name: "Partner",
+      note: "Entry tier: River Mobile bookings, Scan and the queue.",
+      monthlyCentavos: PLAN_PRICING.monthly.centavos,
+      lifetimeCentavos: PLAN_PRICING.lifetime.centavos,
     },
-    paid: { status: "tbd" as const, note: "Paid plan prices are not set yet." },
+    tiers: (Object.keys(PLAN_PRICING) as PartnerBillingOption[]).map((id) => {
+      const t = PLAN_PRICING[id];
+      return {
+        id, ...t,
+        label: `${peso(t.centavos)}${t.cadence === "month" ? " / month" : " one-time"}`,
+        originalLabel: peso(t.originalCentavos),
+      };
+    }),
   };
 }
 
@@ -44,7 +54,7 @@ export async function selectPartnerBilling(
   actorUid: string,
   now: Date,
 ): Promise<Doc<Business>> {
-  if (business.plan !== "partner") throw badRequest("Partner billing options apply to Partner shops only. Paid plan pricing is TBD.");
+  if (business.plan !== "partner") throw badRequest("Upgrades apply to Partner shops. This shop is already on Pro or Lifetime.");
   const at = now.toISOString();
   const billing: Business["billing"] = {
     ...(business.billing ?? defaultBilling()),
@@ -70,7 +80,7 @@ export async function confirmBillingPayment(
   now: Date,
 ): Promise<Doc<Business>> {
   const billing = business.billing ?? defaultBilling();
-  if (!billing.partnerOption) throw badRequest("Choose a Partner package (monthly or one-time) first.");
+  if (!billing.partnerOption) throw badRequest("Choose Pro or Lifetime first.");
   const amount = input.amountCentavos ?? partnerPriceCentavos(billing.partnerOption);
   const at = now.toISOString();
   const next: Business["billing"] = {
@@ -113,7 +123,7 @@ export async function activateBilling(
     d.setUTCMonth(d.getUTCMonth() + 1);
     expiresAt = d.toISOString();
   }
-  if (input.status === "active" && billing.partnerOption === "lifetime") expiresAt = null;
+  if (input.status === "active" && billing.partnerOption !== "monthly") expiresAt = null;
   const next: Business["billing"] = {
     ...billing,
     status: input.status,

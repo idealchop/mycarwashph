@@ -29,7 +29,7 @@ export function AccountScreen() {
     { href: "/history", icon: History, title: "History", subtitle: "Past washes and bookings" },
     ...(paid ? [] : [{ href: "/settings/edit", icon: Car, title: "Shop listing", subtitle: "How River Mobile customers find this shop" }]),
     { href: "/settings/services", icon: Package, title: "Services", subtitle: "Basic Wash, other services and prices" },
-    { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: paid ? "You’re on Paid" : "Partner plan and Paid" },
+    { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: paid ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
     { href: "/terms", icon: FileText, title: "Terms of Service", subtitle: "How Mycarwash.ph works for your shop" },
     { href: "/privacy", icon: ShieldCheck, title: "Privacy Policy", subtitle: "Shop and customer data, Data Privacy Act" },
   ];

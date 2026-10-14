@@ -44,7 +44,7 @@ export default function BaysPage() {
     <div className="mx-auto w-full max-w-[402px] px-4 pb-8 pt-4 lg:max-w-[720px] lg:px-[30px] lg:pt-6">
       <Topbar className="px-1" leading={<PageBack fallback="/queue" />} title="In bay" subtitle={today.ready ? `${holders.size} in use` : "Loading"} />
       {shop && !paid ? (
-        <p className="mt-4 rounded-card bg-surface px-4 py-6 text-center text-[13.5px] font-semibold text-muted shadow-card">Bays are on the Paid plan.</p>
+        <p className="mt-4 rounded-card bg-surface px-4 py-6 text-center text-[13.5px] font-semibold text-muted shadow-card">Bays come with Pro or Lifetime.</p>
       ) : today.bays.length === 0 ? (
         <p className="mt-4 rounded-card bg-surface px-4 py-6 text-center text-[13.5px] font-semibold text-muted shadow-card">No bays yet. Add your first bay below.</p>
       ) : (
