@@ -31,7 +31,7 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 }
 
 export type Plan = "partner" | "paid";
-export type PartnerBillingOption = "monthly" | "lifetime";
+export type PartnerBillingOption = "monthly" | "lifetime" | "lifetime_5plus";
 export type BillingStatus = "trial" | "unpaid" | "pending" | "active" | "suspended";
 export type BillingPaymentMethod = "gcash" | "maya" | "bank" | "other";
 

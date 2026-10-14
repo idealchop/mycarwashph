@@ -48,7 +48,14 @@ describe("location + partner billing", () => {
     const pricing = await request(app).get(`/businesses/${id}/billing`).set(auth("owner2"));
     expect(pricing.status).toBe(200);
     expect(pricing.body.data.pricing.partner.monthlyCentavos).toBe(PARTNER_PRICING.monthlyCentavos);
-    expect(pricing.body.data.pricing.paid.status).toBe("tbd");
+    expect(PARTNER_PRICING.monthlyCentavos).toBe(49_900);
+    const tiers = pricing.body.data.pricing.tiers as { id: string; centavos: number; originalCentavos: number; name: string }[];
+    expect(tiers.map((t) => [t.id, t.name, t.centavos, t.originalCentavos])).toEqual([
+      ["monthly", "Pro", 49_900, 95_000],
+      ["lifetime", "Lifetime", 1_000_000, 1_800_000],
+      ["lifetime_5plus", "Lifetime", 2_000_000, 3_500_000],
+    ]);
+    expect(JSON.stringify(pricing.body.data.pricing)).not.toMatch(/free|tbd|chain/i);
 
     const select = await request(app)
       .post(`/businesses/${id}/billing/select`)
@@ -85,6 +92,14 @@ describe("location + partner billing", () => {
       .set(auth("owner3"))
       .send({ method: "bank", paymentRef: "BDO-99" });
     expect(pay.body.data.billing.lastPayment.amountCentavos).toBe(PARTNER_PRICING.lifetimeCentavos);
+
+    const big = await request(app).post(`/businesses/${id}/billing/select`).set(auth("owner3")).send({ partnerOption: "lifetime_5plus" });
+    expect(big.status).toBe(200);
+    const pay5 = await request(app).post(`/businesses/${id}/billing/confirm-payment`).set(auth("owner3")).send({ method: "bank" });
+    expect(pay5.body.data.billing.lastPayment.amountCentavos).toBe(2_000_000);
+    const life = await request(app).put(`/businesses/${id}/billing/activate`).set(auth("owner3", true)).send({ status: "active" });
+    expect(life.body.data.billing.expiresAt).toBeNull();
+    expect((await request(app).post(`/businesses/${id}/billing/select`).set(auth("owner3")).send({ partnerOption: "chain" })).status).toBe(400);
 
     await deps.store.update(`businesses/${id}`, { plan: "paid" });
     const bad = await request(app)

@@ -166,7 +166,7 @@ export function QueueBoard() {
         <EmptyState
           className="mt-4"
           title={search ? "No matches" : channel === "online" ? "No bookings yet" : "The bays are clear"}
-          description={search ? undefined : channel === "online" ? "Customers who book you on River Mobile show up here." : paid || !shop ? "Walk-ins you add at the counter show up here." : "Walk-ins are on the Paid plan."}
+          description={search ? undefined : channel === "online" ? "Customers who book you on River Mobile show up here." : paid || !shop ? "Walk-ins you add at the counter show up here." : "Walk-ins come with Pro or Lifetime."}
         />
       ) : null}
 

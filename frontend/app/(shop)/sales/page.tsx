@@ -21,8 +21,8 @@ export default function SalesPage() {
           <SalesList shopId={s.id} />
         ) : (
           <div className="mt-6 rounded-card bg-grey-100 p-5">
-            <b className="text-[15px]">Sales is on the Paid plan</b>
-            <p className="mt-1 text-[13.5px] font-medium text-muted">Paid shops record payments from the queue and see daily totals.</p>
+            <b className="text-[15px]">Sales comes with Pro or Lifetime</b>
+            <p className="mt-1 text-[13.5px] font-medium text-muted">Pro and Lifetime shops record payments from the queue and see daily totals.</p>
             <Button className="mt-3" size="sm" href="/settings/billing">See plans</Button>
           </div>
         )

@@ -28,7 +28,7 @@ export default function QrPage() {
           </div>
         ) : (
           <div className="mt-6 rounded-card bg-grey-100 p-5">
-            <b className="text-[15px]">The shop QR is on the Paid plan</b>
+            <b className="text-[15px]">The shop QR comes with Pro or Lifetime</b>
             <Button className="mt-3" size="sm" href="/settings/billing">See plans</Button>
           </div>
         )

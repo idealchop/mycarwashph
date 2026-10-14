@@ -7,17 +7,28 @@
 export const ROLES = ["owner", "staff"] as const;
 export type Role = (typeof ROLES)[number];
 
-/** Partner = light booking + scan app; Paid = full shop system. Paid prices are TBD. */
+/** Partner = entry tier (booking + Scan); "paid" (data id) = Pro or Lifetime, the full shop system. */
 export const PLANS = ["partner", "paid"] as const;
 export type Plan = (typeof PLANS)[number];
 
-/** Founder-set Partner prices (centavos). Paid plan prices stay TBD. */
-export const PARTNER_PRICING = {
-  monthlyCentavos: 95_000, // ₱950 / month
-  lifetimeCentavos: 1_000_000, // ₱10,000 one-time
+/**
+ * Standard pricing (approved Oct 14, 2026), centavos. Option ids stay data-compatible:
+ * "monthly" = Pro, "lifetime" = Lifetime (1–5 locations), "lifetime_5plus" = Lifetime (5+ locations).
+ */
+export const PLAN_PRICING = {
+  monthly: { name: "Pro", centavos: 49_900, originalCentavos: 95_000, cadence: "month", locations: "1 shop" },
+  lifetime: { name: "Lifetime", centavos: 1_000_000, originalCentavos: 1_800_000, cadence: "one-time", locations: "1–5 locations" },
+  lifetime_5plus: { name: "Lifetime", centavos: 2_000_000, originalCentavos: 3_500_000, cadence: "one-time", locations: "5+ locations" },
 } as const;
 
-export const PARTNER_BILLING_OPTIONS = ["monthly", "lifetime"] as const;
+/** Back-compat aliases. */
+export const PARTNER_PRICING = {
+  monthlyCentavos: PLAN_PRICING.monthly.centavos,
+  lifetimeCentavos: PLAN_PRICING.lifetime.centavos,
+  lifetime5PlusCentavos: PLAN_PRICING.lifetime_5plus.centavos,
+} as const;
+
+export const PARTNER_BILLING_OPTIONS = ["monthly", "lifetime", "lifetime_5plus"] as const;
 export type PartnerBillingOption = (typeof PARTNER_BILLING_OPTIONS)[number];
 
 export const BILLING_STATUSES = ["trial", "unpaid", "pending", "active", "suspended"] as const;
@@ -78,7 +89,7 @@ export interface Business {
   hours?: string | null;
   /** Shop logo HTTPS URL. */
   logoUrl?: string | null;
-  /** Partner billing (Paid prices TBD). */
+  /** Billing for the Pro / Lifetime upgrade. */
   billing: BusinessBilling;
   createdAt: string;
   updatedAt: string;

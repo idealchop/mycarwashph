@@ -28,7 +28,7 @@ export default function WalkInPage() {
       <main className="mx-auto flex w-full max-w-[402px] flex-col px-4 pt-6">
         <div className="flex items-center gap-1">
           <PageBack fallback="/queue" />
-          <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.03em]">Walk-ins are on Paid</h1>
+          <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.03em]">Walk-ins come with Pro</h1>
         </div>
         <p className="mt-2 pl-11 text-[15px] font-medium text-ink-2">Partner shops accept River Mobile bookings from Home and Queue.</p>
         <Button className="ml-11 mt-4 self-start" size="sm" href="/settings/billing">See plans</Button>

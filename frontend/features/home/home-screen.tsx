@@ -156,7 +156,7 @@ export function HomeScreen() {
           <Card padding="none" className="mx-4 mt-2.5 flex items-center justify-between gap-3 px-4 py-3.5">
             <span className="min-w-0">
               <b className="block text-[14px]">You’re on Partner</b>
-              <small className="text-[12.5px] font-semibold text-muted">Paid adds walk-ins, bays and the shop QR</small>
+              <small className="text-[12.5px] font-semibold text-muted">Pro (₱499/mo) adds walk-ins, bays and the shop QR</small>
             </span>
             <Button href="/settings/billing" variant="secondary" size="sm" className="flex-none">Plans</Button>
           </Card>

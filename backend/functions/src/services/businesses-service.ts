@@ -15,7 +15,7 @@ export interface CreateBusinessInput {
 
 /**
  * Creates a business and its owner membership atomically. Every new shop starts
- * on the Partner plan; only a platform admin can move it to Paid (prices TBD).
+ * on the Partner plan; only a platform admin can move it to Pro / Lifetime.
  */
 export async function createBusiness(
   store: DocStore,
@@ -123,7 +123,7 @@ export async function updateBusiness(
   return { ...business, ...patch };
 }
 
-/** Platform-admin only (River Apps): switch Partner <-> Paid. Billing is out of scope (prices TBD). */
+/** Platform-admin only (River Apps): switch Partner <-> Paid. Billing lives in billing-service. */
 export async function setPlan(store: DocStore, businessId: string, plan: Plan, adminUid: string, now: Date) {
   const business = await store.get<Business>(paths.business(businessId));
   if (!business) throw notFound("Shop not found.");
