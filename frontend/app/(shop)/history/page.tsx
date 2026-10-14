@@ -18,7 +18,7 @@ export default function HistoryPage() {
           shopId={s.id}
           plan={s.plan}
           emptyTitle="No bookings yet"
-          emptyDescription="Turn on “List on River Mobile” in Settings → Edit shop so customers can book you."
+          emptyDescription="Turn on “List on River Mobile” in Account → Edit shop so customers can book you."
         />
       )}
     </ShopPage>

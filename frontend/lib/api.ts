@@ -194,16 +194,6 @@ export interface Customer {
   vehicleSize: string | null;
 }
 
-export interface GrowthMetrics {
-  date: string;
-  bookingsRequestedOpen: number;
-  bookingsAcceptedOrBeyond: number;
-  queueToday: number;
-  carsWashedToday: number;
-  salesTodayCentavos: number;
-  salesLast200Centavos: number;
-  comingSoon: string[];
-}
 export interface VerifyResult {
   booking: Booking;
   queueItem: QueueItem | null;

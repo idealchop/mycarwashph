@@ -5,9 +5,9 @@ import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { useShop } from "@/lib/shop-context";
 import { uploadShopPhoto } from "@/lib/shop-photos";
-import { updateCommunityStore, useCommunityStore, useNow, type CommunityPost, type PostAuthor } from "./posts";
+import { updateMomentsStore, useMomentsStore, useNow, type MomentPost, type PostAuthor } from "./posts";
 
-let cache: CommunityPost[] | null = null;
+let cache: MomentPost[] | null = null;
 
 async function dataUrlToUrl(shopId: string, src: string): Promise<string> {
   if (!src.startsWith("data:")) return src;
@@ -16,7 +16,7 @@ async function dataUrlToUrl(shopId: string, src: string): Promise<string> {
 }
 
 /** The shared feed. Likes, replies and posts are saved on the server for the signed-in shop. */
-export function useCommunityFeed() {
+export function useMomentsFeed() {
   const { shop } = useShop();
   const shopId = shop?.id;
   const { user } = useAuth();
@@ -25,9 +25,9 @@ export function useCommunityFeed() {
     () => ({ name: shop?.name ?? "", meta: area.split(",").pop()?.trim() || undefined, photoUrl: shop?.logoUrl || undefined }),
     [shop?.name, area, shop?.logoUrl],
   );
-  const store = useCommunityStore();
+  const store = useMomentsStore();
   const now = useNow();
-  const [raw, setRaw] = useState<CommunityPost[]>(cache ?? []);
+  const [raw, setRaw] = useState<MomentPost[]>(cache ?? []);
   const [loading, setLoading] = useState(cache === null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -38,7 +38,7 @@ export function useCommunityFeed() {
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   }, []);
 
-  const reload = useCallback(() => api<{ posts: CommunityPost[] }>("/moments", { guest: true })
+  const reload = useCallback(() => api<{ posts: MomentPost[] }>("/moments", { guest: true })
     .then((d) => { cache = d.posts; setRaw(cache); })
     .catch(() => undefined)
     .finally(() => setLoading(false)), []);
@@ -64,7 +64,7 @@ export function useCommunityFeed() {
 
   const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 
-  const share = async (p: CommunityPost) => {
+  const share = async (p: MomentPost) => {
     const url = `${window.location.origin}/moments#${p.id}`;
     const text = p.body ? `${p.author.name}: ${p.body.slice(0, 140)}` : `Post by ${p.author.name}`;
     try {
@@ -102,26 +102,26 @@ export function useCommunityFeed() {
       setRaw((cur) => cur.map((p) => (p.id === id ? { ...p, liked: !p.liked, likes: p.likes + (p.liked ? -1 : 1) } : p)));
       void op({ op: "like", id });
     },
-    repost(p: CommunityPost) {
+    repost(p: MomentPost) {
       void op({ op: "repost", id: p.id }, p.reposted ? undefined : "Reposted");
     },
     share,
-    reply(p: CommunityPost, body: string) {
+    reply(p: MomentPost, body: string) {
       void op({ op: "reply", id: p.id, body });
     },
-    remove(p: CommunityPost) {
+    remove(p: MomentPost) {
       void op({ op: "delete", id: p.id }, "Post deleted");
     },
     hide(id: string) {
-      updateCommunityStore((st) => ({ ...st, hidden: [...st.hidden, id] }));
+      updateMomentsStore((st) => ({ ...st, hidden: [...st.hidden, id] }));
       flash("Post hidden");
     },
-    copy(p: CommunityPost) {
+    copy(p: MomentPost) {
       void navigator.clipboard?.writeText(p.body).then(() => flash("Copied"), () => undefined);
     },
     toggleFollow(handle: string) {
       const on = store.following.includes(handle);
-      updateCommunityStore((st) => ({ ...st, following: toggle(st.following, handle) }));
+      updateMomentsStore((st) => ({ ...st, following: toggle(st.following, handle) }));
       if (!on) flash("Following");
     },
   };

@@ -6,9 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Avatar, cn } from "@river-apps/ui";
 import { useShop } from "@/lib/shop-context";
-import { useCommunityFeed } from "./feed";
+import { useMomentsFeed } from "./feed";
 import { PostCard } from "./post-card";
-import { authorHandle, resolveProfile, type CommunityPost } from "./posts";
+import { authorHandle, resolveProfile, type MomentPost } from "./posts";
 
 type Tab = "threads" | "replies" | "media" | "reposts";
 const TABS: { id: Tab; label: string }[] = [
@@ -18,17 +18,17 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "reposts", label: "Reposts" },
 ];
 
-/** Profile for one shop in the community. */
+/** Profile for one shop in Moments. */
 export function ProfileScreen() {
   const handle = (useSearchParams().get("u") ?? "").toLowerCase();
-  const feed = useCommunityFeed();
+  const feed = useMomentsFeed();
   const { me: account } = useShop();
   const profile = resolveProfile(handle, feed.me, feed.posts);
   const [tab, setTab] = useState<Tab>("threads");
   const isMe = !!profile && authorHandle(feed.me.name) === profile.handle;
   const locations = isMe ? Math.max(1, account?.businesses.length ?? 1) : null;
   const following = !!profile && feed.following.includes(profile.handle);
-  const byAuthor = (p: CommunityPost) => !!profile && authorHandle(p.author.name) === profile.handle;
+  const byAuthor = (p: MomentPost) => !!profile && authorHandle(p.author.name) === profile.handle;
   const threads = feed.posts.filter(byAuthor);
   const replies = feed.posts.flatMap((p) => p.replies.filter((r) => profile && authorHandle(r.author.name) === profile.handle).map((reply) => ({ reply, parent: p })));
   const media = threads.flatMap((p) => p.images.map((src) => ({ src, postId: p.id })));
@@ -37,7 +37,7 @@ export function ProfileScreen() {
   return (
     <div className="mx-auto w-full max-w-[402px] px-4 pb-8 pt-[max(0.5rem,env(safe-area-inset-top))] lg:max-w-[640px] lg:px-[30px] lg:pt-6">
       <PageBack fallback="/moments" />
-      {!profile ? <p className="px-1 py-16 text-center text-[15px] font-semibold text-muted">That profile isn’t in the community.</p> : (
+      {!profile ? <p className="px-1 py-16 text-center text-[15px] font-semibold text-muted">That profile isn’t in Moments.</p> : (
         <>
           <header className="mt-2 px-1">
             <Avatar name={profile.name} src={profile.photoUrl} preset={profile.avatar} size={86} decorative={false} />
@@ -97,7 +97,7 @@ function Empty({ label }: { label: string }) {
   return <p className="px-1 py-14 text-center text-[15px] font-semibold text-muted">{label}</p>;
 }
 
-function PostList({ posts, empty, feed }: { posts: CommunityPost[]; empty: string; feed: ReturnType<typeof useCommunityFeed> }) {
+function PostList({ posts, empty, feed }: { posts: MomentPost[]; empty: string; feed: ReturnType<typeof useMomentsFeed> }) {
   if (!posts.length) return <Empty label={empty} />;
   return (
     <ul className="divide-y divide-line">

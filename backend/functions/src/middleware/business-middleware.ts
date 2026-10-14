@@ -51,7 +51,7 @@ export function requirePlan(plan: Plan): RequestHandler {
   return (_req, res, next) => {
     const business = getBusiness(res);
     if (business.plan !== plan || business.planStatus !== "active") {
-      return next(new HttpError(402, "plan_required", `This feature needs the ${plan} plan.`));
+      return next(new HttpError(402, "plan_required", plan === "paid" ? "This feature comes with Pro or Lifetime." : `This feature needs the ${plan} plan.`));
     }
     next();
   };

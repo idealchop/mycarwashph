@@ -79,7 +79,14 @@ export function momentsRoutes(deps: Deps) {
       res.json({ ok: true });
       return;
     }
-    await deleteMoment(deps.store, b.id, ids);
+    const gone = await deleteMoment(deps.store, b.id, ids);
+    // Remove the post's uploaded images too (only files under that shop's moments/ folder).
+    if (deps.photos) {
+      for (const url of gone.images ?? []) {
+        const file = deps.photos.pathFromUrl(url);
+        if (file?.startsWith(`businesses/${gone.businessId}/moments/`)) await deps.photos.remove(file).catch(() => undefined);
+      }
+    }
     res.json({ ok: true });
   });
   return r;

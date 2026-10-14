@@ -118,4 +118,5 @@ export async function deleteMoment(store: DocStore, id: string, myBusinessIds: s
   if (!m) throw notFound("That post was removed.");
   if (!myBusinessIds.includes(m.businessId)) throw forbidden("You can only delete your own shop’s posts.");
   await store.delete(path(id));
+  return m;
 }

@@ -20,7 +20,7 @@ export type PostReply = {
   ageMin?: number;
 };
 
-export type CommunityPost = {
+export type MomentPost = {
   id: string;
   author: PostAuthor;
   body: string;
@@ -57,12 +57,12 @@ export function compact(n: number): string {
 const KEY = "mcw.moments.v1";
 const cloudStorage = { getItem: (k: string) => window.localStorage.getItem(k), setItem: (k: string, v: string) => window.localStorage.setItem(k, v) };
 
-export type CommunityStore = {
+export type MomentsStore = {
   hidden: string[];
   following: string[];
 };
 
-const EMPTY: CommunityStore = { hidden: [], following: [] };
+const EMPTY: MomentsStore = { hidden: [], following: [] };
 
 export function authorHandle(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 24) || "shop";
@@ -72,10 +72,10 @@ export function profileHref(name: string): string {
   return `/moments/profile?u=${encodeURIComponent(authorHandle(name))}`;
 }
 
-export type CommunityProfile = PostAuthor & { handle: string; bio: string };
+export type MomentsProfile = PostAuthor & { handle: string; bio: string };
 
-/** A shop's community profile, built from what it has posted. */
-export function resolveProfile(handle: string, me: PostAuthor, posts: CommunityPost[]): CommunityProfile | null {
+/** A shop's Moments profile, built from what it has posted. */
+export function resolveProfile(handle: string, me: PostAuthor, posts: MomentPost[]): MomentsProfile | null {
   const key = handle.toLowerCase();
   if (!key) return null;
   if (me.name && authorHandle(me.name) === key) return { ...me, handle: key, bio: me.meta ? `Car wash in ${me.meta}.` : "Car wash on Mycarwash.ph." };
@@ -84,14 +84,14 @@ export function resolveProfile(handle: string, me: PostAuthor, posts: CommunityP
   return { ...author, handle: key, bio: author.meta ? `Car wash in ${author.meta}.` : "Car wash on Mycarwash.ph." };
 }
 
-let current: CommunityStore | null = null;
+let current: MomentsStore | null = null;
 const listeners = new Set<() => void>();
 
-function read(): CommunityStore {
+function read(): MomentsStore {
   try {
     const raw = cloudStorage.getItem(KEY);
     if (!raw) return EMPTY;
-    const parsed = JSON.parse(raw) as Partial<CommunityStore> | null;
+    const parsed = JSON.parse(raw) as Partial<MomentsStore> | null;
     return { hidden: parsed?.hidden ?? [], following: parsed?.following ?? [] };
   } catch {
     return EMPTY;
@@ -112,11 +112,11 @@ function subscribeStore(cb: () => void) {
 const getStore = () => (current ??= read());
 const getServerStore = () => EMPTY;
 
-export function useCommunityStore(): CommunityStore {
+export function useMomentsStore(): MomentsStore {
   return useSyncExternalStore(subscribeStore, getStore, getServerStore);
 }
 
-export function updateCommunityStore(fn: (s: CommunityStore) => CommunityStore): boolean {
+export function updateMomentsStore(fn: (s: MomentsStore) => MomentsStore): boolean {
   const next = fn(getStore());
   let ok = true;
   try {
