@@ -1,5 +1,6 @@
 "use client";
 
+import { MarkdownLite, stripMarkdown } from "@/components/markdown-lite";
 import { SparkleIcon } from "@river-apps/icons";
 import { ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
@@ -32,8 +33,8 @@ export function CompanionCard({ className }: { className?: string }) {
         <p className="mt-3 flex items-center gap-2 text-[13.5px] font-semibold text-on-ink-muted"><Lock size={14} /> Weekly tips from your own sales and queue, in English or Taglish.</p>
       ) : tip ? (
         <div className="mt-3 rounded-tile bg-white px-3.5 py-3 text-ink">
-          <b className="block text-[14px]">{tip.title}</b>
-          <p className="mt-0.5 text-[13px] font-medium text-muted">{tip.body}</p>
+          <b className="block text-[14px]">{stripMarkdown(tip.title)}</b>
+          <MarkdownLite className="mt-0.5 text-[13px] font-medium text-muted" text={tip.body} />
           {locked ? <p className="mt-2 text-[12px] font-bold">+{locked} more tips with Pro</p> : null}
         </div>
       ) : (

@@ -1,5 +1,6 @@
 "use client";
 
+import { MarkdownLite, stripMarkdown } from "@/components/markdown-lite";
 import { SparkleIcon } from "@river-apps/icons";
 import { Button, Card } from "@river-apps/ui";
 import { ArrowUp, Lock, Target } from "lucide-react";
@@ -139,10 +140,10 @@ function Bubble({ m }: { m: CompanionMessage }) {
     return (
       <li className="self-stretch rounded-card bg-surface px-4 py-3.5 shadow-card">
         <div className="flex items-center gap-2"><SparkleIcon size={24} /><b className="text-[14px]">Weekly tips · {m.weekId}</b></div>
-        {m.text ? <p className="mt-1 text-[13px] font-medium text-muted">{m.text}</p> : null}
+        {m.text ? <MarkdownLite className="mt-1 text-[13px] font-medium text-muted" text={m.text} /> : null}
         <ol className="mt-2.5 flex flex-col gap-2">
           {(m.tips ?? []).map((t, i) => (
-            <li key={i} className="rounded-tile bg-grey-100 px-3 py-2.5"><b className="block text-[13.5px]">{t.title}</b><span className="text-[13px] font-medium text-muted">{t.body}</span></li>
+            <li key={i} className="rounded-tile bg-grey-100 px-3 py-2.5"><b className="block text-[13.5px]">{stripMarkdown(t.title)}</b><MarkdownLite className="text-[13px] font-medium text-muted" text={t.body} /></li>
           ))}
           {Array.from({ length: m.lockedCount ?? 0 }, (_, i) => (
             <li key={`l${i}`} aria-hidden className="select-none rounded-tile bg-grey-100 px-3 py-2.5 blur-[5px]"><b className="block text-[13.5px]">Upgrade to see this tip</b><span className="text-[13px] font-medium text-muted">Pro shops get every weekly tip grounded in their numbers.</span></li>
@@ -156,11 +157,11 @@ function Bubble({ m }: { m: CompanionMessage }) {
     return (
       <li className="self-stretch rounded-card border-2 border-ink bg-surface px-4 py-3">
         <b className="block text-[12.5px] uppercase tracking-wide">Alert</b>
-        <p className="mt-0.5 whitespace-pre-wrap text-[14px] font-medium">{m.locked ? "Pro shops get alerts when sales or the queue change sharply." : m.text}</p>
+        <MarkdownLite className="mt-0.5 text-[14px] font-medium" text={m.locked ? "Pro shops get alerts when sales or the queue change sharply." : m.text} />
       </li>
     );
   }
-  return <li className="max-w-[90%] self-start whitespace-pre-wrap rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium">{m.text}</li>;
+  return <li className="max-w-[90%] self-start rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium"><MarkdownLite text={m.text} /></li>;
 }
 
 function Goals({ shopId, goals, onSaved }: { shopId: string; goals: GoalProgress[] | null; onSaved: (g: GoalProgress[]) => void }) {
