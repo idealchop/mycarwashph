@@ -59,12 +59,13 @@ export function useToday(shop: Shop | null) {
     const jobs: Job[] = [];
     for (const b of data.bookings) {
       if (queuedBookingIds.has(b.id)) continue;
+      // Only open bookings belong on the queue. Terminal statuses (paid, no_show, cancelled, declined) stay in History / Sales.
+      if (!["requested", "accepted", "queued", "checked_in", "in_bay", "done", "completed"].includes(b.status)) continue;
       const status: Job["status"] =
         b.status === "requested" ? "requested"
-          : b.status === "accepted" ? "accepted"
-            : b.status === "checked_in" ? "in_bay"
-              : b.status === "completed" ? "done"
-                : b.status === "declined" || b.status === "cancelled" || b.status === "no_show" ? "declined" : "accepted";
+          : b.status === "accepted" || b.status === "queued" ? "accepted"
+            : b.status === "checked_in" || b.status === "in_bay" ? "in_bay"
+              : "done";
       if (status !== "requested" && status !== "accepted" && dayKeyPHT(new Date(b.scheduledStart)) !== today) continue;
       jobs.push({
         id: b.id, kind: "booking", channel: "online", status, ref: b.reference, who: b.customerSnapshot.name, plate: b.plate,
