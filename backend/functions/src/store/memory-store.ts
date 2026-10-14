@@ -91,8 +91,11 @@ function clone<T>(value: T): T {
 
 function applyQuery<R extends { id: string }>(rows: R[], query?: ListQuery): R[] {
   let out = rows;
-  for (const [field, , value] of query?.where ?? []) {
-    out = out.filter((r) => (r as Record<string, unknown>)[field] === value);
+  for (const [field, op, value] of query?.where ?? []) {
+    out = out.filter((r) => {
+      const v = (r as Record<string, unknown>)[field];
+      return op === "<" ? (v as string | number) < (value as string | number) : v === value;
+    });
   }
   if (query?.orderBy) {
     const { field, direction = "asc" } = query.orderBy;

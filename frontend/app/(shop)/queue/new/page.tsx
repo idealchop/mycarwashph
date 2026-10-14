@@ -5,14 +5,16 @@ import { Button, Input, cn } from "@river-apps/ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageBack } from "@/components/shop/page-back";
-import { api, type QueueItem } from "@/lib/api";
+import { api, ApiError, type QueueItem } from "@/lib/api";
 import { peso } from "@/lib/format";
 import { useShop } from "@/lib/shop-context";
+import { WalkInLimitCard } from "@/features/queue/walkin-limit-card";
 import { useToday } from "@/lib/today";
+import { publishWalkIns, useWalkInAllowance, WALKIN_LIMIT_CODE, type WalkInAllowance } from "@/lib/walkin-limit";
 
 const SIZES = [["small", "Small"], ["medium", "Medium"], ["large", "Large"], ["xl", "XL"]] as const;
 
-/** Paid counter: a walk-in goes straight into a free bay (Barbers.ph WalkInScreen). */
+/** Counter walk-in: straight into a free bay when there is one (Barbers.ph WalkInScreen). Partner: 10 a day. */
 export default function WalkInPage() {
   const { shop, signedIn } = useShop();
   const router = useRouter();
@@ -23,18 +25,9 @@ export default function WalkInPage() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
-  if (shop && shop.plan !== "paid") {
-    return (
-      <main className="mx-auto flex w-full max-w-[402px] flex-col px-4 pt-6">
-        <div className="flex items-center gap-1">
-          <PageBack fallback="/queue" />
-          <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.03em]">Walk-ins come with Pro</h1>
-        </div>
-        <p className="mt-2 pl-11 text-[15px] font-medium text-ink-2">Partner shops accept River Mobile bookings from Home and Queue.</p>
-        <Button className="ml-11 mt-4 self-start" size="sm" href="/settings/billing">See plans</Button>
-      </main>
-    );
-  }
+  const walk = useWalkInAllowance(shop?.id);
+  const [limitHit, setLimitHit] = useState("");
+  const blocked = walk.atLimit || !!limitHit;
 
   const active = today.services.filter((s) => s.active !== false);
   const main = active[0] ?? null;
@@ -49,14 +42,16 @@ export default function WalkInPage() {
     setBusy(true);
     setNote("");
     try {
-      const res = await api<{ data: QueueItem }>(`/businesses/${shop.id}/queue`, {
+      const res = await api<{ data: QueueItem; walkIns?: WalkInAllowance }>(`/businesses/${shop.id}/queue`, {
         method: "POST",
         body: { plate: plate.trim().toUpperCase() || null, serviceIds: chosen.map((s) => s.id), vehicleSize: size },
       });
+      if (res.walkIns) publishWalkIns(shop.id, res.walkIns);
       if (freeBay) await api(`/businesses/${shop.id}/queue/${res.data.id}`, { method: "PATCH", body: { status: "in_bay", bayId: freeBay.id } });
       router.push("/queue");
     } catch (e) {
-      setNote((e as Error).message);
+      if (e instanceof ApiError && e.code === WALKIN_LIMIT_CODE) setLimitHit(e.message);
+      else setNote((e as Error).message);
       setBusy(false);
     }
   }
@@ -70,6 +65,7 @@ export default function WalkInPage() {
       <p className="mt-2 pl-11 text-[15px] font-medium text-ink-2">
         {freeBay ? `They go into ${freeBay.name} now and pay at the shop.` : "They join the queue now and pay at the shop."}
       </p>
+      {walk.label ? <p className="mt-1 pl-11 text-[13px] font-bold" data-testid="walkin-left">{walk.label}</p> : null}
       {main ? (
         <div className="mt-5 flex items-center gap-3 rounded-[16px] bg-ink px-3 py-2.5 text-on-ink">
           <Icon3D name="bubbles" size={40} />
@@ -118,9 +114,11 @@ export default function WalkInPage() {
         <Input label="Plate number" placeholder="Optional" value={plate} onChange={(e) => setPlate(e.target.value)} autoCapitalize="characters" />
       </div>
       {note ? <p className="mt-4 text-[13.5px] font-semibold">{note}</p> : null}
-      <Button data-auth="action" className="mt-5" fullWidth disabled={busy || (!!shop && !main)} onClick={() => void save()}>
+      {blocked ? <WalkInLimitCard message={limitHit} /> : null}
+      <Button data-auth="action" className="mt-5" fullWidth disabled={busy || blocked || (!!shop && !main)} onClick={() => void save()}>
         {busy ? "Adding…" : price ? `Add walk-in · ${peso(price)}` : "Add walk-in"}
       </Button>
     </main>
   );
 }
+

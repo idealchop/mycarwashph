@@ -9,6 +9,8 @@ import { useMemo, useState } from "react";
 import { PageBack } from "@/components/shop/page-back";
 import { peso } from "@/lib/format";
 import { useShop } from "@/lib/shop-context";
+import { useWalkInAllowance } from "@/lib/walkin-limit";
+import { WalkInLimitCard } from "./walkin-limit-card";
 import { acceptJob, declineJob, doneJob, figures, payJob, startJob, useToday, type Job } from "@/lib/today";
 
 type Channel = "walk-ins" | "online";
@@ -23,7 +25,7 @@ function matches(row: Job, q: string) {
   return [row.ref, row.who, row.serviceName, row.plate ?? ""].some((v) => v.toLowerCase().includes(t));
 }
 
-function Actions({ row, freeBay, onAct, onPay }: { row: Job; freeBay: { id: string; name: string } | null; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
+function Actions({ row, freeBay, noBays, onAct, onPay }: { row: Job; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
   const line = "mt-3 flex gap-2 border-t border-dashed border-[#E8E8EC] pt-3";
   if (row.status === "requested") {
     return (
@@ -39,7 +41,7 @@ function Actions({ row, freeBay, onAct, onPay }: { row: Job; freeBay: { id: stri
   if (row.status === "accepted" && row.kind === "queue") {
     return (
       <div className={line}>
-        <Button size="sm" fullWidth data-auth="action" onClick={() => freeBay ? onAct((id) => startJob(id, row, freeBay.id)) : onAct(async () => undefined, "Every bay is taken, or none have been added yet.")}>
+        <Button size="sm" fullWidth data-auth="action" onClick={() => freeBay ? onAct((id) => startJob(id, row, freeBay.id)) : noBays ? onAct((id) => startJob(id, row, null)) : onAct(async () => undefined, "Every bay is taken, or none have been added yet.")}>
           {freeBay ? `Start in ${freeBay.name}` : "Start"}
         </Button>
       </div>
@@ -54,7 +56,7 @@ function Actions({ row, freeBay, onAct, onPay }: { row: Job; freeBay: { id: stri
   return null;
 }
 
-function Row({ row, ...rest }: { row: Job; freeBay: { id: string; name: string } | null; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
+function Row({ row, ...rest }: { row: Job; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
   const where = row.status === "in_bay" && row.bayName ? row.bayName : row.slotLabel;
   const pay = row.paid ? "Paid" : row.kind === "booking" ? "Booked on River Mobile" : "Pay at the shop";
   return (
@@ -76,9 +78,9 @@ function Row({ row, ...rest }: { row: Job; freeBay: { id: string; name: string }
 /** Queue: walk-ins and online, with today’s sales on the same screen (Barbers.ph QueueBoard). */
 export function QueueBoard() {
   const { shop } = useShop();
-  const paid = shop?.plan === "paid";
   const router = useRouter();
-  const channel: Channel = useSearchParams().get("channel") === "online" || (shop && !paid) ? "online" : "walk-ins";
+  const channel: Channel = useSearchParams().get("channel") === "online" ? "online" : "walk-ins";
+  const walk = useWalkInAllowance(shop?.id);
   const [search, setSearch] = useState("");
   const [note, setNote] = useState("");
   const [payFor, setPayFor] = useState<Job | null>(null);
@@ -152,12 +154,14 @@ export function QueueBoard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {(paid || !shop) && channel === "walk-ins" ? (
+        {channel === "walk-ins" ? (
           <Button href="/queue/new" size="md" aria-label="New walk-in" data-auth="action" leadingIcon={<Plus size={18} strokeWidth={2.2} />} className="flex-none px-4">
             Walk-in
           </Button>
         ) : null}
       </div>
+      {channel === "walk-ins" && walk.label ? <p className="mt-2 px-1 text-[13px] font-bold" data-testid="walkin-left">{walk.label}</p> : null}
+      {channel === "walk-ins" && walk.atLimit ? <WalkInLimitCard className="mt-3" /> : null}
 
       {note ? <p className="mt-3 px-1 text-[13.5px] font-semibold">{note}</p> : null}
       {!today.ready ? (
@@ -166,18 +170,18 @@ export function QueueBoard() {
         <EmptyState
           className="mt-4"
           title={search ? "No matches" : channel === "online" ? "No bookings yet" : "The bays are clear"}
-          description={search ? undefined : channel === "online" ? "Customers who book you on River Mobile show up here." : paid || !shop ? "Walk-ins you add at the counter show up here." : "Walk-ins come with Pro or Lifetime."}
+          description={search ? undefined : channel === "online" ? "Customers who book you on River Mobile show up here." : "Walk-ins you add at the counter show up here."}
         />
       ) : null}
 
-      <Section title="To accept" rows={open} freeBay={freeBay} onAct={onAct} onPay={setPayFor} />
-      <Section title="Done today" rows={done} freeBay={freeBay} onAct={onAct} onPay={setPayFor} />
+      <Section title="To accept" rows={open} freeBay={freeBay} noBays={today.bays.length === 0} onAct={onAct} onPay={setPayFor} />
+      <Section title="Done today" rows={done} freeBay={freeBay} noBays={today.bays.length === 0} onAct={onAct} onPay={setPayFor} />
       {payFor && shop ? <PaySheet row={payFor} onClose={() => setPayFor(null)} onPaid={() => { setPayFor(null); today.reload(); }} shopId={shop.id} /> : null}
     </div>
   );
 }
 
-function Section({ title, rows, ...rest }: { title: string; rows: Job[]; freeBay: { id: string; name: string } | null; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
+function Section({ title, rows, ...rest }: { title: string; rows: Job[]; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
   if (rows.length === 0) return null;
   return (
     <div className="mt-5">

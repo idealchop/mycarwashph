@@ -11,7 +11,7 @@ export type Doc<T> = T & { id: string };
 export type GroupDoc<T> = Doc<T> & { path: string };
 
 export interface ListQuery {
-  where?: Array<[field: string, op: "==", value: unknown]>;
+  where?: Array<[field: string, op: "==" | "<", value: unknown]>;
   orderBy?: { field: string; direction?: "asc" | "desc" };
   limit?: number;
 }

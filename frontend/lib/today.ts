@@ -1,5 +1,6 @@
 "use client";
 
+import { publishWalkIns, type WalkInAllowance } from "./walkin-limit";
 import { useMemo } from "react";
 import { api, type Bay, type Booking, type MeResponse, type QueueItem, type SalesSummary, type Service } from "./api";
 import { dayKeyPHT } from "./format";
@@ -41,14 +42,15 @@ export function useToday(shop: Shop | null) {
   const paid = shop?.plan === "paid";
   const { data, error, reload } = useLoad(async () => {
     if (!shop) return null;
-    const [bookings, services, queue, bays, summary] = await Promise.all([
+    const [bookings, services, queueRes, bays, summary] = await Promise.all([
       api<{ data: Booking[] }>(`/businesses/${shop.id}/bookings`).then((r) => r.data),
       api<{ data: Service[] }>(`/businesses/${shop.id}/services`).then((r) => r.data),
-      paid ? api<{ data: QueueItem[] }>(`/businesses/${shop.id}/queue`).then((r) => r.data) : Promise.resolve([] as QueueItem[]),
+      api<{ data: QueueItem[]; walkIns?: WalkInAllowance }>(`/businesses/${shop.id}/queue`),
       paid ? api<{ data: Bay[] }>(`/businesses/${shop.id}/bays`).then((r) => r.data) : Promise.resolve([] as Bay[]),
       paid ? api<{ data: SalesSummary }>(`/businesses/${shop.id}/sales/summary`).then((r) => r.data) : Promise.resolve(null),
     ]);
-    return { bookings, services, queue, bays, summary };
+    if (queueRes.walkIns) publishWalkIns(shop.id, queueRes.walkIns);
+    return { bookings, services, queue: queueRes.data, bays, summary };
   }, shop ? `today-${shop.id}-${shop.plan}` : "today-none");
 
   return useMemo(() => {
@@ -107,7 +109,8 @@ export async function acceptJob(shopId: string, j: Job) {
 export async function declineJob(shopId: string, j: Job) {
   if (j.kind === "booking") await api(`/businesses/${shopId}/bookings/${j.id}/decline`, { method: "POST" });
 }
-export async function startJob(shopId: string, j: Job, bayId: string) {
+/** Starts a queued car, in a bay when there is one (Partner shops have no bays). */
+export async function startJob(shopId: string, j: Job, bayId: string | null) {
   if (j.kind === "queue") await api(`/businesses/${shopId}/queue/${j.id}`, { method: "PATCH", body: { status: "in_bay", bayId } });
 }
 export async function doneJob(shopId: string, j: Job) {

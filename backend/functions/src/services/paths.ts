@@ -16,6 +16,7 @@ export const paths = {
   booking: (b: string, id: string) => `businesses/${b}/bookings/${id}`,
   queue: (b: string) => `businesses/${b}/queue`,
   queueItem: (b: string, id: string) => `businesses/${b}/queue/${id}`,
+  walkInCounter: (b: string, dayKey: string) => `businesses/${b}/counters/walkins-${dayKey}`,
   queueCounter: (b: string, dayKey: string) => `businesses/${b}/counters/queue-${dayKey}`,
   sales: (b: string) => `businesses/${b}/sales`,
   sale: (b: string, id: string) => `businesses/${b}/sales/${id}`,

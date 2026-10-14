@@ -39,7 +39,7 @@ import { createInvite, listInvites, revokeInvite } from "../services/invites-ser
 import { listMembers, removeMember } from "../services/members-service.js";
 import { listAlerts, markAlertRead } from "../services/notify-service.js";
 import { paths } from "../services/paths.js";
-import { createQueueItem, listQueue, updateQueueItem } from "../services/queue-service.js";
+import { createQueueItem, listQueue, updateQueueItem, walkInAllowance } from "../services/queue-service.js";
 import { listSales, recordSale, salesSummary } from "../services/sales-service.js";
 
 const PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
@@ -203,15 +203,19 @@ export function businessRoutes(deps: Deps) {
     });
   }
 
-  r.get("/queue", member, paid, async (req, res) => {
+  // The queue is open to every plan; Partner walk-ins are capped per day in createQueueItem.
+  r.get("/queue", member, async (req, res) => {
+    const b = getBusiness(res);
     const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
-    res.json({ data: await listQueue(store, getBusiness(res).id, date), date });
+    const [data, walkIns] = await Promise.all([listQueue(store, b.id, date), walkInAllowance(store, b.id, b.plan, deps.now())]);
+    res.json({ data, date, walkIns });
   });
-  r.post("/queue", member, paid, validateBody(queueCreateSchema), async (req, res) => {
-    const item = await createQueueItem(store, getBusiness(res).id, { ...req.body, source: "staff", bookingId: null }, user(res), deps.now());
-    res.status(201).json({ data: item });
+  r.post("/queue", member, validateBody(queueCreateSchema), async (req, res) => {
+    const b = getBusiness(res);
+    const item = await createQueueItem(store, b.id, { ...req.body, source: "staff", bookingId: null }, user(res), deps.now(), b.plan);
+    res.status(201).json({ data: item, walkIns: await walkInAllowance(store, b.id, b.plan, deps.now()) });
   });
-  r.patch("/queue/:queueItemId", member, paid, validateBody(queueUpdateSchema), async (req, res) => {
+  r.patch("/queue/:queueItemId", member, validateBody(queueUpdateSchema), async (req, res) => {
     const b = getBusiness(res);
     const result = await updateQueueItem(store, b.id, param(req.params.queueItemId), req.body, getUser(res).uid, deps.now());
     res.json({ data: result.item, sale: result.sale });

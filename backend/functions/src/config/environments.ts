@@ -74,7 +74,7 @@ export const ENVIRONMENTS: Record<EnvName, EnvDefinition> = {
     name: "prod",
     databaseId: "mycarwash-prod",
     pepperSecret: "API_KEY_PEPPER_PROD",
-    companionEnabled: process.env.INSIGHTS_PROD_ENABLED === "true",
+    companionEnabled: process.env.COMPANION_ENABLED === "1" || process.env.INSIGHTS_PROD_ENABLED === "true",
     devTools: false,
     allowedOrigins: [
       "https://mycarwash-prod--mycarwashph.asia-southeast1.hosted.app",
