@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Avatar, cn } from "@river-apps/ui";
 import { PostMedia } from "./post-media";
-import { compact, profileHref, shortAge, type CommunityPost, type PostAuthor, type PostReply } from "./posts";
+import { compact, profileHref, shortAge, type MomentPost, type PostAuthor, type PostReply } from "./posts";
 
 export function PostCard({
   post, now, me, onLike, onRepost, onShare, onReply, onDelete, onHide, onCopy,
 }: {
-  post: CommunityPost;
+  post: MomentPost;
   now: number | null;
   me: PostAuthor;
   onLike: () => void;
@@ -102,7 +102,7 @@ function Action({ label, onClick, count, pressed, children }: { label: string; o
   );
 }
 
-function Replies({ post, now, me, replyRef, onReply }: { post: CommunityPost; now: number | null; me: PostAuthor; replyRef: React.RefObject<HTMLTextAreaElement | null>; onReply: (body: string) => void }) {
+function Replies({ post, now, me, replyRef, onReply }: { post: MomentPost; now: number | null; me: PostAuthor; replyRef: React.RefObject<HTMLTextAreaElement | null>; onReply: (body: string) => void }) {
   const [text, setText] = useState("");
   const id = useId();
   const submit = () => {

@@ -80,7 +80,9 @@ export function HomeScreen() {
   const fresh = today.jobs.filter((j) => j.status === "requested");
   const aside = !today.ready ? "" : fresh.length ? `${fresh.length} new` : "Live";
   const todayTitle = `Today: ${peso(fig.sales) || "₱0"}`;
-  const owner = user ? ((user.displayName ?? "").split(" ")[0] || user.displayName || "") : "";
+  // Phone sign-ins have no name: greet with the shop instead (Barbers.ph 7c64812).
+  const realName = user?.displayName && !/^[+\d]/.test(user.displayName) ? user.displayName : "";
+  const owner = realName ? (realName.split(" ")[0] || realName) : (user ? shop?.name ?? "" : "");
   const displayName = user?.displayName || user?.phoneNumber || user?.email || "Me";
   const shopName = shop?.name || (signedIn ? "your shop" : "Mycarwash.ph");
   const contact = user ? shortPhone(user.phoneNumber || shop?.phoneE164 || "") || user.email || "" : "";

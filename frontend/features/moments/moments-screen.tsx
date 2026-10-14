@@ -2,12 +2,12 @@
 
 import { PageBack } from "@/components/shop/page-back";
 import { Composer } from "./composer";
-import { useCommunityFeed } from "./feed";
+import { useMomentsFeed } from "./feed";
 import { PostCard } from "./post-card";
 
 /** Feed shared by every car wash on Mycarwash.ph. */
-export function CommunityScreen() {
-  const feed = useCommunityFeed();
+export function MomentsScreen() {
+  const feed = useMomentsFeed();
   return (
     <div className="mx-auto w-full max-w-[402px] px-4 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))] lg:max-w-[640px] lg:px-[30px] lg:pt-6">
       <div className="flex items-center">

@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge, Button, Input } from "@river-apps/ui";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LoadingBlock, ShopPage } from "@/components/shop/page";
 import { api, type BillingPaymentMethod, type BusinessBilling, type MeResponse, type PartnerBillingOption } from "@/lib/api";
@@ -147,6 +148,7 @@ function TierCards({ selected, disabled, onPick }: { selected: PartnerBillingOpt
           <button
             key={t.id}
             type="button"
+            data-auth="action"
             disabled={disabled}
             onClick={() => onPick?.(t.id)}
             aria-pressed={on}
@@ -167,12 +169,13 @@ function TierCards({ selected, disabled, onPick }: { selected: PartnerBillingOpt
 }
 
 function PublicTiers() {
+  const router = useRouter();
   return (
     <section className="mt-6 shop-panel">
       <b className="text-[15px]">Plans</b>
       <p className="mt-1 text-[13px] font-medium text-muted">Every shop starts on <b>Partner</b>: River Mobile bookings, Scan and the queue.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <TierCards selected={null} disabled />
+        <TierCards selected={null} onPick={() => router.push("/settings/edit")} />
       </div>
     </section>
   );

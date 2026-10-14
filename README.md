@@ -5,17 +5,18 @@ Web only: desktop and phone browsers, designed mobile-first. Shop density follow
 
 - **Partner** shops get a light app: receive River Mobile bookings, accept or
   decline, **Scan** to verify customers on arrival, and booking history.
-- **Paid** shops get the full system: everything in Partner plus bays, queue,
-  customers and (later) sales, messaging and growth tools. Partner pricing is **₱950/month** or **₱10,000 one-time** (Billing in Settings). Paid plan prices are not
-  set yet and are not in the code.
+- **Pro** (₱499/month, 1 shop) and **Lifetime** (₱10,000 one-time for 1–5
+  locations, ₱20,000 for 5+) get the full system: everything in Partner plus
+  walk-ins, bays, queue, sales and the shop QR. The data id for both is `paid`
+  (see Plan & billing in Account).
 
 > **Standalone.** Mycarwash.ph has its own Firebase project, its own databases
 > and its own sign-in. It shares no database, users or code at runtime with
 > River Mobile or any other River Apps product. River Mobile connects **only
 > through the versioned public API** (`/v1`, see [docs/api.md](docs/api.md)).
 
-Status: **Phase 1** (+ River Maps shop pin, shop photos, Partner billing UI, responsive dashboards) — live sales on Paid home, queue/walk-in/pay UI, team invites,
-Messages alerts, Growth metrics, `/v1` App Hosting proxy. Partner home still uses
+Status: **Phase 1** (+ River Maps shop pin, shop photos, Plan & billing, Moments, Barbers.ph-style Home / Queue / Account) — queue/walk-in/pay UI, team invites,
+`/v1` App Hosting proxy. Partner home still uses
 real bookings; Paid sales/target are live (no Sample data badges on those widgets).
 
 ### Guest browse (River Mobile–style)

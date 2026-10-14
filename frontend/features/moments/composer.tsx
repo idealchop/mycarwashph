@@ -61,9 +61,9 @@ export function Composer({ me, onPost }: { me: PostAuthor; onPost: (body: string
         <b className="min-w-0 truncate text-[15px] font-extrabold leading-tight tracking-[-0.01em]">{me.name || "Your shop"}</b>
       </Link>
       <div className="mt-2.5">
-        <label htmlFor="community-composer" className="sr-only">Write a post</label>
+        <label htmlFor="moments-composer" className="sr-only">Write a post</label>
         <textarea
-          id="community-composer"
+          id="moments-composer"
           ref={textRef}
           rows={1}
           value={body}
