@@ -53,7 +53,11 @@ export class MemoryStore implements DocStore {
   async runTransaction<R>(fn: (tx: Tx) => Promise<R>): Promise<R> {
     const writes: Array<() => void> = [];
     const tx: Tx = {
-      get: async <T>(path: string) => this.read<T>(path),
+      // Same rule as Firestore: every read must happen before the first write.
+      get: async <T>(path: string) => {
+        if (writes.length) throw new Error("Firestore transactions require all reads to be executed before all writes.");
+        return this.read<T>(path);
+      },
       set: (path, data) => void writes.push(() => this.docs.set(path, clone(data))),
       create: (path, data) =>
         void writes.push(() => {

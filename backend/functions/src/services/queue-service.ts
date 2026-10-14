@@ -63,17 +63,16 @@ export async function walkInAllowance(store: DocStore, businessId: string, plan:
  */
 export async function createQueueItem(store: DocStore, businessId: string, input: NewQueueItem, actor: Actor, now: Date, plan: Plan = "paid") {
   return store.runTransaction(async (tx) => {
-    if (input.source !== "booking") {
-      const dayKey = manilaDayKey(now);
-      const path = paths.walkInCounter(businessId, dayKey);
-      const used = (await tx.get<{ count: number }>(path))?.count ?? 0;
-      const limit = walkInLimit(plan);
-      if (limit !== null && used >= limit) {
-        throw new HttpError(402, "walkin_limit", WALKIN_LIMIT_MESSAGE, { limit: "walk-ins", used, max: limit });
-      }
-      tx.set(path, { count: used + 1, dayKey, updatedAt: now.toISOString() });
+    // Firestore transactions: all reads first. allocateQueueItem reads the queue counter before its writes.
+    const walkIn = input.source !== "booking";
+    const counterPath = paths.walkInCounter(businessId, manilaDayKey(now));
+    const used = walkIn ? (await tx.get<{ count: number }>(counterPath))?.count ?? 0 : 0;
+    const limit = walkInLimit(plan);
+    if (walkIn && limit !== null && used >= limit) {
+      throw new HttpError(402, "walkin_limit", WALKIN_LIMIT_MESSAGE, { limit: "walk-ins", used, max: limit });
     }
     const item = await allocateQueueItem(store, tx, businessId, input, now);
+    if (walkIn) tx.set(counterPath, { count: used + 1, dayKey: manilaDayKey(now), updatedAt: now.toISOString() });
     await writeAudit(store, businessId, { actor, action: "queue.create", target: paths.queueItem(businessId, item.id), meta: { queueNumber: item.queueNumber } }, now, tx);
     return item;
   });
