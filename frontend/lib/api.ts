@@ -108,10 +108,15 @@ export interface Booking {
   createdAt?: string;
   updatedAt?: string;
 }
+export type ServiceCategory = "car-wash" | "interior" | "detailing" | "wax-coating" | "engine" | "add-ons";
+export type ServiceIconName = "bubbles" | "vacuum" | "sparkle" | "tyre" | "drop" | "car" | "shield" | "coin" | "check";
 export interface Service {
   id: string;
   name: string;
-  durationMins: number;
+  /** Legacy; no longer shown. */
+  durationMins?: number;
+  category?: ServiceCategory;
+  icon?: ServiceIconName | null;
   pricesBySize: Partial<Record<string, number | null>>;
   active?: boolean;
   listedOnRiverMobile?: boolean;
@@ -149,7 +154,7 @@ export interface OrderLine {
   serviceId: string;
   name: string;
   priceCentavos: number;
-  durationMins: number;
+  durationMins?: number;
 }
 
 export type PaymentMethod = "cash" | "gcash" | "maya" | "other";

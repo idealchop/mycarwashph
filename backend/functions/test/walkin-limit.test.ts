@@ -1,6 +1,6 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { auth, makeApps } from "./helpers.js";
+import { auth, makeApps, starterId } from "./helpers.js";
 
 async function shopWith(plan?: "paid") {
   const ctx = makeApps();
@@ -8,8 +8,8 @@ async function shopWith(plan?: "paid") {
   if (plan) await request(ctx.app).put(`/businesses/${shop}/plan`).set(auth("ops", true)).send({ plan });
   return { ctx, shop };
 }
-const walkIn = (ctx: ReturnType<typeof makeApps>, shop: string) =>
-  request(ctx.app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ serviceIds: [], vehicleSize: "medium" });
+const walkIn = async (ctx: ReturnType<typeof makeApps>, shop: string) =>
+  request(ctx.app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ serviceIds: [await starterId(ctx.app, shop)], vehicleSize: "medium" });
 
 describe("Partner daily walk-in limit", () => {
   it("lets Partner add 10 walk-ins a Manila day and refuses the 11th with walkin_limit", async () => {

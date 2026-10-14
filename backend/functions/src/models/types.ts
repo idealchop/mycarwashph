@@ -79,6 +79,8 @@ export interface Business {
   location?: ShopLocation | null;
   /** Opt-in to being listed and bookable in River Mobile. */
   riverMobile: { listed: boolean; listedAt: string | null };
+  /** Set once the starter services were seeded or the backfill checked this shop. */
+  starterServicesAt?: string | null;
   /** Partner availability: simple max bookings per slot. */
   bookingCapacity: { slotMins: number; maxBookingsPerSlot: number };
   /** Shop settings (Paid). dailyTargetCentavos null = not set. */
@@ -112,9 +114,20 @@ export interface Member {
 }
 
 /** businesses/{businessId}/services/{serviceId} */
+export const SERVICE_CATEGORIES = ["car-wash", "interior", "detailing", "wax-coating", "engine", "add-ons"] as const;
+export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
+/** 3D icon names the frontend can render (packages/icons ICON_NAMES subset). */
+export const SERVICE_ICONS = ["bubbles", "vacuum", "sparkle", "tyre", "drop", "car", "shield", "coin", "check"] as const;
+export type ServiceIcon = (typeof SERVICE_ICONS)[number];
+
 export interface Service {
   name: string;
-  durationMins: number;
+  /** Legacy; no longer shown or required. */
+  durationMins?: number;
+  /** Missing on old docs = "car-wash". */
+  category?: ServiceCategory;
+  /** Missing = the category icon. */
+  icon?: ServiceIcon | null;
   /** Centavos per vehicle size. Owner-entered; null = not offered / price not set. */
   pricesBySize: Partial<Record<VehicleSize, number | null>>;
   active: boolean;

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { API_SCOPES, BILLING_PAYMENT_METHODS, PARTNER_BILLING_OPTIONS, PAYMENT_METHODS, PLANS, QUEUE_STATUSES, ROLES, VEHICLE_SIZES } from "./types.js";
+import { API_SCOPES, BILLING_PAYMENT_METHODS, PARTNER_BILLING_OPTIONS, PAYMENT_METHODS, PLANS, QUEUE_STATUSES, ROLES, SERVICE_CATEGORIES, SERVICE_ICONS, VEHICLE_SIZES } from "./types.js";
 
 const name = z.string().trim().min(1).max(80);
 /** Philippine mobile in E.164, e.g. +639171234567. */
@@ -65,12 +65,14 @@ export const setPlanSchema = z.object({ plan: z.enum(PLANS) });
 
 export const serviceSchema = z.object({
   name,
-  durationMins: z.number().int().min(5).max(600),
+  durationMins: z.number().int().min(5).max(600).optional(),
+  category: z.enum(SERVICE_CATEGORIES).default("car-wash"),
+  icon: z.enum(SERVICE_ICONS).nullable().optional(),
   pricesBySize: z.partialRecord(vehicleSize, centavos.nullable()).default({}),
   active: z.boolean().default(true),
   listedOnRiverMobile: z.boolean().default(false),
 });
-export const updateServiceSchema = serviceSchema.partial().strict();
+export const updateServiceSchema = serviceSchema.extend({ category: z.enum(SERVICE_CATEGORIES) }).partial().strict();
 
 export const baySchema = z.object({ name, active: z.boolean().default(true), sortOrder: z.number().int().min(0).default(0) });
 export const updateBaySchema = baySchema.partial().strict();

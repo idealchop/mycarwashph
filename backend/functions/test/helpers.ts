@@ -1,3 +1,4 @@
+import request from "supertest";
 import type { AuthUser, TokenVerifier } from "../src/auth/token-verifier.js";
 import { createApp, createPublicApp } from "../src/app.js";
 import type { Deps } from "../src/deps.js";
@@ -44,4 +45,10 @@ export async function addMember(store: MemoryStore, businessId: string, uid: str
   await store.set(paths.member(businessId, uid), {
     uid, businessId, role, status, displayName: uid, phoneE164: null, email: null, invitedBy: "owner", createdAt: at, updatedAt: at,
   });
+}
+
+/** First starter service of a shop (every new shop gets the starter menu). */
+export async function starterId(app: Parameters<typeof request>[0], shop: string, uid = "owner") {
+  const r = await request(app).get(`/businesses/${shop}/services`).set(auth(uid));
+  return (r.body.data as { id: string; name: string }[]).find((s) => s.name === "Basic Wash")!.id;
 }

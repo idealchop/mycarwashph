@@ -72,10 +72,9 @@ export function OrderDetails({ shopId, order, onClose, onChanged }: { shopId: st
     ? q.lines
     : (q?.serviceIds ?? b?.serviceIds ?? []).map((id) => {
         const s = services.find((x) => x.id === id);
-        return { serviceId: id, name: s?.name ?? "Service", priceCentavos: s ? priceFor(s, size) ?? 0 : 0, durationMins: s?.durationMins ?? 0 };
+        return { serviceId: id, name: s?.name ?? "Service", priceCentavos: s ? priceFor(s, size) ?? 0 : 0 };
       });
   const total = q?.totalCentavos ?? lines.reduce((t, l) => t + l.priceCentavos, 0);
-  const mins = lines.reduce((t, l) => t + l.durationMins, 0);
   const status = q ? q.status : b?.status ?? "";
   const label = (q ? QUEUE_STATUS[status] : BOOKING_STATUS[status]) ?? status;
   const paid = status === "paid" || status === "closed";
@@ -132,7 +131,7 @@ export function OrderDetails({ shopId, order, onClose, onChanged }: { shopId: st
             </Card>
 
             <Card className="mt-4 px-4 py-3.5">
-              <CardHeader title="Services" subtitle={`${SIZE[size] ?? size} car${mins ? ` · ${mins} min` : ""}${b ? ` · ${when(b.scheduledStart)}` : ""}`} />
+              <CardHeader title="Services" subtitle={`${SIZE[size] ?? size} car${b ? ` · ${when(b.scheduledStart)}` : ""}`} />
               <ul className="mt-3 flex flex-col gap-2" data-testid="order-lines">
                 {lines.length ? lines.map((l) => (
                   <li key={l.serviceId} className="flex items-baseline justify-between gap-3 text-[14px] font-medium">
