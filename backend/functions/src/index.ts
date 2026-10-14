@@ -13,7 +13,6 @@ import { brand } from "./config/brand.js";
 import { loadConfig } from "./config/env.js";
 import { APP_HOSTING_SERVICE_ACCOUNT, ENVIRONMENTS, type EnvName } from "./config/environments.js";
 import type { Deps } from "./deps.js";
-import { runDailyAlerts } from "./services/companion/alerts.js";
 import { VertexCompanionModel } from "./services/companion/model.js";
 import { runWeeklyCompanion } from "./services/companion/tips-service.js";
 import { FirebasePhotoStore } from "./services/photo-store.js";
@@ -103,7 +102,7 @@ function jobStore(env: EnvName) {
 
 /**
  * AI Companion Monday tips, 07:00 Asia/Manila. Prod is guarded: unless
- * ENVIRONMENTS.prod.companionEnabled (INSIGHTS_PROD_ENABLED=true) the job logs
+ * ENVIRONMENTS.prod.companionEnabled (COMPANION_ENABLED=1 or INSIGHTS_PROD_ENABLED=true) the job logs
  * and exits without reading shops or calling Gemini.
  */
 function weeklyTips(env: EnvName) {
@@ -119,25 +118,7 @@ function weeklyTips(env: EnvName) {
   );
 }
 
-/** Daily alert sweep, 20:00 Manila (deterministic, no Gemini). Same prod guard. */
-function dailyAlerts(env: EnvName) {
-  return onSchedule(
-    { schedule: "0 20 * * *", timeZone: brand.timeZone, region: brand.region, memory: "256MiB", timeoutSeconds: 300, maxInstances: 1, retryCount: 0 },
-    async () => {
-      if (!ENVIRONMENTS[env].companionEnabled) {
-        logger.info("companion_alerts_disabled", { env });
-        return;
-      }
-      await runDailyAlerts(jobStore(env), { now: new Date(), env });
-    },
-  );
-}
-
 /** AI Companion weekly tips, dev database. */
 export const mycarwashCompanionWeeklyDev = weeklyTips("dev");
 /** AI Companion weekly tips, prod database (guarded off until approved). */
 export const mycarwashCompanionWeeklyProd = weeklyTips("prod");
-/** AI Companion alerts, dev database. */
-export const mycarwashCompanionAlertsDev = dailyAlerts("dev");
-/** AI Companion alerts, prod database (guarded off until approved). */
-export const mycarwashCompanionAlertsProd = dailyAlerts("prod");

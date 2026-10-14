@@ -5,7 +5,7 @@ import { requireAuth } from "./middleware/auth-middleware.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-middleware.js";
 import { cors, limiter } from "./middleware/http-middleware.js";
 import { businessRoutes } from "./routes/business-routes.js";
-import { companionRoutes, meCompanionRoutes } from "./routes/companion-routes.js";
+import { companionRoutes } from "./routes/companion-routes.js";
 import { meRoutes } from "./routes/me-routes.js";
 import { momentsRoutes } from "./routes/moments-routes.js";
 import { publicRoutes } from "./routes/v1/public-routes.js";
@@ -28,7 +28,6 @@ export function createApp(deps: Deps) {
   app.use(momentsRoutes(deps));
   app.use(requireAuth(deps.verifier));
   app.use(meRoutes(deps));
-  app.use(meCompanionRoutes(deps));
   app.use("/businesses/:businessId", companionRoutes(deps));
   app.use("/businesses/:businessId", businessRoutes(deps));
   app.use(notFoundHandler);

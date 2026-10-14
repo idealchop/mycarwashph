@@ -1,8 +1,8 @@
 "use client";
 
-import { MarkdownLite, stripMarkdown } from "@/components/markdown-lite";
+import { MarkdownLite } from "@/components/markdown-lite";
 import { Button, Card } from "@river-apps/ui";
-import { ArrowUp, Lock } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LoadingBlock, ShopPage } from "@/components/shop/page";
@@ -95,7 +95,6 @@ function Chat({ shopId }: { shopId: string }) {
         messages: [...s.messages.filter((m) => m.id !== "pending"), out.question, out.answer],
         quota: { ...s.quota, remaining: out.remaining, used: s.quota.limit !== null && out.remaining !== null ? s.quota.limit - out.remaining : s.quota.used },
       });
-      if (/goal/i.test(value)) load();
     } catch (e) {
       if (e instanceof ApiError && e.code === "companion_quota") {
         // Keep the question on screen and answer with the server's message, inline.
@@ -169,39 +168,20 @@ function Chat({ shopId }: { shopId: string }) {
   );
 }
 
+/** Plain bubbles, same as Barbers.ph: Monday tips and alerts are tagged text, no cards. */
 function Bubble({ m }: { m: CompanionMessage }) {
   if (m.role === "owner") {
-    return <li className="max-w-[85%] self-end whitespace-pre-wrap rounded-card bg-ink px-4 py-2.5 text-[14px] font-medium text-on-ink">{m.text}</li>;
+    return <li className="companion-enter max-w-[85%] self-end whitespace-pre-wrap rounded-card bg-ink px-4 py-2.5 text-[14px] font-medium text-on-ink">{m.text}</li>;
   }
-  if (m.kind === "tip") {
-    return (
-      <li className="self-stretch rounded-card bg-surface px-4 py-3.5 shadow-card">
-        <div className="flex items-center gap-2"><CompanionAvatar size={24} state="still" /><b className="text-[14px]">Weekly tips · {m.weekId}</b></div>
-        {m.text ? <MarkdownLite className="mt-1 text-[13px] font-medium text-muted" text={m.text} /> : null}
-        <ol className="mt-2.5 flex flex-col gap-2">
-          {(m.tips ?? []).map((t, i) => (
-            <li key={i} className="rounded-tile bg-grey-100 px-3 py-2.5"><b className="block text-[13.5px]">{stripMarkdown(t.title)}</b><MarkdownLite className="text-[13px] font-medium text-muted" text={t.body} /></li>
-          ))}
-          {Array.from({ length: m.lockedCount ?? 0 }, (_, i) => (
-            <li key={`l${i}`} aria-hidden className="select-none rounded-tile bg-grey-100 px-3 py-2.5 blur-[5px]"><b className="block text-[13.5px]">Upgrade to see this tip</b><span className="text-[13px] font-medium text-muted">Pro shops get every weekly tip grounded in their numbers.</span></li>
-          ))}
-        </ol>
-        {m.lockedCount ? <Button href="/settings/billing" size="sm" className="mt-3" leadingIcon={<Lock size={14} />}>Unlock {m.lockedCount} more tips with Pro</Button> : null}
-      </li>
-    );
-  }
-  if (m.kind === "alert") {
-    return (
-      <li className="self-stretch rounded-card border-2 border-ink bg-surface px-4 py-3">
-        <b className="block text-[12.5px] uppercase tracking-wide">Alert</b>
-        <MarkdownLite className="mt-0.5 text-[14px] font-medium" text={m.locked ? "Pro shops get alerts when sales or the queue change sharply." : m.text} />
-      </li>
-    );
-  }
+  const tag = m.kind === "tip" ? "Monday tips" : m.kind === "alert" ? "Heads up" : "";
   return (
     <li className="companion-enter flex max-w-[90%] items-end gap-2 self-start">
       <CompanionAvatar size={28} state="still" />
-      <div className="rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium"><MarkdownLite text={m.text} /></div>
+      <div className={`rounded-card px-4 py-2.5 text-[14px] font-medium ${m.kind === "alert" ? "border-2 border-ink bg-surface" : m.kind === "tip" ? "bg-surface shadow-card ring-1 ring-ink/15" : "bg-grey-100"}`}>
+        {tag ? <b className="mb-1 block text-[11.5px] uppercase tracking-[0.04em] text-muted">{tag}</b> : null}
+        <MarkdownLite text={m.text} />
+        {m.locked ? <Link href="/settings/billing" className="mt-2 block text-[13px] font-bold underline underline-offset-[3px]">See plans</Link> : null}
+      </div>
     </li>
   );
 }

@@ -1,8 +1,8 @@
 import { badRequest } from "../../lib/errors.js";
 import type { DocStore } from "../../store/doc-store.js";
 import { rangeFor } from "./periods.js";
-import { companionPaths, loadShopData } from "./store.js";
-import type { InsightsInput } from "./metrics.js";
+import { companionPaths } from "./store.js";
+import type { ShopData } from "./tools.js";
 
 export interface Goal {
   id: string;
@@ -36,13 +36,8 @@ export async function saveGoal(store: DocStore, businessId: string, input: { met
   return goal;
 }
 
-export async function deleteGoal(store: DocStore, businessId: string, id: string, now: Date) {
-  const goals = (await listGoals(store, businessId)).filter((g) => g.id !== id);
-  await store.set(companionPaths.goals(businessId), { goals, updatedAt: now.toISOString() });
-}
-
 /** Progress of each goal in the current Manila week/month, with the pace needed to hit it. */
-export function goalProgress(goals: Goal[], data: InsightsInput) {
+export function goalProgress(goals: Goal[], data: ShopData) {
   const now = data.now;
   return goals.map((g) => {
     const range = rangeFor(g.period === "month" ? "this_month" : "this_week", now);
@@ -69,10 +64,4 @@ export function goalProgress(goals: Goal[], data: InsightsInput) {
       neededPerDay: daysLeft > 0 ? Math.max(0, Math.ceil((g.target - actual) / daysLeft)) : 0,
     };
   });
-}
-
-export async function goalProgressFor(store: DocStore, businessId: string, now: Date) {
-  const goals = await listGoals(store, businessId);
-  if (!goals.length) return [];
-  return goalProgress(goals, await loadShopData(store, businessId, now));
 }
