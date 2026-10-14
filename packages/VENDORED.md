@@ -30,3 +30,15 @@ for p in tokens icons ui; do
   (cd $KIT/packages && tar cf - --exclude node_modules --exclude dist $p) | tar xf - -C packages
 done
 ```
+
+# Vendored River Maps
+
+`river-map/` is copied from the private repository `idealchop/river-maps`
+(`packages/river-map`) at commit **f7989dc** ("River Maps: reusable
+MapLibre/PMTiles map package, style, fonts, sprites, tools, docs").
+Consumed as the workspace package `@river/map` (source, transpiled by Next).
+Tiles, style, glyphs and sprites are served by River from
+`https://storage.googleapis.com/rivermobile-ph-maps/maps/v2026-10/` (public,
+CORS + Range enabled); nothing is hosted by Mycarwash.
+
+Local edits: `package.json` dev dependency versions pinned to React 19 + `exports` (adds `./theme`); `Route.ts` imports `Feature` from `geojson` instead of the ambient `GeoJSON` namespace.

@@ -3,10 +3,11 @@
 import { Badge, Button, Input, SectionHeader } from "@river-apps/ui";
 import { useState } from "react";
 import { BrowseGate } from "@/components/browse-gate";
+import { useAuthGate } from "@/components/auth/auth-gate";
 import { GuestPage } from "@/components/shop/guest-page";
 import { useAuth } from "@/lib/auth";
 import { Spinner } from "@/components/screen";
-import { LocationPicker } from "@/components/shop/location-picker";
+import { LocationPicker, ShopLocationMap } from "@/components/shop/location-picker";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopPhotos } from "@/components/shop/shop-photos";
 import { ShopShell } from "@/components/shop/shop-shell";
@@ -37,11 +38,36 @@ function Inner() {
   if (!user) {
     return (
       <GuestPage title="Settings" description="Profile, location, team and billing stay private. Shop photos are visible as a preview — upload needs sign-in." actionLabel="Sign in to open Settings" mobileTab="more">
+        <GuestLocationPreview />
         <ShopPhotos key="guest-preview" businessId="guest-preview" photoUrls={[]} canEdit={false} />
       </GuestPage>
     );
   }
   return <SettingsInner />;
+}
+
+/** Guests can try the map pin; saving opens the sign-in sheet. */
+function GuestLocationPreview() {
+  const { requireAuth } = useAuthGate();
+  const [address, setAddress] = useState("");
+  const [location, setLocation] = useState<ShopLocation | null>(null);
+  return (
+    <section className="mt-6 shop-panel">
+      <b className="text-[15px]">Shop location</b>
+      <p className="mt-1 text-[13px] font-medium text-muted">Preview the River Maps pin. Saving needs sign-in.</p>
+      <div className="mt-4 flex flex-col gap-3">
+        <LocationPicker
+          address={address}
+          location={location}
+          onChange={({ address: a, location: loc }) => {
+            setAddress(a);
+            setLocation(loc);
+          }}
+        />
+        <Button onClick={() => requireAuth(undefined, { subtitle: "Sign in as the shop owner to save your location." })}>Save location</Button>
+      </div>
+    </section>
+  );
 }
 
 function SettingsInner() {
@@ -190,15 +216,19 @@ function SettingsInner() {
                   disabled={shop.role !== "owner" || busy}
                   onChange={(e) => setPhone(e.target.value)}
                 />
-                <LocationPicker
-                  address={addressValue}
-                  location={locationValue}
-                  disabled={shop.role !== "owner" || busy}
-                  onChange={({ address: a, location: loc }) => {
-                    setAddress(a);
-                    setLocation(loc);
-                  }}
-                />
+                {shop.role === "owner" ? (
+                  <LocationPicker
+                    address={addressValue}
+                    location={locationValue}
+                    disabled={busy}
+                    onChange={({ address: a, location: loc }) => {
+                      setAddress(a);
+                      setLocation(loc);
+                    }}
+                  />
+                ) : (
+                  <ShopLocationMap location={locationValue} address={addressValue} />
+                )}
                 <label className="flex items-center gap-2 text-[14px] font-semibold">
                   <input type="checkbox" checked={listedValue} disabled={shop.role !== "owner" || busy} onChange={(e) => setListed(e.target.checked)} />
                   List on River Mobile

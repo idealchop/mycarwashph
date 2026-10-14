@@ -1,9 +1,31 @@
 "use client";
 
-import { Input } from "@river-apps/ui";
-import { useEffect, useId, useRef, useState } from "react";
-import { getGoogle, loadGoogleMaps, mapsApiKey, PH_DEFAULT, type ShopLocationValue } from "@/lib/maps";
+import { Button, Input } from "@river-apps/ui";
+import { LocateFixed } from "lucide-react";
+import { useState } from "react";
+import { ShopMap } from "@/components/maps/shop-map";
+import { inPhilippines, PH_DEFAULT, type ShopLocationValue } from "@/lib/maps";
 
+const MAP_BOX = "h-[240px] w-full overflow-hidden rounded-2xl border border-grey-200 lg:h-[300px]";
+
+/** Read-only shop map (staff, guests, anywhere the location is shown). */
+export function ShopLocationMap({ location, address }: { location: ShopLocationValue | null; address?: string | null }) {
+  if (!location) {
+    return (
+      <p className="rounded-2xl border border-dashed border-grey-200 px-4 py-6 text-center text-[13.5px] font-semibold text-muted">
+        No map pin yet. The shop owner can set it in Settings.
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <ShopMap position={location} className={MAP_BOX} />
+      {address ? <p className="text-[13px] font-medium text-muted">{address}</p> : null}
+    </div>
+  );
+}
+
+/** Address + draggable River Maps pin. Saves lat/lng that River Mobile reads through /v1/shops/:id. */
 export function LocationPicker({
   address,
   location,
@@ -15,218 +37,84 @@ export function LocationPicker({
   onChange: (next: { address: string; location: ShopLocationValue | null }) => void;
   disabled?: boolean;
 }) {
-  const hasKey = Boolean(mapsApiKey());
-  const [mapsReady, setMapsReady] = useState(false);
-  const [mapsFailed, setMapsFailed] = useState(false);
-  const mapEl = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const markerRef = useRef<{ setPosition: (c: { lat: number; lng: number }) => void; getPosition: () => { lat: () => number; lng: () => number } | null } | null>(null);
-  const mapRef = useRef<{ setCenter: (c: { lat: number; lng: number }) => void } | null>(null);
-  const searchId = useId();
+  const [locating, setLocating] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!hasKey) return;
-    let cancelled = false;
-    void loadGoogleMaps().then((ok) => {
-      if (cancelled) return;
-      if (!ok) setMapsFailed(true);
-      else setMapsReady(true);
+  const setPin = (lat: number, lng: number) => {
+    if (!inPhilippines(lat, lng)) {
+      setHint("That pin is outside the Philippines. Move it to your shop.");
+      return;
+    }
+    setHint(null);
+    onChange({
+      address,
+      location: {
+        lat: Number(lat.toFixed(6)),
+        lng: Number(lng.toFixed(6)),
+        formattedAddress: address || null,
+        placeId: null,
+      },
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [hasKey]);
+  };
 
-  useEffect(() => {
-    if (!mapsReady || !mapEl.current || !searchRef.current) return;
-    const g = getGoogle();
-    if (!g?.maps?.places) return;
-
-    const center = location ?? PH_DEFAULT;
-    const map = new g.maps.Map(mapEl.current, {
-      center,
-      zoom: location ? 16 : 12,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-    });
-    mapRef.current = map;
-    const marker = new g.maps.Marker({
-      map,
-      position: center,
-      draggable: true,
-      title: "Shop location",
-    });
-    markerRef.current = marker;
-
-    const syncFromLatLng = (lat: number, lng: number, formatted?: string | null, placeId?: string | null) => {
-      onChange({
-        address: formatted ?? address,
-        location: {
-          lat,
-          lng,
-          formattedAddress: (formatted ?? address) || null,
-          placeId: placeId ?? location?.placeId ?? null,
-        },
-      });
-    };
-
-    marker.addListener("dragend", () => {
-      const pos = marker.getPosition();
-      if (!pos) return;
-      syncFromLatLng(pos.lat(), pos.lng(), address || null, location?.placeId ?? null);
-    });
-    map.addListener("click", (e) => {
-      const ll = e.latLng;
-      if (!ll) return;
-      marker.setPosition({ lat: ll.lat(), lng: ll.lng() });
-      syncFromLatLng(ll.lat(), ll.lng(), address || null, location?.placeId ?? null);
-    });
-
-    const ac = new g.maps.places.Autocomplete(searchRef.current, {
-      fields: ["geometry", "formatted_address", "place_id", "name"],
-      componentRestrictions: { country: "ph" },
-    });
-    ac.addListener("place_changed", () => {
-      const place = ac.getPlace();
-      const loc = place.geometry?.location;
-      if (!loc) return;
-      const lat = loc.lat();
-      const lng = loc.lng();
-      const formatted = place.formatted_address ?? place.name ?? address;
-      marker.setPosition({ lat, lng });
-      map.setCenter({ lat, lng });
-      onChange({
-        address: formatted,
-        location: { lat, lng, formattedAddress: formatted, placeId: place.place_id ?? null },
-      });
-    });
-
-    return () => {
-      g.maps.event.clearInstanceListeners(marker);
-      g.maps.event.clearInstanceListeners(map);
-      g.maps.event.clearInstanceListeners(ac);
-    };
-    // Intentionally mount once when Maps is ready; subsequent value sync is via props → marker in separate effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapsReady]);
-
-  useEffect(() => {
-    if (!location || !markerRef.current || !mapRef.current) return;
-    markerRef.current.setPosition({ lat: location.lat, lng: location.lng });
-    mapRef.current.setCenter({ lat: location.lat, lng: location.lng });
-    // Only recenter when coordinates change; full `location` object identity flips often.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- lat/lng only
-  }, [location?.lat, location?.lng]);
-
-  if (!hasKey || mapsFailed) {
-    return (
-      <div className="flex flex-col gap-3">
-        <Input
-          label="Street address"
-          placeholder="e.g. 123 Maginhawa St, Quezon City"
-          value={address}
-          disabled={disabled}
-          onChange={(e) =>
-            onChange({
-              address: e.target.value,
-              location: location
-                ? { ...location, formattedAddress: e.target.value || null }
-                : null,
-            })
-          }
-        />
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Input
-            label="Latitude"
-            placeholder="14.5995"
-            inputMode="decimal"
-            disabled={disabled}
-            value={location?.lat != null ? String(location.lat) : ""}
-            onChange={(e) => {
-              const lat = Number(e.target.value);
-              if (!Number.isFinite(lat)) {
-                onChange({ address, location: null });
-                return;
-              }
-              onChange({
-                address,
-                location: {
-                  lat,
-                  lng: location?.lng ?? PH_DEFAULT.lng,
-                  formattedAddress: address || null,
-                  placeId: location?.placeId ?? null,
-                },
-              });
-            }}
-          />
-          <Input
-            label="Longitude"
-            placeholder="120.9842"
-            inputMode="decimal"
-            disabled={disabled}
-            value={location?.lng != null ? String(location.lng) : ""}
-            onChange={(e) => {
-              const lng = Number(e.target.value);
-              if (!Number.isFinite(lng) || location?.lat == null) {
-                return;
-              }
-              onChange({
-                address,
-                location: {
-                  lat: location.lat,
-                  lng,
-                  formattedAddress: address || null,
-                  placeId: location?.placeId ?? null,
-                },
-              });
-            }}
-          />
-        </div>
-        <p className="text-[12.5px] font-medium text-muted">
-          Google Maps key not configured. Set <code className="font-mono">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> for Places
-          autocomplete and a map pin. Lat/lng still save for River Mobile.
-        </p>
-      </div>
+  const useMyLocation = () => {
+    if (!("geolocation" in navigator)) {
+      setHint("This browser can't share its location. Drag the pin instead.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setLocating(false);
+        setPin(p.coords.latitude, p.coords.longitude);
+      },
+      () => {
+        setLocating(false);
+        setHint("Location permission was denied. Drag the pin to your shop.");
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
     );
-  }
+  };
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1.5" htmlFor={searchId}>
-        <span className="text-[13px] font-bold">Search address (Philippines)</span>
-        <input
-          id={searchId}
-          ref={searchRef}
-          defaultValue={address}
-          disabled={disabled || !mapsReady}
-          placeholder={mapsReady ? "Start typing a street or landmark…" : "Loading Maps…"}
-          className="h-12 w-full rounded-2xl border border-grey-200 bg-white px-4 text-[15px] font-medium outline-none focus:border-ink"
-        />
-      </label>
       <Input
-        label="Street address (editable)"
+        label="Street address"
+        placeholder="e.g. 123 Maginhawa St, Quezon City"
         value={address}
         disabled={disabled}
         onChange={(e) =>
           onChange({
             address: e.target.value,
-            location: location
-              ? { ...location, formattedAddress: e.target.value || location.formattedAddress }
-              : null,
+            location: location ? { ...location, formattedAddress: e.target.value || null } : null,
           })
         }
       />
-      <div ref={mapEl} className="h-[220px] w-full overflow-hidden rounded-2xl border border-grey-200 bg-grey-100 lg:h-[280px]" />
-      <p className="text-[12.5px] font-medium text-muted">
-        Drag the pin or tap the map. River Mobile uses this location to find your shop.
-        {location ? (
-          <>
-            {" "}
-            Pin: {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-          </>
+      <div className="relative">
+        <ShopMap
+          position={location ?? (disabled ? null : PH_DEFAULT)}
+          editable={!disabled}
+          onMove={(p) => setPin(p.lat, p.lng)}
+          className={MAP_BOX}
+        />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" variant="secondary" disabled={disabled || locating} leadingIcon={<LocateFixed size={16} />} onClick={useMyLocation}>
+          {locating ? "Locating…" : "Use my current location"}
+        </Button>
+        {location && !disabled ? (
+          <Button type="button" size="sm" variant="ghost" onClick={() => onChange({ address, location: null })}>
+            Remove pin
+          </Button>
         ) : null}
+      </div>
+      <p className="text-[12.5px] font-medium text-muted">
+        {disabled
+          ? "Only the shop owner can move the pin."
+          : "Drag the pin or tap the map (two fingers to pan on phones). River Mobile uses this pin to find your shop."}
+        {location ? ` Pin: ${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}.` : " No pin saved yet."}
       </p>
+      {hint ? <p role="status" className="text-[13px] font-semibold">{hint}</p> : null}
     </div>
   );
 }

@@ -1,17 +1,22 @@
 rules_version = '2';
 // Mycarwash.ph shop photos for River Mobile listing.
 // Path: businesses/{businessId}/photos/{fileName}
+// Writes: active OWNER of that shop only (matches PATCH /businesses/:id, which is owner-only).
+// Membership may live in mycarwash-dev (dev) or mycarwash-prod (prod); both share this bucket.
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() {
-      return request.auth != null;
+    function memberPath(db, businessId) {
+      return /databases/$(db)/documents/businesses/$(businessId)/members/$(request.auth.uid);
     }
-    // Membership may live in mycarwash-dev (App Hosting / Functions dev) or mycarwash-prod.
-    function isShopMember(businessId) {
-      return signedIn() && (
-        firestore.exists(/databases/mycarwash-dev/documents/businesses/$(businessId)/members/$(request.auth.uid))
-        || firestore.exists(/databases/mycarwash-prod/documents/businesses/$(businessId)/members/$(request.auth.uid))
-      );
+    function activeOwnerIn(db, businessId) {
+      return firestore.exists(memberPath(db, businessId))
+        && firestore.get(memberPath(db, businessId)).data.status == 'active'
+        && firestore.get(memberPath(db, businessId)).data.role == 'owner'
+        && firestore.get(memberPath(db, businessId)).data.businessId == businessId;
+    }
+    function isShopOwner(businessId) {
+      return request.auth != null
+        && (activeOwnerIn('mycarwash-dev', businessId) || activeOwnerIn('mycarwash-prod', businessId));
     }
     function isImage() {
       return request.resource.contentType.matches('image/(jpeg|png|webp)');
@@ -23,9 +28,16 @@ service firebase.storage {
     match /businesses/{businessId}/photos/{fileName} {
       // Public read so River Mobile can show storefront photos from download URLs.
       allow read: if true;
-      allow create, update: if isShopMember(businessId) && isImage() && under5mb()
-        && fileName.size() < 180;
-      allow delete: if isShopMember(businessId);
+      // File names are "<uid>_<ts>_<rand>.<ext>"; require the uploader's uid prefix.
+      allow create: if isShopOwner(businessId) && isImage() && under5mb()
+        && fileName.size() < 180 && fileName.matches(request.auth.uid + '_.*');
+      allow update: if false;
+      allow delete: if isShopOwner(businessId);
+    }
+
+    // Everything else is closed.
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

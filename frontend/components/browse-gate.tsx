@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
-import { isGuestMode } from "@/lib/guest-mode";
+import { clearGuestMode, isGuestMode } from "@/lib/guest-mode";
 import { Spinner } from "./screen";
 
 function subscribeGuest(cb: () => void) {
@@ -31,6 +31,8 @@ export function BrowseGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user && !guest) router.replace("/");
+    // Signed in: a leftover guest flag must never route this tab back to sample data.
+    if (user && guest) clearGuestMode();
   }, [loading, user, guest, router]);
 
   if (loading || (!user && !guest)) return <Spinner />;
