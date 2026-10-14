@@ -1,6 +1,8 @@
 "use client";
 
-import { CarIllustration, SparkleIcon } from "@river-apps/icons";
+import { CompanionAvatar } from "@/features/companion/companion-mark";
+import { companionEnabled } from "@/lib/companion-flag";
+import { CarIllustration } from "@river-apps/icons";
 import { Car, ChevronRight, CreditCard, FileText, History, LogOut, MapPin, Package, Pencil, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -68,7 +70,7 @@ export function AccountScreen() {
         )}
         <div className="mt-3 border-t border-line pt-3">
           <p className="text-[13.5px] font-medium leading-snug text-ink/80">
-            {paid ? "Walk-ins, bays, the queue and the shop QR." : "River Mobile bookings, Scan to verify, and the queue."}
+            {paid ? "Walk-ins, bays, the queue and the shop QR." : "River Mobile bookings, Scan to verify, and 10 walk-ins a day."}
           </p>
           {place ? (
             <p className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-semibold text-muted">
@@ -138,14 +140,14 @@ export function AccountScreen() {
 
         <Card padding="none" className="overflow-visible px-2 py-1.5">
           <b className="block px-2.5 pt-3 text-[16px]">Features</b>
-          <Link href="/companion" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
-            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><SparkleIcon size={26} /></span>
+          {companionEnabled() ? <Link href="/companion" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
+            <CompanionAvatar size={40} state="still" />
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[15px]">AI Companion</b>
               <small className="block truncate text-[13px] font-medium text-muted">Ask about your numbers, weekly tips{paid ? ", goals" : ""}</small>
             </span>
             <Badge variant="soft" size="sm">{paid ? "Unlimited" : "10/mo"}</Badge>
-          </Link>
+          </Link> : null}
           <Link href="/settings/shops" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
             <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><MapPin size={18} strokeWidth={1.75} /></span>
             <span className="min-w-0 flex-1">
@@ -162,25 +164,14 @@ export function AccountScreen() {
               <Button size="sm" fullWidth href="/qr">Get QR code</Button>
             </div>
           ) : null}
-          {paid ? (
-            <Link href="/queue/new" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
-              <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Car size={18} strokeWidth={1.75} /></span>
-              <span className="min-w-0 flex-1">
-                <b className="block truncate text-[15px]">Walk-in</b>
-                <small className="block truncate text-[13px] font-medium text-muted">Add a car at the counter</small>
-              </span>
-              <Badge variant="soft" size="sm">Included</Badge>
-            </Link>
-          ) : (
-            <div className="flex min-h-[60px] items-center gap-3 px-1.5 py-2">
-              <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Car size={18} strokeWidth={1.75} /></span>
-              <span className="min-w-0 flex-1">
-                <b className="block truncate text-[15px]">Walk-in</b>
-                <small className="block truncate text-[13px] font-medium text-muted">Add a car at the counter</small>
-              </span>
-              <Button href="/settings/billing" size="xs" pill className="whitespace-nowrap">Upgrade</Button>
-            </div>
-          )}
+          <Link href="/queue/new" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
+            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Car size={18} strokeWidth={1.75} /></span>
+            <span className="min-w-0 flex-1">
+              <b className="block truncate text-[15px]">Walk-in</b>
+              <small className="block truncate text-[13px] font-medium text-muted">{paid ? "Add a car at the counter" : "10 a day on Partner"}</small>
+            </span>
+            <Badge variant="soft" size="sm">{paid ? "Unlimited" : "10/day"}</Badge>
+          </Link>
         </Card>
 
         {user ? (

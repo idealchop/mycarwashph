@@ -30,6 +30,8 @@ function requireAi(deps: Deps) {
   return deps.ai;
 }
 
+const PAGE = 30;
+
 /** /businesses/:businessId/companion* (owners only). */
 export function companionRoutes(deps: Deps) {
   const { store } = deps;
@@ -41,17 +43,27 @@ export function companionRoutes(deps: Deps) {
     const b = getBusiness(res);
     const tier = tierOf(b);
     const now = deps.now();
-    const [messages, insights, quota] = await Promise.all([listMessages(store, b.id, 60), listInsights(store, b.id, 1), quotaFor(store, b, now)]);
+    const [messages, insights, quota] = await Promise.all([listMessages(store, b.id, PAGE + 1), listInsights(store, b.id, 1), quotaFor(store, b, now)]);
     res.json({
       data: {
         enabled: !!deps.config.companionEnabled,
         tier,
         quota,
         latest: insights[0] ? insightView(insights[0], tier) : null,
-        messages: messages.map((m) => messageView(m, tier)),
+        messages: messages.slice(-PAGE).map((m) => messageView(m, tier)),
+        hasMore: messages.length > PAGE,
         goals: tier === "full" ? await goalProgressFor(store, b.id, now) : null,
       },
     });
+  });
+
+  // Older messages of the single thread, loaded as the owner scrolls up.
+  r.get("/companion/messages", owner, async (req, res) => {
+    const b = getBusiness(res);
+    const before = typeof req.query.before === "string" ? req.query.before.slice(0, 40) : undefined;
+    const limit = Math.min(Math.max(Number(req.query.limit) || PAGE, 1), 50);
+    const rows = await listMessages(store, b.id, limit + 1, before);
+    res.json({ data: rows.slice(-limit).map((m) => messageView(m, tierOf(b))), hasMore: rows.length > limit });
   });
 
   r.post("/companion/messages", owner, validateBody(askSchema), async (req, res) => {

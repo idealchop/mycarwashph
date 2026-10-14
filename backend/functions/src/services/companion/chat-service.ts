@@ -24,8 +24,13 @@ export interface CompanionMessage {
 
 const HISTORY = 12;
 
-export async function listMessages(store: DocStore, businessId: string, limit = 50) {
-  const rows = await store.list<CompanionMessage>(companionPaths.messages(businessId), { orderBy: { field: "createdAt", direction: "desc" }, limit });
+/** One continuous thread per shop, newest page first; `before` (an ISO createdAt) pages further back. */
+export async function listMessages(store: DocStore, businessId: string, limit = 50, before?: string) {
+  const rows = await store.list<CompanionMessage>(companionPaths.messages(businessId), {
+    ...(before ? { where: [["createdAt", "<", before] as [string, "<", unknown]] } : {}),
+    orderBy: { field: "createdAt", direction: "desc" },
+    limit,
+  });
   return rows.reverse();
 }
 
@@ -60,7 +65,7 @@ export async function askCompanion(
   const tier = tierOf(business);
   const claim = await claimQuestion(store, business.id, tier, now);
   if (!claim.ok) {
-    throw new HttpError(402, "companion_quota", `You've used your ${PARTNER_MONTHLY_QUESTIONS} free questions this month. Upgrade to Pro for unlimited chat.`);
+    throw new HttpError(402, "companion_quota", `You've used your ${PARTNER_MONTHLY_QUESTIONS} Partner questions this month. Upgrade to Pro or Lifetime for unlimited chat.`);
   }
   const history = await listMessages(store, business.id, HISTORY);
   const ownerMsg: CompanionMessage = { role: "owner", kind: "chat", text: input.text, uid: input.uid, createdAt: now.toISOString() };

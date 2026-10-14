@@ -28,7 +28,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   turbopack: { root: fileURLToPath(new URL("..", import.meta.url)) },
-  env: webConfigEnv(),
+  // AI Companion switch (lib/companion-flag.ts): on only where COMPANION_ENABLED=1.
+  env: { ...webConfigEnv(), NEXT_PUBLIC_COMPANION_ENABLED: process.env.COMPANION_ENABLED === "1" ? "1" : "0" },
   // River Maps is a source-only workspace package (vendored from idealchop/river-maps).
   transpilePackages: ["@river/map"],
   // Pages retired when Mycarwash moved to the Barbers.ph structure (3-item nav).

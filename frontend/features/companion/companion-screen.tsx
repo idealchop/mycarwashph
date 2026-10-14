@@ -1,14 +1,14 @@
 "use client";
 
 import { MarkdownLite, stripMarkdown } from "@/components/markdown-lite";
-import { SparkleIcon } from "@river-apps/icons";
 import { Button, Card } from "@river-apps/ui";
 import { ArrowUp, Lock } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LoadingBlock, ShopPage } from "@/components/shop/page";
 import { ApiError } from "@/lib/api";
-import { askCompanion, getCompanion, type CompanionMessage, type CompanionState } from "@/lib/companion";
+import { CompanionAvatar } from "./companion-mark";
+import { askCompanion, getCompanion, getOlderMessages, type CompanionMessage, type CompanionState } from "@/lib/companion";
 
 const SUGGESTIONS = ["Magkano kinita ko last week?", "Anong oras pinakamaraming kotse?", "Paano ko mapapataas ang average ticket?", "Ilang customers ang hindi na bumalik?"];
 
@@ -18,7 +18,6 @@ export function CompanionScreen() {
       title="AI Companion"
       subtitle="Your carwash kasama, from your own numbers"
       back="/home"
-      icon="sparkle"
       empty={{ title: "Sign in to chat with River", description: "Ask about your sales, queue and customers, and get weekly tips for your shop." }}
     >
       {(shop) => (shop.role === "owner" ? <Chat shopId={shop.id} /> : <p className="mt-6 font-semibold">The AI Companion is for shop owners.</p>)}
@@ -34,16 +33,52 @@ function Chat({ shopId }: { shopId: string }) {
   /** Server-side limit message (Partner quota), shown inline as River's reply. */
   const [limitNote, setLimitNote] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+  const anchor = useRef<{ h: number; y: number } | null>(null);
+  const loadingOlder = useRef(false);
+  const lastId = state?.messages[state.messages.length - 1]?.id;
 
   const load = () => getCompanion(shopId).then(setState, (e: Error) => setError(e.message));
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shopId]);
+  // New messages (and the first load) scroll to the bottom; older pages don't.
   useEffect(() => {
     // Block body: newer Chrome returns a Promise from scrollIntoView, which React would call as a cleanup.
     endRef.current?.scrollIntoView({ block: "end" });
-  }, [state?.messages.length, busy, limitNote]);
+  }, [lastId, busy, limitNote]);
+  // Older pages are prepended without moving what the owner is reading.
+  useLayoutEffect(() => {
+    const a = anchor.current;
+    if (!a) return;
+    anchor.current = null;
+    window.scrollTo(0, a.y + (document.documentElement.scrollHeight - a.h));
+  }, [state?.messages.length]);
+
+  const first = state?.messages[0];
+  const loadOlder = useCallback(async () => {
+    if (!first || loadingOlder.current) return;
+    loadingOlder.current = true;
+    anchor.current = { h: document.documentElement.scrollHeight, y: window.scrollY };
+    try {
+      const page = await getOlderMessages(shopId, first.createdAt);
+      if (!page.data.length) anchor.current = null;
+      setState((s) => s && { ...s, hasMore: page.hasMore, messages: [...page.data, ...s.messages] });
+    } catch {
+      anchor.current = null;
+    } finally {
+      loadingOlder.current = false;
+    }
+  }, [first, shopId]);
+  // One continuous thread: scrolling near the top loads the previous page.
+  useEffect(() => {
+    const el = topRef.current;
+    if (!el || !state?.hasMore) return;
+    const io = new IntersectionObserver((entries) => { if (entries[0]?.isIntersecting) void loadOlder(); }, { rootMargin: "200px 0px 0px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [state?.hasMore, loadOlder]);
 
   const send = async (q: string) => {
     const value = q.trim();
@@ -83,18 +118,27 @@ function Chat({ shopId }: { shopId: string }) {
       {!state.enabled ? <p className="rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold">AI Companion is coming soon for your shop.</p> : null}
       {state.messages.length === 0 && !limitNote ? (
         <Card padding="none" className="flex flex-col items-center px-5 py-7 text-center">
-          <SparkleIcon size={56} />
+          <CompanionAvatar size={56} state="idle" />
           <b className="mt-2 text-[16px]">Kumusta! I’m River.</b>
           <p className="mt-1 max-w-[420px] text-[13.5px] font-medium text-muted">Ask me about your sales, busy hours, services or customers, or anything about running a car wash. You can set a goal too: “Goal ko ₱50k this month”.</p>
         </Card>
       ) : null}
+      <div ref={topRef} aria-hidden />
+      {state.hasMore ? <p className="text-center text-[12.5px] font-semibold text-muted">Loading earlier messages…</p> : null}
       <ul className="flex flex-col gap-2.5" aria-live="polite">
         {state.messages.map((m) => <Bubble key={m.id} m={m} />)}
-        {busy ? <li className="self-start rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold text-muted">River is checking your numbers…</li> : null}
+        {busy ? (
+          <li className="companion-enter flex items-center gap-2 self-start text-[13.5px] font-semibold text-muted" role="status">
+            <CompanionAvatar size={32} state="thinking" /> <span>River is checking your numbers</span><span className="companion-dots" aria-hidden><i /><i /><i /></span>
+          </li>
+        ) : null}
         {limitNote && !busy ? (
-          <li className="max-w-[90%] self-start rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium">
-            <MarkdownLite text={limitNote} />
-            <Link href="/settings/billing" className="mt-1.5 inline-block text-[13px] font-bold underline underline-offset-2">Upgrade</Link>
+          <li className="flex max-w-[90%] items-end gap-2 self-start">
+            <CompanionAvatar size={28} state="still" />
+            <div className="rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium">
+              <MarkdownLite text={limitNote} />
+              <Link href="/settings/billing" className="mt-1.5 inline-block text-[13px] font-bold underline underline-offset-2">Upgrade</Link>
+            </div>
           </li>
         ) : null}
       </ul>
@@ -132,7 +176,7 @@ function Bubble({ m }: { m: CompanionMessage }) {
   if (m.kind === "tip") {
     return (
       <li className="self-stretch rounded-card bg-surface px-4 py-3.5 shadow-card">
-        <div className="flex items-center gap-2"><SparkleIcon size={24} /><b className="text-[14px]">Weekly tips · {m.weekId}</b></div>
+        <div className="flex items-center gap-2"><CompanionAvatar size={24} state="still" /><b className="text-[14px]">Weekly tips · {m.weekId}</b></div>
         {m.text ? <MarkdownLite className="mt-1 text-[13px] font-medium text-muted" text={m.text} /> : null}
         <ol className="mt-2.5 flex flex-col gap-2">
           {(m.tips ?? []).map((t, i) => (
@@ -154,5 +198,10 @@ function Bubble({ m }: { m: CompanionMessage }) {
       </li>
     );
   }
-  return <li className="max-w-[90%] self-start rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium"><MarkdownLite text={m.text} /></li>;
+  return (
+    <li className="companion-enter flex max-w-[90%] items-end gap-2 self-start">
+      <CompanionAvatar size={28} state="still" />
+      <div className="rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium"><MarkdownLite text={m.text} /></div>
+    </li>
+  );
 }

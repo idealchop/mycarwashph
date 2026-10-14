@@ -1,6 +1,6 @@
-import { notFound, unprocessable } from "../lib/errors.js";
+import { HttpError, notFound, unprocessable } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
-import type { Bay, PaymentMethod, QueueItem, QueueStatus, VehicleSize } from "../models/types.js";
+import type { Bay, Plan, PaymentMethod, QueueItem, QueueStatus, VehicleSize } from "../models/types.js";
 import type { DocStore, Tx } from "../store/doc-store.js";
 import type { Actor } from "./audit-service.js";
 import { writeAudit } from "./audit-service.js";
@@ -43,8 +43,36 @@ export async function allocateQueueItem(store: DocStore, tx: Tx, businessId: str
   return { ...item, id };
 }
 
-export async function createQueueItem(store: DocStore, businessId: string, input: NewQueueItem, actor: Actor, now: Date) {
+/** Partner shops seat up to 10 walk-ins per Manila calendar day; Pro and Lifetime are unlimited (Barbers.ph parity). */
+export const PARTNER_WALKINS_PER_DAY = 10;
+export const WALKIN_LIMIT_MESSAGE = `You've added ${PARTNER_WALKINS_PER_DAY} walk-ins today, the Partner limit. Upgrade to Pro or Lifetime for unlimited walk-ins.`;
+export const walkInLimit = (plan: Plan) => (plan === "paid" ? null : PARTNER_WALKINS_PER_DAY);
+
+export interface WalkInAllowance { used: number; limit: number | null; left: number | null }
+
+export async function walkInAllowance(store: DocStore, businessId: string, plan: Plan, now: Date): Promise<WalkInAllowance> {
+  const doc = await store.get<{ count: number }>(paths.walkInCounter(businessId, manilaDayKey(now)));
+  const used = doc?.count ?? 0;
+  const limit = walkInLimit(plan);
+  return { used, limit, left: limit === null ? null : Math.max(0, limit - used) };
+}
+
+/**
+ * Creates a queue item. Walk-ins (source "staff") are counted on a per-day counter doc inside the
+ * same transaction, so concurrent adds can't pass the Partner cap. Scan-verified bookings don't count.
+ */
+export async function createQueueItem(store: DocStore, businessId: string, input: NewQueueItem, actor: Actor, now: Date, plan: Plan = "paid") {
   return store.runTransaction(async (tx) => {
+    if (input.source !== "booking") {
+      const dayKey = manilaDayKey(now);
+      const path = paths.walkInCounter(businessId, dayKey);
+      const used = (await tx.get<{ count: number }>(path))?.count ?? 0;
+      const limit = walkInLimit(plan);
+      if (limit !== null && used >= limit) {
+        throw new HttpError(402, "walkin_limit", WALKIN_LIMIT_MESSAGE, { limit: "walk-ins", used, max: limit });
+      }
+      tx.set(path, { count: used + 1, dayKey, updatedAt: now.toISOString() });
+    }
     const item = await allocateQueueItem(store, tx, businessId, input, now);
     await writeAudit(store, businessId, { actor, action: "queue.create", target: paths.queueItem(businessId, item.id), meta: { queueNumber: item.queueNumber } }, now, tx);
     return item;

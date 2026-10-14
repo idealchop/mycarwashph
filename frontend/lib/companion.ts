@@ -49,10 +49,15 @@ export interface CompanionState {
   quota: { limit: number | null; used: number | null; remaining: number | null };
   latest: InsightView | null;
   messages: CompanionMessage[];
+  /** Older messages exist above the first one (load with getOlderMessages). */
+  hasMore?: boolean;
   goals: GoalProgress[] | null;
 }
 
 export const getCompanion = (shopId: string) => api<{ data: CompanionState }>(`/businesses/${shopId}/companion`).then((r) => r.data);
+/** The page of the single thread before `before` (an ISO createdAt), oldest first. */
+export const getOlderMessages = (shopId: string, before: string, limit = 30) =>
+  api<{ data: CompanionMessage[]; hasMore: boolean }>(`/businesses/${shopId}/companion/messages?limit=${limit}&before=${encodeURIComponent(before)}`);
 export const askCompanion = (shopId: string, text: string) =>
   api<{ data: { question: CompanionMessage; answer: CompanionMessage; remaining: number | null } }>(`/businesses/${shopId}/companion/messages`, { method: "POST", body: { text } }).then((r) => r.data);
 export const getInsights = (shopId: string) => api<{ data: InsightView[] }>(`/businesses/${shopId}/companion/insights`).then((r) => r.data);
