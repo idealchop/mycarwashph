@@ -31,6 +31,16 @@ const nextConfig: NextConfig = {
   env: webConfigEnv(),
   // River Maps is a source-only workspace package (vendored from idealchop/river-maps).
   transpilePackages: ["@river/map"],
+  // Pages retired when Mycarwash moved to the Barbers.ph structure (3-item nav).
+  async redirects() {
+    const home = ["/messages", "/growth", "/customers", "/dashboard", "/staff", "/onboarding", "/welcome", "/sign-in", "/sign-in/:path*", "/invite/:path*"];
+    return [
+      ...home.map((source) => ({ source, destination: "/home", permanent: false })),
+      { source: "/bookings", destination: "/history", permanent: false },
+      { source: "/community", destination: "/moments", permanent: false },
+      { source: "/community/:path*", destination: "/moments", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {

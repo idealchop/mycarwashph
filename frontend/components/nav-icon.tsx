@@ -1,8 +1,7 @@
 import Image from "next/image";
 
-/** Colourful 3D icon set (River UI kit assets/icons3d), used in side and bottom navs. */
-export type Nav3DName =
-  | "house" | "ticket" | "calendar" | "cash" | "people" | "chat" | "sparkle" | "sliders" | "document" | "receipt" | "car";
+/** Colourful 3D icons (River UI kit assets/icons3d), shared by the sidebar and the bottom nav. */
+export type Nav3DName = "house" | "ticket" | "heart";
 
 export function NavIcon3D({ name, size = 26 }: { name: Nav3DName; size?: number }) {
   return (

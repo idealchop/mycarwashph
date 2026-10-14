@@ -30,6 +30,8 @@ export const updateBusinessSchema = z
     address: z.string().trim().max(300).nullable().optional(),
     location: shopLocation.nullable().optional(),
     riverMobileListed: z.boolean().optional(),
+    hours: z.string().trim().max(120).nullable().optional(),
+    logoUrl: z.string().url().max(1000).nullable().optional(),
     bookingCapacity: z
       .object({ slotMins: z.number().int().min(15).max(240), maxBookingsPerSlot: z.number().int().min(1).max(50) })
       .optional(),

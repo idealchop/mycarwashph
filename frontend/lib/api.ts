@@ -69,6 +69,8 @@ export interface BusinessProfile {
   bookingCapacity?: { slotMins: number; maxBookingsPerSlot: number };
   settings?: { dailyTargetCentavos: number | null };
   photoUrls?: string[];
+  hours?: string | null;
+  logoUrl?: string | null;
   billing?: BusinessBilling | null;
 }
 
