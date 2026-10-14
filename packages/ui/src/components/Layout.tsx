@@ -46,7 +46,7 @@ function NavLink({ item, active }: { item: NavItem; active?: boolean }) {
       className={cn(
         "flex h-[46px] items-center gap-3 rounded-control px-3.5 text-[14.5px] font-semibold transition-colors",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
-        active ? "bg-ink text-on-ink shadow-raised" : "text-grey-500 hover:bg-grey-100 hover:text-ink",
+        active ? "bg-ink text-on-ink shadow-raised" : "text-grey-500 hover:bg-grey-100 hover:text-ink [&_.nav-icon-3d]:opacity-75 hover:[&_.nav-icon-3d]:opacity-100",
       )}
     >
       {item.icon}
@@ -144,7 +144,7 @@ export function MobileTabBar({ items, activeKey, position = "fixed", label = "Ma
             className={cn(
               "relative flex h-[46px] min-w-[46px] items-center justify-center gap-2 rounded-tile transition-colors",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
-              on ? "bg-ink px-[18px] text-[14px] font-bold text-on-ink" : "px-3 text-subtle hover:text-ink",
+              on ? "bg-ink px-[18px] text-[14px] font-bold text-on-ink" : "px-3 text-subtle hover:text-ink [&_.nav-icon-3d]:opacity-75 hover:[&_.nav-icon-3d]:opacity-100",
             )}
           >
             {it.icon}
