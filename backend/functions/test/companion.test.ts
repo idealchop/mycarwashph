@@ -4,7 +4,7 @@ import { createApp } from "../src/app.js";
 import type { ChatResult, CompanionModel, ModelResult } from "../src/services/companion/model.js";
 import { weekIdFor } from "../src/services/companion/store.js";
 import { getBookings, getSales, loadShopData } from "../src/services/companion/tools.js";
-import { auth, FIXED_NOW, makeDeps } from "./helpers.js";
+import { auth, FIXED_NOW, makeDeps, starterId } from "./helpers.js";
 
 const usage = { inputTokens: 1000, outputTokens: 200, totalTokens: 1200 };
 
@@ -36,7 +36,8 @@ async function setup(plan: "partner" | "paid", opts: { enabled?: boolean } = {})
 
 /** Walk-ins today in every status, via the real API. */
 async function walkIns(app: ReturnType<typeof createApp>, shop: string) {
-  const add = async () => (await request(app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ serviceIds: [], vehicleSize: "medium" })).body.data.id as string;
+  const basic = await starterId(app, shop);
+  const add = async () => (await request(app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ serviceIds: [basic], vehicleSize: "medium" })).body.data.id as string;
   const patch = (id: string, body: object) => request(app).patch(`/businesses/${shop}/queue/${id}`).set(auth("owner")).send(body);
   for (let i = 0; i < 3; i++) await add(); // queued
   const bay = await add(); await patch(bay, { status: "in_bay" });

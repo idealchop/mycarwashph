@@ -7,7 +7,6 @@ import { LocationPicker } from "@/components/shop/location-picker";
 import { api, type ShopLocation } from "@/lib/api";
 import { currentShop } from "@/lib/shop";
 import { useShop } from "@/lib/shop-context";
-import { DEFAULT_SERVICE } from "@/lib/default-service";
 
 /** Shops: open one, or add another branch with its own pin, queue, bays and services. */
 export default function ShopsPage() {
@@ -29,7 +28,6 @@ export default function ShopsPage() {
     setBusy(true);
     try {
       const res = await api<{ data: { id: string } }>("/businesses", { method: "POST", body: { name: name.trim(), address: address.trim() || undefined, location: pin } });
-      await api(`/businesses/${res.data.id}/services`, { method: "POST", body: DEFAULT_SERVICE });
       currentShop.set(res.data.id);
       setNote(`${name.trim()} is ready. Its queue, bays and services stay on this shop.`);
       setName("");

@@ -39,6 +39,7 @@ import { createInvite, listInvites, revokeInvite } from "../services/invites-ser
 import { listMembers, removeMember } from "../services/members-service.js";
 import { listAlerts, markAlertRead } from "../services/notify-service.js";
 import { paths } from "../services/paths.js";
+import { ensureStarterServices } from "../services/starter-services.js";
 import { createQueueItem, listQueue, updateQueueItem, walkInAllowance } from "../services/queue-service.js";
 import { listSales, recordSale, salesSummary } from "../services/sales-service.js";
 
@@ -155,6 +156,7 @@ export function businessRoutes(deps: Deps) {
   });
 
   r.get("/services", member, async (_req, res) => {
+    await ensureStarterServices(store, getBusiness(res), deps.now());
     res.json({ data: await listItems(store, paths.services(getBusiness(res).id), "name") });
   });
   r.post("/services", owner, validateBody(serviceSchema), async (req, res) => {

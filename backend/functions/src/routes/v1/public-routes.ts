@@ -1,3 +1,4 @@
+import { CATEGORY_ICON } from "../../services/starter-services.js";
 import { Router } from "express";
 import type { Deps } from "../../deps.js";
 import { requireApiClient, requireIdempotencyKey, requireScope } from "../../middleware/api-key-middleware.js";
@@ -53,7 +54,11 @@ export function publicRoutes(deps: Deps) {
     res.json({
       data: rows
         .filter((s) => s.active && s.listedOnRiverMobile)
-        .map((s) => ({ serviceId: s.id, name: s.name, durationMins: s.durationMins, pricesBySize: s.pricesBySize })),
+        .map((s) => {
+          const category = s.category ?? "car-wash";
+          // durationMins kept for older River Mobile builds (30 when an owner never set one).
+          return { serviceId: s.id, name: s.name, durationMins: s.durationMins ?? 30, pricesBySize: s.pricesBySize, category, icon: s.icon ?? CATEGORY_ICON[category] };
+        }),
     });
   });
 

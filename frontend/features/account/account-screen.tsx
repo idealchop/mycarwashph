@@ -3,7 +3,7 @@
 import { CompanionAvatar } from "@/features/companion/companion-mark";
 import { companionEnabled } from "@/lib/companion-flag";
 import { CarIllustration } from "@river-apps/icons";
-import { Car, ChevronRight, CreditCard, FileText, History, LogOut, MapPin, Package, Pencil, ShieldCheck } from "lucide-react";
+import { Car, ChevronRight, CreditCard, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -29,11 +29,8 @@ export function AccountScreen() {
 
   const links = [
     { href: "/history", icon: History, title: "History", subtitle: "Past washes and bookings" },
-    ...(paid ? [] : [{ href: "/settings/edit", icon: Car, title: "Shop listing", subtitle: "How River Mobile customers find this shop" }]),
-    { href: "/settings/services", icon: Package, title: "Services", subtitle: "Basic Wash, other services and prices" },
+    { href: "/settings/services", icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
     { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: paid ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
-    { href: "/terms", icon: FileText, title: "Terms of Service", subtitle: "How Mycarwash.ph works for your shop" },
-    { href: "/privacy", icon: ShieldCheck, title: "Privacy Policy", subtitle: "Shop and customer data, Data Privacy Act" },
   ];
 
   return (
@@ -148,14 +145,6 @@ export function AccountScreen() {
             </span>
             <Badge variant="soft" size="sm">{paid ? "Unlimited" : "10/mo"}</Badge>
           </Link> : null}
-          <Link href="/settings/shops" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
-            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><MapPin size={18} strokeWidth={1.75} /></span>
-            <span className="min-w-0 flex-1">
-              <b className="block truncate text-[15px]">Multiple shops</b>
-              <small className="block truncate text-[13px] font-medium text-muted">{shops.length > 1 ? "On. Each shop has its own day." : "Add another branch when you’re ready."}</small>
-            </span>
-            <Badge variant="soft" size="sm">{shops.length > 1 ? "On" : "Off"}</Badge>
-          </Link>
           {paid ? (
             <div className="relative mx-1.5 mb-1 mt-11 rounded-card bg-grey-100 px-4 pb-4 pt-[78px] lg:hidden">
               <div className="absolute inset-x-0 -top-9 flex justify-center"><CarIllustration size={170} /></div>
@@ -188,6 +177,11 @@ export function AccountScreen() {
           </button>
         ) : null}
       </div>
+      <p className="mt-5 text-center text-[12.5px] font-semibold text-muted">
+        <Link href="/terms" className="underline-offset-[3px] hover:underline">Terms of Service</Link>
+        <span aria-hidden> · </span>
+        <Link href="/privacy" className="underline-offset-[3px] hover:underline">Privacy Policy</Link>
+      </p>
     </div>
   );
 }

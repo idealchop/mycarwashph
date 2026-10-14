@@ -13,12 +13,11 @@ import { currentShop } from "@/lib/shop";
 import { useShop } from "@/lib/shop-context";
 import { uploadShopPhoto } from "@/lib/shop-photos";
 import { useLoad } from "@/lib/use-load";
-import { DEFAULT_SERVICE } from "@/lib/default-service";
 
 
 /**
  * Edit shop (also the first-time set-up: there is no separate onboarding).
- * The first save creates the shop and publishes a Basic Wash service.
+ * The first save creates the shop and sets up starter services service.
  */
 export default function EditShopPage() {
   const { loading, shop } = useShop();
@@ -29,7 +28,7 @@ export default function EditShopPage() {
   const ready = !loading && (!shop || profile);
   return (
     <ShopPageFrame narrow>
-      <PageHeader title={shop ? "Edit shop" : "Set up your shop"} subtitle={shop ? undefined : "Saving creates your shop and publishes a Basic Wash."} back="/account" />
+      <PageHeader title={shop ? "Edit shop" : "Set up your shop"} subtitle={shop ? undefined : "Saving creates your shop and sets up starter services."} back="/account" />
       {ready ? <EditForm key={profile?.id ?? "new"} profile={profile ?? null} canEdit={!shop || shop.role === "owner"} /> : <LoadingBlock />}
     </ShopPageFrame>
   );
@@ -81,7 +80,6 @@ function EditForm({ profile, canEdit }: { profile: (BusinessProfile & { hours?: 
         const res = await api<{ data: { id: string } }>("/businesses", { method: "POST", body });
         id = res.data.id;
         currentShop.set(id);
-        await api(`/businesses/${id}/services`, { method: "POST", body: DEFAULT_SERVICE });
       }
       await api(`/businesses/${id}`, {
         method: "PATCH",

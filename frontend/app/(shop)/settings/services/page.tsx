@@ -9,7 +9,7 @@ export default function ServicesPage() {
       title="Services"
       back="/account"
       icon="bubbles"
-      empty={{ title: "No services yet", description: "Saving your shop publishes a Basic Wash. Add more washes and prices here after." }}
+      empty={{ title: "No services yet", description: "Saving your shop sets up starter services you can edit." }}
     >
       {(s) => <ShopServices businessId={s.id} canEdit={s.role === "owner"} />}
     </ShopPage>

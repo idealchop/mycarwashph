@@ -5,6 +5,7 @@ import type { Doc, DocStore } from "../store/doc-store.js";
 import { writeAudit } from "./audit-service.js";
 import { defaultBilling } from "./billing-service.js";
 import { paths } from "./paths.js";
+import { seedStarterServices } from "./starter-services.js";
 
 export interface CreateBusinessInput {
   name: string;
@@ -34,6 +35,7 @@ export async function createBusiness(
     address: input.address ?? input.location?.formattedAddress ?? null,
     location: input.location ?? null,
     riverMobile: { listed: false, listedAt: null },
+    starterServicesAt: now.toISOString(),
     bookingCapacity: { slotMins: 60, maxBookingsPerSlot: 2 },
     settings: { dailyTargetCentavos: null },
     photoUrls: [],
@@ -56,6 +58,7 @@ export async function createBusiness(
   await store.runTransaction(async (tx) => {
     tx.create(paths.business(businessId), { ...business });
     tx.create(paths.member(businessId, user.uid), { ...member });
+    seedStarterServices(store, tx, businessId, at);
     await writeAudit(store, businessId, { actor: { type: "user", id: user.uid }, action: "business.create", target: paths.business(businessId), meta: null }, now, tx);
   });
   return { business: { ...business, id: businessId }, member: { ...member, id: user.uid } };
