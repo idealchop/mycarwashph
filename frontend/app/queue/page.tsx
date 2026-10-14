@@ -82,6 +82,20 @@ function PaidQueue({ shopId, newBookings, waiting, onChanged }: { shopId: string
 
   const freeBay = useMemo(() => data?.bays.find((b) => b.active && !data.queue.some((q) => q.status === "in_bay" && q.bayId === b.id)), [data]);
 
+  const activeBays = data?.bays.filter((b) => b.active).length ?? 0;
+
+  /** New shops start with no bays; without one a car can't move past "queued". */
+  async function addBay() {
+    setBusy(true);
+    try {
+      await api(`/businesses/${shopId}/bays`, { method: "POST", body: { name: `Bay ${(data?.bays.length ?? 0) + 1}`, active: true, sortOrder: data?.bays.length ?? 0 } });
+      reload();
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function walkIn() {
     setBusy(true);
     try {
@@ -114,6 +128,12 @@ function PaidQueue({ shopId, newBookings, waiting, onChanged }: { shopId: string
           <Input label="Plate" hideLabel placeholder="Plate (optional)" value={plate} onChange={(e) => setPlate(e.target.value)} />
           <Button onClick={walkIn} disabled={busy}>Add walk-in</Button>
         </div>
+        {data && activeBays === 0 ? (
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="text-[13px] font-medium text-muted">Add a bay so cars can move from the queue into service.</p>
+            <Button size="sm" variant="secondary" onClick={addBay} disabled={busy}>Add bay</Button>
+          </div>
+        ) : null}
         {error ? <p role="alert" className="mt-3 text-[14px] font-semibold">{error}</p> : null}
         {!data ? <Spinner label="Loading queue" /> : null}
         {data && data.queue.length === 0 ? (

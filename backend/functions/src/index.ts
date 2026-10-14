@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { defineSecret } from "firebase-functions/params";
 import { onRequest } from "firebase-functions/v2/https";
 import { createApp, createPublicApp } from "./app.js";
@@ -10,6 +11,7 @@ import { brand } from "./config/brand.js";
 import { loadConfig } from "./config/env.js";
 import { APP_HOSTING_SERVICE_ACCOUNT, ENVIRONMENTS, type EnvName } from "./config/environments.js";
 import type { Deps } from "./deps.js";
+import { FirebasePhotoStore } from "./services/photo-store.js";
 import { FirestoreStore } from "./store/firestore-store.js";
 
 const firebaseApp = initializeApp();
@@ -45,6 +47,7 @@ function depsFor(env: EnvName): Deps {
       verifier: new FirebaseTokenVerifier(getAuth(firebaseApp)),
       config: loadConfig({ allowedOrigins: def.allowedOrigins, apiKeyPepper: pepper(env) }),
       now: () => new Date(),
+      photos: new FirebasePhotoStore(getStorage(firebaseApp).bucket(process.env.SHOP_PHOTOS_BUCKET || "mycarwashph.firebasestorage.app")),
     };
     depsCache.set(env, deps);
   }

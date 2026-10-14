@@ -106,6 +106,8 @@ export interface Service {
   name: string;
   durationMins: number;
   pricesBySize: Partial<Record<string, number | null>>;
+  active?: boolean;
+  listedOnRiverMobile?: boolean;
 }
 export interface Bay {
   id: string;

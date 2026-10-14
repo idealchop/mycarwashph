@@ -10,6 +10,7 @@ import { Spinner } from "@/components/screen";
 import { LocationPicker, ShopLocationMap } from "@/components/shop/location-picker";
 import { ShopPageFrame } from "@/components/shop/page-frame";
 import { ShopPhotos } from "@/components/shop/shop-photos";
+import { ShopServices } from "@/components/shop/shop-services";
 import { ShopShell } from "@/components/shop/shop-shell";
 import {
   api,
@@ -251,6 +252,8 @@ function SettingsInner() {
               canEdit={shop.role === "owner"}
               onSaved={() => reload()}
             />
+
+            <ShopServices businessId={shop.id} canEdit={shop.role === "owner"} />
 
             {shop.plan === "paid" && shop.role === "owner" ? (
               <section className="mt-6 shop-panel">
