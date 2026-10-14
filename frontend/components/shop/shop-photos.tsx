@@ -71,7 +71,7 @@ export function ShopPhotos({
     try {
       const next = urls.filter((_, i) => i !== index);
       await persist(next);
-      void deleteShopPhotoByUrl(target);
+      void deleteShopPhotoByUrl(businessId, target);
     } catch (e) {
       setError((e as Error).message);
     } finally {

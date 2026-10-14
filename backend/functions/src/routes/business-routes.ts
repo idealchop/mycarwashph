@@ -1,9 +1,10 @@
-import { Router } from "express";
+import express, { Router } from "express";
+import { z } from "zod";
 import type { Deps } from "../deps.js";
 import { requireMembership, requirePlan, requireRole } from "../middleware/business-middleware.js";
 import { getBusiness, getMember, getUser } from "../middleware/context.js";
 import { validateBody } from "../middleware/validate.js";
-import { badRequest, forbidden } from "../lib/errors.js";
+import { badRequest, forbidden, HttpError } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
 import {
   baySchema,
@@ -41,6 +42,8 @@ import { paths } from "../services/paths.js";
 import { createQueueItem, listQueue, updateQueueItem } from "../services/queue-service.js";
 import { listSales, recordSale, salesSummary } from "../services/sales-service.js";
 
+const PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
 const param = (v: unknown) => {
   if (typeof v !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(v)) throw badRequest("Invalid id.");
   return v;
@@ -70,6 +73,33 @@ export function businessRoutes(deps: Deps) {
   });
   r.patch("/", owner, validateBody(updateBusinessSchema), async (req, res) => {
     res.json({ data: await updateBusiness(store, getBusiness(res), getUser(res).uid, req.body, deps.now()) });
+  });
+
+  // Shop photos: raw image body (JPEG/PNG/WebP, < 5 MB), owner only. The API writes to
+  // Storage because Storage rules cannot check membership in named Firestore databases.
+  r.post(
+    "/photos",
+    owner,
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: "5mb" }),
+    async (req, res) => {
+      const b = getBusiness(res);
+      if (!deps.photos) throw new HttpError(503, "photos_unavailable", "Photo uploads are not configured.");
+      const type = (req.header("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+      const ext = PHOTO_TYPES[type];
+      if (!ext || !Buffer.isBuffer(req.body) || req.body.length === 0) throw badRequest("Send a JPG, PNG, or WebP image.");
+      if ((b.photoUrls ?? []).length >= 6) throw badRequest("A shop can have up to 6 photos.");
+      const name = `${getUser(res).uid}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const url = await deps.photos.save(`businesses/${b.id}/photos/${name}`, req.body, type);
+      res.status(201).json({ data: { url } });
+    },
+  );
+  r.delete("/photos", owner, validateBody(z.object({ url: z.string().url() })), async (req, res) => {
+    const b = getBusiness(res);
+    const path = deps.photos?.pathFromUrl(req.body.url);
+    if (deps.photos && path && path.startsWith(`businesses/${b.id}/photos/`) && !path.includes("..")) {
+      await deps.photos.remove(path);
+    }
+    res.status(204).end();
   });
 
   r.get("/billing", member, (_req, res) => {

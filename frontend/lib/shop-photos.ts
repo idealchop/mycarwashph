@@ -1,32 +1,36 @@
-import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { firebaseAuth, firebaseStorage } from "@/lib/firebase";
+import { api } from "@/lib/api";
+import { firebaseAuth } from "@/lib/firebase";
+
+const apiBase = () => process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 export const MAX_SHOP_PHOTOS = 6;
 export const MAX_SHOP_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-function extFor(type: string): string {
-  if (type === "image/png") return "png";
-  if (type === "image/webp") return "webp";
-  return "jpg";
-}
-
-/** Upload one shop photo to Storage; returns the HTTPS download URL. */
+/**
+ * Upload one shop photo through the shop API (owner check happens there; Storage
+ * rules cannot read our named Firestore databases). Returns the HTTPS download URL.
+ */
 export async function uploadShopPhoto(businessId: string, file: File): Promise<string> {
-  const uid = firebaseAuth().currentUser?.uid;
-  if (!uid) throw new Error("Sign in to upload shop photos.");
+  const user = firebaseAuth().currentUser;
+  if (!user) throw new Error("Sign in to upload shop photos.");
   if (!ALLOWED.has(file.type)) throw new Error("Use a JPG, PNG, or WebP image.");
   if (file.size > MAX_SHOP_PHOTO_BYTES) throw new Error("Each photo must be under 5 MB.");
-  const name = `${uid}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extFor(file.type)}`;
-  const storageRef = ref(firebaseStorage(), `businesses/${businessId}/photos/${name}`);
-  await uploadBytes(storageRef, file, { contentType: file.type, cacheControl: "public,max-age=31536000" });
-  return getDownloadURL(storageRef);
+  const token = await user.getIdToken();
+  const res = await fetch(`${apiBase()}/businesses/${businessId}/photos`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type },
+    body: file,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || typeof json?.data?.url !== "string") throw new Error(json?.title ?? "Upload failed. Please try again.");
+  return json.data.url as string;
 }
 
-/** Best-effort delete from Storage by download URL. */
-export async function deleteShopPhotoByUrl(url: string): Promise<void> {
+/** Best-effort delete of a removed photo (API checks the URL belongs to this shop). */
+export async function deleteShopPhotoByUrl(businessId: string, url: string): Promise<void> {
   try {
-    await deleteObject(ref(firebaseStorage(), url));
+    await api(`/businesses/${businessId}/photos`, { method: "DELETE", body: { url } });
   } catch {
     // ignore missing / foreign URLs
   }

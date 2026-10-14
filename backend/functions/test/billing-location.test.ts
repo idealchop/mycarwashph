@@ -94,3 +94,43 @@ describe("location + partner billing", () => {
     expect(bad.status).toBe(400);
   });
 });
+
+describe("shop photos (API upload)", () => {
+  it("lets the owner upload and delete photos; staff and bad types are rejected", async () => {
+    const { makeDeps } = await import("./helpers.js");
+    const { createApp } = await import("../src/app.js");
+    const saved = new Map<string, Buffer>();
+    const deps = makeDeps();
+    deps.photos = {
+      async save(path, data) {
+        saved.set(path, data);
+        return `https://firebasestorage.googleapis.com/v0/b/test/o/${encodeURIComponent(path)}?alt=media&token=t`;
+      },
+      async remove(path) {
+        saved.delete(path);
+      },
+      pathFromUrl(url) {
+        const p = "https://firebasestorage.googleapis.com/v0/b/test/o/";
+        return url.startsWith(p) ? decodeURIComponent(url.slice(p.length).split("?")[0]!) : null;
+      },
+    };
+    const app = createApp(deps);
+    const created = await request(app).post("/businesses").set(auth("owner1")).send({ name: "Photo Wash" });
+    const id = created.body.data.id as string;
+
+    const up = await request(app).post(`/businesses/${id}/photos`).set(auth("owner1")).set("Content-Type", "image/jpeg").send(Buffer.from([0xff, 0xd8, 0xff, 1, 2, 3]));
+    expect(up.status).toBe(201);
+    const url = up.body.data.url as string;
+    expect(url).toContain(encodeURIComponent(`businesses/${id}/photos/owner1_`));
+    expect(saved.size).toBe(1);
+
+    const bad = await request(app).post(`/businesses/${id}/photos`).set(auth("owner1")).set("Content-Type", "text/plain").send("hi");
+    expect(bad.status).toBe(400);
+    const stranger = await request(app).post(`/businesses/${id}/photos`).set(auth("other")).set("Content-Type", "image/png").send(Buffer.from([1]));
+    expect(stranger.status).toBe(403);
+
+    const del = await request(app).delete(`/businesses/${id}/photos`).set(auth("owner1")).send({ url });
+    expect(del.status).toBe(204);
+    expect(saved.size).toBe(0);
+  });
+});
