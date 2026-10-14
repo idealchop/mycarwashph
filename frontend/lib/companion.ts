@@ -60,6 +60,3 @@ export const saveGoal = (shopId: string, body: { metric: "revenue" | "cars"; per
   api<{ data: GoalProgress[] }>(`/businesses/${shopId}/companion/goals`, { method: "PUT", body }).then((r) => r.data);
 
 /** Dev environment only (the API returns 404 elsewhere). */
-export const devSeed = (shopId: string, plan: "partner" | "paid") => api(`/businesses/${shopId}/dev/seed-companion-demo`, { method: "POST", body: { plan } });
-export const runTips = (shopId: string) => api(`/businesses/${shopId}/companion/tips/run`, { method: "POST" });
-export const isDevEnv = () => process.env.NEXT_PUBLIC_APP_ENV === "dev";
