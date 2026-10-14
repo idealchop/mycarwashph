@@ -3,14 +3,14 @@
 import { MarkdownLite, stripMarkdown } from "@/components/markdown-lite";
 import { SparkleIcon } from "@river-apps/icons";
 import { Button, Card } from "@river-apps/ui";
-import { ArrowUp, Lock, Target } from "lucide-react";
+import { ArrowUp, Lock } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LoadingBlock, ShopPage } from "@/components/shop/page";
 import { ApiError } from "@/lib/api";
-import { askCompanion, devSeed, getCompanion, isDevEnv, runTips, saveGoal, type CompanionMessage, type CompanionState, type GoalProgress } from "@/lib/companion";
+import { askCompanion, getCompanion, type CompanionMessage, type CompanionState } from "@/lib/companion";
 
 const SUGGESTIONS = ["Magkano kinita ko last week?", "Anong oras pinakamaraming kotse?", "Paano ko mapapataas ang average ticket?", "Ilang customers ang hindi na bumalik?"];
-const peso = (n: number) => `₱${n.toLocaleString("en-US")}`;
 
 export function CompanionScreen() {
   return (
@@ -31,6 +31,8 @@ function Chat({ shopId }: { shopId: string }) {
   const [error, setError] = useState("");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Server-side limit message (Partner quota), shown inline as River's reply. */
+  const [limitNote, setLimitNote] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
   const load = () => getCompanion(shopId).then(setState, (e: Error) => setError(e.message));
@@ -41,7 +43,7 @@ function Chat({ shopId }: { shopId: string }) {
   useEffect(() => {
     // Block body: newer Chrome returns a Promise from scrollIntoView, which React would call as a cleanup.
     endRef.current?.scrollIntoView({ block: "end" });
-  }, [state?.messages.length, busy]);
+  }, [state?.messages.length, busy, limitNote]);
 
   const send = async (q: string) => {
     const value = q.trim();
@@ -60,74 +62,65 @@ function Chat({ shopId }: { shopId: string }) {
       });
       if (/goal/i.test(value)) load();
     } catch (e) {
-      setState((s) => s && { ...s, messages: s.messages.filter((m) => m.id !== "pending") });
-      setText(value);
-      setError(e instanceof ApiError ? e.message : "Something went wrong.");
+      if (e instanceof ApiError && e.code === "companion_quota") {
+        // Keep the question on screen and answer with the server's message, inline.
+        setState((s) => s && { ...s, messages: s.messages.map((m) => (m.id === "pending" ? { ...m, id: `q-${Date.now()}` } : m)) });
+        setLimitNote(e.message);
+      } else {
+        setState((s) => s && { ...s, messages: s.messages.filter((m) => m.id !== "pending") });
+        setText(value);
+        setError(e instanceof ApiError ? e.message : "Something went wrong.");
+      }
     } finally {
       setBusy(false);
     }
   };
 
   if (!state) return error ? <p role="alert" className="mt-4 font-semibold">{error}</p> : <LoadingBlock />;
-  const partner = state.tier === "partner";
-  const out = partner && state.quota.remaining === 0;
 
   return (
-    <div className="mt-4 flex flex-col gap-3 pb-28 lg:grid lg:grid-cols-[1fr_300px] lg:items-start lg:gap-5">
-      <div className="flex min-w-0 flex-col gap-3">
-        {partner ? <QuotaBanner remaining={state.quota.remaining ?? 0} limit={state.quota.limit ?? 10} /> : null}
-        {!state.enabled ? <p className="rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold">AI Companion is coming soon for your shop.</p> : null}
-        {state.messages.length === 0 ? (
-          <Card padding="none" className="flex flex-col items-center px-5 py-6 text-center">
-            <SparkleIcon size={56} />
-            <b className="mt-2 text-[16px]">Kumusta! I’m River.</b>
-            <p className="mt-1 text-[13.5px] font-medium text-muted">Ask me about your sales, busy hours, services or customers, or anything about running a car wash.</p>
-          </Card>
+    <div className="mx-auto mt-4 flex w-full max-w-[760px] flex-col gap-3 pb-36 lg:pb-8">
+      {!state.enabled ? <p className="rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold">AI Companion is coming soon for your shop.</p> : null}
+      {state.messages.length === 0 && !limitNote ? (
+        <Card padding="none" className="flex flex-col items-center px-5 py-7 text-center">
+          <SparkleIcon size={56} />
+          <b className="mt-2 text-[16px]">Kumusta! I’m River.</b>
+          <p className="mt-1 max-w-[420px] text-[13.5px] font-medium text-muted">Ask me about your sales, busy hours, services or customers, or anything about running a car wash. You can set a goal too: “Goal ko ₱50k this month”.</p>
+        </Card>
+      ) : null}
+      <ul className="flex flex-col gap-2.5" aria-live="polite">
+        {state.messages.map((m) => <Bubble key={m.id} m={m} />)}
+        {busy ? <li className="self-start rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold text-muted">River is checking your numbers…</li> : null}
+        {limitNote && !busy ? (
+          <li className="max-w-[90%] self-start rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium">
+            <MarkdownLite text={limitNote} />
+            <Link href="/settings/billing" className="mt-1.5 inline-block text-[13px] font-bold underline underline-offset-2">Upgrade</Link>
+          </li>
         ) : null}
-        <ul className="flex flex-col gap-2.5" aria-live="polite">
-          {state.messages.map((m) => <Bubble key={m.id} m={m} />)}
-          {busy ? <li className="self-start rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold text-muted">River is checking your numbers…</li> : null}
-        </ul>
-        <div ref={endRef} />
-        {error ? <p role="alert" className="text-[13px] font-semibold">{error}</p> : null}
-        <div className="flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s) => (
-            <button key={s} type="button" disabled={busy || out} onClick={() => send(s)} className="rounded-pill bg-grey-100 px-3 py-2 text-[12.5px] font-semibold disabled:opacity-50">{s}</button>
-          ))}
-        </div>
-        <form
-          className="fixed inset-x-0 bottom-[72px] z-20 mx-auto flex w-full max-w-[402px] gap-2 bg-canvas px-4 py-2 lg:static lg:max-w-none lg:px-0"
-          onSubmit={(e) => { e.preventDefault(); send(text); }}
-        >
-          <label className="sr-only" htmlFor="companion-input">Ask River</label>
-          <input
-            id="companion-input"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={500}
-            disabled={out || !state.enabled}
-            placeholder={out ? "Upgrade to keep chatting" : "Ask about your shop…"}
-            className="h-12 min-w-0 flex-1 rounded-pill border border-line bg-surface px-4 text-[14.5px] font-medium outline-none focus:border-ink"
-          />
-          <Button type="submit" aria-label="Send" disabled={busy || out || !text.trim()} className="size-12 flex-none rounded-full p-0"><ArrowUp size={20} /></Button>
-        </form>
+      </ul>
+      <div ref={endRef} />
+      {error ? <p role="alert" className="text-[13px] font-semibold">{error}</p> : null}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
+        {SUGGESTIONS.map((q) => (
+          <button key={q} type="button" disabled={busy || !state.enabled} onClick={() => send(q)} className="flex-none rounded-pill bg-surface px-3.5 py-2 text-[12.5px] font-semibold shadow-card disabled:opacity-50">{q}</button>
+        ))}
       </div>
-      <aside className="flex flex-col gap-3">
-        <Goals shopId={shopId} goals={state.goals} onSaved={(goals) => setState({ ...state, goals })} />
-        {isDevEnv() ? <DevTools shopId={shopId} onDone={load} /> : null}
-      </aside>
-    </div>
-  );
-}
-
-function QuotaBanner({ remaining, limit }: { remaining: number; limit: number }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-card bg-ink px-4 py-3 text-on-ink">
-      <span className="min-w-0">
-        <b className="block text-[14px]">{remaining} of {limit} free questions left</b>
-        <small className="text-[12px] font-semibold text-on-ink-muted">Partner: {limit} questions a month + 1 weekly tip. Pro: unlimited, all tips, alerts and goals.</small>
-      </span>
-      <Button href="/settings/billing" variant="white" size="sm" className="flex-none">Upgrade</Button>
+      <form
+        className="fixed inset-x-0 bottom-[72px] z-20 mx-auto flex w-full max-w-[402px] gap-2 bg-canvas px-4 py-2 lg:sticky lg:bottom-4 lg:max-w-none lg:rounded-pill lg:px-0 lg:py-0"
+        onSubmit={(e) => { e.preventDefault(); send(text); }}
+      >
+        <label className="sr-only" htmlFor="companion-input">Ask River</label>
+        <input
+          id="companion-input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={500}
+          disabled={!state.enabled}
+          placeholder="Ask about your shop…"
+          className="h-12 min-w-0 flex-1 rounded-pill border border-line bg-surface px-4 text-[14.5px] font-medium shadow-card outline-none focus:border-ink"
+        />
+        <Button type="submit" aria-label="Send" disabled={busy || !text.trim()} className="size-12 flex-none rounded-full p-0"><ArrowUp size={20} /></Button>
+      </form>
     </div>
   );
 }
@@ -162,66 +155,4 @@ function Bubble({ m }: { m: CompanionMessage }) {
     );
   }
   return <li className="max-w-[90%] self-start rounded-card bg-grey-100 px-4 py-2.5 text-[14px] font-medium"><MarkdownLite text={m.text} /></li>;
-}
-
-function Goals({ shopId, goals, onSaved }: { shopId: string; goals: GoalProgress[] | null; onSaved: (g: GoalProgress[]) => void }) {
-  const [target, setTarget] = useState("");
-  const [err, setErr] = useState("");
-  if (goals === null) {
-    return (
-      <Card padding="none" className="px-4 py-3.5">
-        <b className="flex items-center gap-2 text-[14.5px]"><Target size={16} /> Goals</b>
-        <p className="mt-1 text-[13px] font-medium text-muted">Set a monthly target like ₱50,000 and River tracks your pace. Included with Pro and Lifetime.</p>
-        <Button href="/settings/billing" size="sm" variant="secondary" className="mt-3">See plans</Button>
-      </Card>
-    );
-  }
-  return (
-    <Card padding="none" className="px-4 py-3.5">
-      <b className="flex items-center gap-2 text-[14.5px]"><Target size={16} /> Goals</b>
-      {goals.length === 0 ? <p className="mt-1 text-[13px] font-medium text-muted">No goal yet. Try “Goal ko ₱50k this month”.</p> : null}
-      {goals.map((g) => (
-        <div key={g.goal} className="mt-2.5">
-          <div className="flex justify-between text-[13px] font-bold"><span>{g.goal}</span><span>{g.percent}%</span></div>
-          <div className="mt-1 h-2 overflow-hidden rounded-pill bg-grey-100"><div className="h-full rounded-pill bg-ink" style={{ width: `${Math.min(100, g.percent)}%` }} /></div>
-          <p className="mt-1 text-[12px] font-semibold text-muted">
-            {g.metric === "revenue" ? peso(g.actual) : `${g.actual} cars`} so far · {g.onTrack ? "on track" : `need ${g.metric === "revenue" ? peso(g.neededPerDay) : g.neededPerDay}/day`} · {g.daysLeft} days left
-          </p>
-        </div>
-      ))}
-      <form
-        className="mt-3 flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const n = Number(target.replace(/[^\d]/g, ""));
-          if (!n) return;
-          saveGoal(shopId, { metric: "revenue", period: "month", target: n }).then((g) => { onSaved(g); setTarget(""); setErr(""); }, (e2: Error) => setErr(e2.message));
-        }}
-      >
-        <input value={target} onChange={(e) => setTarget(e.target.value)} inputMode="numeric" placeholder="Monthly sales goal, ₱" aria-label="Monthly sales goal in pesos" className="h-10 min-w-0 flex-1 rounded-pill border border-line px-3 text-[13.5px]" />
-        <Button type="submit" size="sm">Save</Button>
-      </form>
-      {err ? <p className="mt-1 text-[12px] font-semibold">{err}</p> : null}
-    </Card>
-  );
-}
-
-/** Dev environment only: seed demo data and trigger the Monday job for this shop. */
-function DevTools({ shopId, onDone }: { shopId: string; onDone: () => void }) {
-  const [msg, setMsg] = useState("");
-  const act = (label: string, fn: () => Promise<unknown>) => {
-    setMsg(`${label}…`);
-    fn().then(() => { setMsg(`${label}: done`); onDone(); }, (e: Error) => setMsg(`${label}: ${e.message}`));
-  };
-  return (
-    <Card padding="none" className="border border-dashed border-line px-4 py-3.5">
-      <b className="text-[13px]">Dev tools (dev database only)</b>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <Button size="xs" variant="secondary" onClick={() => act("Seed as Pro", () => devSeed(shopId, "paid"))}>Seed demo · Pro</Button>
-        <Button size="xs" variant="secondary" onClick={() => act("Seed as Partner", () => devSeed(shopId, "partner"))}>Seed demo · Partner</Button>
-        <Button size="xs" variant="secondary" onClick={() => act("Run Monday tips", () => runTips(shopId))}>Run Monday tips</Button>
-      </div>
-      {msg ? <p className="mt-2 text-[12px] font-semibold text-muted">{msg}</p> : null}
-    </Card>
-  );
 }
