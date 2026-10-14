@@ -113,7 +113,7 @@ describe("River Mobile /v1 API and Scan", () => {
       await request(ctx.app).put(`/businesses/${shop}/plan`).set(auth("ops", true)).send({ plan: "paid" });
       const { body } = await book();
       await request(ctx.app).post(`/businesses/${shop}/bookings/${body.bookingId}/accept`).set(auth("sam"));
-      const walkIn = await request(ctx.app).post(`/businesses/${shop}/queue`).set(auth("sam")).send({ plate: "ABC 123" });
+      const walkIn = await request(ctx.app).post(`/businesses/${shop}/queue`).set(auth("sam")).send({ serviceIds: [serviceId] });
       expect(walkIn.body.data.queueNumber).toBe(1);
       const ok = await request(ctx.app).post(`/businesses/${shop}/bookings/verify`).set(auth("sam")).send({ payload: body.checkIn.qrPayload });
       expect(ok.body.data.booking.status).toBe("queued");

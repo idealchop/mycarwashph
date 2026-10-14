@@ -1,5 +1,6 @@
 "use client";
 
+import { OrderDetails, type OrderRef } from "@/features/orders/order-details";
 import { Icon3D } from "@river-apps/icons";
 import { Plus } from "lucide-react";
 import { Button, Card, EmptyState, Input, SearchInput, StatCard, cn } from "@river-apps/ui";
@@ -22,10 +23,10 @@ const STATUS: Record<Job["status"], string> = {
 function matches(row: Job, q: string) {
   const t = q.trim().toLowerCase();
   if (!t) return true;
-  return [row.ref, row.who, row.serviceName, row.plate ?? ""].some((v) => v.toLowerCase().includes(t));
+  return [row.ref, row.who, row.serviceName].some((v) => v.toLowerCase().includes(t));
 }
 
-function Actions({ row, freeBay, noBays, onAct, onPay }: { row: Job; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
+function Actions({ row, freeBay, noBays, onAct, onPay }: { row: Job; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void; onOpen: (row: Job) => void }) {
   const line = "mt-3 flex gap-2 border-t border-dashed border-[#E8E8EC] pt-3";
   if (row.status === "requested") {
     return (
@@ -56,7 +57,7 @@ function Actions({ row, freeBay, noBays, onAct, onPay }: { row: Job; freeBay: { 
   return null;
 }
 
-function Row({ row, ...rest }: { row: Job; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
+function Row({ row, onOpen, ...rest }: { row: Job; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void; onOpen: (row: Job) => void }) {
   const where = row.status === "in_bay" && row.bayName ? row.bayName : row.slotLabel;
   const pay = row.paid ? "Paid" : row.kind === "booking" ? "Booked on River Mobile" : "Pay at the shop";
   return (
@@ -70,7 +71,8 @@ function Row({ row, ...rest }: { row: Job; freeBay: { id: string; name: string }
         </div>
         <b className="text-[14px]">{row.price ? peso(row.price) : STATUS[row.status]}</b>
       </div>
-      <Actions row={row} {...rest} />
+      <Actions row={row} onOpen={onOpen} {...rest} />
+      <button type="button" onClick={() => onOpen(row)} className="mt-2 min-h-9 text-[13px] font-bold underline decoration-grey-300 underline-offset-[3px]">View details</button>
     </li>
   );
 }
@@ -84,6 +86,7 @@ export function QueueBoard() {
   const [search, setSearch] = useState("");
   const [note, setNote] = useState("");
   const [payFor, setPayFor] = useState<Job | null>(null);
+  const [details, setDetails] = useState<OrderRef | null>(null);
   const today = useToday(shop);
   const rows = today.jobs.filter((r) => r.status !== "declined");
   const fig = figures(today.jobs, today.summary);
@@ -150,7 +153,7 @@ export function QueueBoard() {
         <SearchInput
           className="min-w-0 flex-1"
           label="Search the queue"
-          placeholder={channel === "walk-ins" ? "Ticket, plate or customer" : "Customer or service"}
+          placeholder={channel === "walk-ins" ? "Ticket or customer" : "Customer or service"}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -174,14 +177,15 @@ export function QueueBoard() {
         />
       ) : null}
 
-      <Section title="To accept" rows={open} freeBay={freeBay} noBays={today.bays.length === 0} onAct={onAct} onPay={setPayFor} />
-      <Section title="Done today" rows={done} freeBay={freeBay} noBays={today.bays.length === 0} onAct={onAct} onPay={setPayFor} />
+      <Section title="To accept" rows={open} freeBay={freeBay} noBays={today.bays.length === 0} onAct={onAct} onPay={setPayFor} onOpen={(r) => setDetails({ kind: r.kind, id: r.id })} />
+      <Section title="Done today" rows={done} freeBay={freeBay} noBays={today.bays.length === 0} onAct={onAct} onPay={setPayFor} onOpen={(r) => setDetails({ kind: r.kind, id: r.id })} />
+      {details && shop ? <OrderDetails shopId={shop.id} order={details} onClose={() => setDetails(null)} onChanged={() => today.reload()} /> : null}
       {payFor && shop ? <PaySheet row={payFor} onClose={() => setPayFor(null)} onPaid={() => { setPayFor(null); today.reload(); }} shopId={shop.id} /> : null}
     </div>
   );
 }
 
-function Section({ title, rows, ...rest }: { title: string; rows: Job[]; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void }) {
+function Section({ title, rows, ...rest }: { title: string; rows: Job[]; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void; onOpen: (row: Job) => void }) {
   if (rows.length === 0) return null;
   return (
     <div className="mt-5">

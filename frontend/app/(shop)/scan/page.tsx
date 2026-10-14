@@ -1,7 +1,7 @@
 "use client";
 
 import { BubblesIcon, CarIcon } from "@river-apps/icons";
-import { Avatar, Button, Card, IconButton, Input, MonoText, StatusDot, SuccessState } from "@river-apps/ui";
+import { Avatar, Button, Card, IconButton, Input, StatusDot, SuccessState } from "@river-apps/ui";
 import { Camera, ScanLine, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
@@ -106,7 +106,6 @@ function ScanInner() {
         <Card padding="sm" className="mx-5 mt-5 flex items-center gap-3 p-3.5">
           <Avatar name={b.customerSnapshot.name} preset="rose" size={48} />
           <span className="flex flex-1 flex-col gap-0.5"><b className="text-[16px]">{b.customerSnapshot.name}</b><StatusDot>River Mobile booking</StatusDot></span>
-          {b.plate ? <MonoText inverse className="text-[16px]">{b.plate}</MonoText> : null}
         </Card>
         <div className="mx-5 mt-2.5 grid grid-cols-2 gap-2.5">
           {[

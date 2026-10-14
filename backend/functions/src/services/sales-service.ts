@@ -14,7 +14,6 @@ export interface RecordSaleInput {
   paymentQrPayload?: string | null;
   serviceIds?: string[];
   vehicleSize?: VehicleSize | null;
-  plate?: string | null;
   customerName?: string | null;
 }
 
@@ -37,7 +36,6 @@ export async function recordSale(
     status: "recorded",
     serviceIds: input.serviceIds ?? [],
     vehicleSize: input.vehicleSize ?? null,
-    plate: input.plate ?? null,
     customerName: input.customerName ?? null,
     recordedBy,
     paidAt: at,

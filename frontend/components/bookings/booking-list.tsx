@@ -9,6 +9,7 @@ import { api, type Booking, type Service } from "@/lib/api";
 import { timePHT } from "@/lib/format";
 import { serviceNames } from "@/lib/shop";
 import { useLoad } from "@/lib/use-load";
+import { OrderDetails, type OrderRef } from "@/features/orders/order-details";
 
 const LABEL: Record<string, string> = {
   requested: "New request",
@@ -47,6 +48,7 @@ export function BookingList({
   }, `bookings-${shopId}-${status ?? "all"}`);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const [details, setDetails] = useState<OrderRef | null>(null);
   async function act(id: string, action: "accept" | "decline" | "complete") {
     setBusy(id);
     try {
@@ -73,7 +75,7 @@ export function BookingList({
               <div className="min-w-0">
                 <b className="text-[15.5px]">{serviceNames(b.serviceIds, data.services) || "Car wash"}</b>
                 <p className="text-[13px] font-medium text-muted">{b.customerSnapshot.name} · {timePHT(b.scheduledStart)} · {LABEL[b.status] ?? b.status}</p>
-                <p className="text-[12px] font-semibold text-muted">{b.reference}{b.plate ? ` · ${b.plate}` : ""}</p>
+                <p className="text-[12px] font-semibold text-muted">{b.reference} · <button type="button" onClick={() => setDetails({ kind: "booking", id: b.id })} className="font-bold text-ink underline decoration-grey-300 underline-offset-[3px]">View details</button></p>
               </div>
               <div className="flex gap-1.5">
                 {b.status === "requested" ? (
@@ -91,6 +93,7 @@ export function BookingList({
           </li>
         ))}
       </ul>
+      {details ? <OrderDetails shopId={shopId} order={details} onClose={() => setDetails(null)} onChanged={() => { reload(); onChanged?.(); }} /> : null}
     </ShopContentCard>
   );
 }

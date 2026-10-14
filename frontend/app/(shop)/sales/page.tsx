@@ -55,7 +55,7 @@ function SalesList({ shopId }: { shopId: string }) {
             {data.list.map((s) => (
               <li key={s.id} className="flex items-center justify-between py-3.5">
                 <div>
-                  <b className="text-[15px]">{s.customerName ?? s.plate ?? "Sale"}</b>
+                  <b className="text-[15px]">{s.customerName ?? "Sale"}</b>
                   <p className="text-[12.5px] font-medium text-muted">{s.method.toUpperCase()}{s.paymentRef ? ` · ${s.paymentRef}` : ""} · {timePHT(s.paidAt)}</p>
                 </div>
                 <b className="text-[16px]">{peso(s.amountCentavos)}</b>

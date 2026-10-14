@@ -136,7 +136,8 @@ export interface Bay {
 export interface Customer {
   name: string;
   phoneE164: string | null;
-  plate: string | null;
+  /** Legacy: no longer collected. */
+  plate?: string | null;
   vehicleSize: VehicleSize | null;
   createdAt: string;
   updatedAt: string;
@@ -165,7 +166,8 @@ export interface Booking {
   status: BookingStatus;
   serviceIds: string[];
   vehicleSize: VehicleSize;
-  plate: string | null;
+  /** Legacy: no longer stored or shown. */
+  plate?: string | null;
   scheduledStart: string;
   customerSnapshot: { name: string; phoneE164: string | null };
   /** sha256(bookingId:code) of the check-in code shown in River Mobile. */
@@ -183,6 +185,14 @@ export const QUEUE_STATUSES = ["queued", "in_bay", "done", "paid", "closed", "ca
 export type QueueStatus = (typeof QUEUE_STATUSES)[number];
 
 /** businesses/{businessId}/queue/{queueItemId} (Paid) */
+/** One service on an order, priced server-side from Settings > Services at the time it was added. */
+export interface OrderLine {
+  serviceId: string;
+  name: string;
+  priceCentavos: number;
+  durationMins: number;
+}
+
 export interface QueueItem {
   queueNumber: number;
   queueDate: string;
@@ -191,7 +201,16 @@ export interface QueueItem {
   bayId: string | null;
   serviceIds: string[];
   vehicleSize: VehicleSize | null;
-  plate: string | null;
+  /** Legacy: no longer collected or shown (older items may still have it). */
+  plate?: string | null;
+  /** Service lines and total, computed server-side (items created before Oct 2026 may lack them). */
+  lines?: OrderLine[];
+  totalCentavos?: number;
+  durationMins?: number;
+  customerName?: string | null;
+  notes?: string | null;
+  paidAt?: string | null;
+  paymentMethod?: PaymentMethod | null;
   customerId: string | null;
   bookingId: string | null;
   startedAt: string | null;
@@ -226,7 +245,8 @@ export interface Sale {
   status: "recorded" | "void";
   serviceIds: string[];
   vehicleSize: VehicleSize | null;
-  plate: string | null;
+  /** Legacy: no longer stored or shown. */
+  plate?: string | null;
   customerName: string | null;
   recordedBy: string;
   paidAt: string;

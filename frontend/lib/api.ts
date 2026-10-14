@@ -99,11 +99,14 @@ export interface Booking {
   status: string;
   serviceIds: string[];
   vehicleSize: string;
-  plate: string | null;
   scheduledStart: string;
   customerSnapshot: { name: string; phoneE164: string | null };
   source: string;
   checkedInAt: string | null;
+  queueItemId?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 export interface Service {
   id: string;
@@ -126,12 +129,27 @@ export interface QueueItem {
   bayId: string | null;
   serviceIds: string[];
   vehicleSize?: string | null;
-  plate: string | null;
   source: string;
   startedAt: string | null;
   doneAt?: string | null;
   bookingId?: string | null;
+  /** Service lines + total, priced server-side from Settings > Services. */
+  lines?: OrderLine[];
+  totalCentavos?: number;
+  durationMins?: number;
+  customerName?: string | null;
+  notes?: string | null;
+  paidAt?: string | null;
+  paymentMethod?: PaymentMethod | null;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface OrderLine {
+  serviceId: string;
+  name: string;
+  priceCentavos: number;
+  durationMins: number;
 }
 
 export type PaymentMethod = "cash" | "gcash" | "maya" | "other";
@@ -143,7 +161,8 @@ export interface Sale {
   paymentRef: string | null;
   status: string;
   serviceIds: string[];
-  plate: string | null;
+  queueItemId?: string | null;
+  bookingId?: string | null;
   customerName: string | null;
   paidAt: string;
 }
@@ -190,7 +209,6 @@ export interface Customer {
   id: string;
   name: string;
   phoneE164: string | null;
-  plate: string | null;
   vehicleSize: string | null;
 }
 

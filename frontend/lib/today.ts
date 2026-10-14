@@ -20,7 +20,6 @@ export type Job = {
   status: "requested" | "accepted" | "in_bay" | "done" | "paid" | "declined";
   ref: string;
   who: string;
-  plate: string | null;
   serviceName: string;
   slotLabel: string;
   bayName: string | null;
@@ -70,7 +69,7 @@ export function useToday(shop: Shop | null) {
               : "done";
       if (status !== "requested" && status !== "accepted" && dayKeyPHT(new Date(b.scheduledStart)) !== today) continue;
       jobs.push({
-        id: b.id, kind: "booking", channel: "online", status, ref: b.reference, who: b.customerSnapshot.name, plate: b.plate,
+        id: b.id, kind: "booking", channel: "online", status, ref: b.reference, who: b.customerSnapshot.name,
         serviceName: namesOf(b.serviceIds, data.services), slotLabel: time(b.scheduledStart), bayName: null,
         price: priceOf(b.serviceIds, b.vehicleSize, data.services), paid: false, createdAt: b.scheduledStart, booking: b,
       });
@@ -79,8 +78,9 @@ export function useToday(shop: Shop | null) {
       const status: Job["status"] = q.status === "queued" ? "accepted" : q.status === "in_bay" ? "in_bay" : q.status === "done" ? "done" : q.status === "cancelled" ? "declined" : "paid";
       jobs.push({
         id: q.id, kind: "queue", channel: q.source === "booking" ? "online" : "walk-in", status,
-        ref: `#${q.queueNumber}`, who: q.plate ?? "Walk-in", plate: q.plate, serviceName: namesOf(q.serviceIds, data.services),
-        slotLabel: time(q.createdAt), bayName: bayName(q.bayId), price: priceOf(q.serviceIds, q.vehicleSize, data.services),
+        ref: `#${q.queueNumber}`, who: q.customerName?.trim() || "Walk-in",
+        serviceName: q.lines?.length ? q.lines.map((l) => l.name).join(" · ") : namesOf(q.serviceIds, data.services),
+        slotLabel: time(q.createdAt), bayName: bayName(q.bayId), price: q.totalCentavos ?? priceOf(q.serviceIds, q.vehicleSize, data.services),
         paid: q.status === "paid" || q.status === "closed", createdAt: q.createdAt, queue: q,
       });
     }

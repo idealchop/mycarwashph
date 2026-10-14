@@ -10,7 +10,7 @@ describe("sales + invites + alerts", () => {
     const shop = created.body.data.id as string;
     await request(ctx.app).put(`/businesses/${shop}/plan`).set(auth("ops", true)).send({ plan: "paid" });
     await request(ctx.app).post(`/businesses/${shop}/bays`).set(auth("owner")).send({ name: "Bay 1", sortOrder: 0 });
-    const q = await request(ctx.app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ plate: "ABC1234", serviceIds: [] });
+    const q = await request(ctx.app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ serviceIds: [] });
     const qid = q.body.data.id as string;
     const bay = (await request(ctx.app).get(`/businesses/${shop}/bays`).set(auth("owner"))).body.data[0].id as string;
     await request(ctx.app).patch(`/businesses/${shop}/queue/${qid}`).set(auth("owner")).send({ status: "in_bay", bayId: bay });

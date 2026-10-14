@@ -9,7 +9,7 @@ async function shopWith(plan?: "paid") {
   return { ctx, shop };
 }
 const walkIn = (ctx: ReturnType<typeof makeApps>, shop: string) =>
-  request(ctx.app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ plate: null, serviceIds: [], vehicleSize: "medium" });
+  request(ctx.app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ serviceIds: [], vehicleSize: "medium" });
 
 describe("Partner daily walk-in limit", () => {
   it("lets Partner add 10 walk-ins a Manila day and refuses the 11th with walkin_limit", async () => {
