@@ -1,6 +1,8 @@
 "use client";
 
 import { Topbar } from "@river-apps/ui";
+import { useState } from "react";
+import { OrderDetails, type OrderRef } from "@/features/orders/order-details";
 import { BookingList } from "@/components/bookings/booking-list";
 import { LoadingBlock } from "@/components/shop/page";
 import { PageBack } from "@/components/shop/page-back";
@@ -21,6 +23,7 @@ export default function HistoryPage() {
     `history-${shop?.id ?? "none"}-${paid}`,
   );
   const rows = data ?? [];
+  const [details, setDetails] = useState<OrderRef | null>(null);
   return (
     <div className="mx-auto w-full max-w-[402px] px-4 pb-8 pt-4 lg:max-w-[880px] lg:px-[30px] lg:pt-6">
       <Topbar
@@ -35,12 +38,14 @@ export default function HistoryPage() {
         !data ? <LoadingBlock /> : rows.length ? (
           <ul className="mt-2 flex flex-col gap-2">
             {rows.map((s) => (
-              <li key={s.id} className="flex items-center justify-between gap-3 rounded-card bg-surface px-4 py-3 shadow-card">
+              <li key={s.id}>
+                <button type="button" disabled={!s.queueItemId && !s.bookingId} onClick={() => setDetails(s.queueItemId ? { kind: "queue", id: s.queueItemId } : { kind: "booking", id: s.bookingId as string })} className="flex w-full items-center justify-between gap-3 rounded-card bg-surface px-4 py-3 text-left shadow-card">
                 <span className="min-w-0">
-                  <b className="block truncate">{s.customerName || s.plate || "Walk-in"}</b>
-                  <small className="text-[12.5px] font-semibold text-muted">{s.plate && s.customerName ? `${s.plate} · ` : ""}{s.method.toUpperCase()} · {when(s.paidAt)}</small>
+                  <b className="block truncate">{s.customerName || "Walk-in"}</b>
+                  <small className="text-[12.5px] font-semibold text-muted">{s.method.toUpperCase()} · {when(s.paidAt)}</small>
                 </span>
                 <b>{peso(s.amountCentavos)}</b>
+                </button>
               </li>
             ))}
           </ul>
@@ -55,6 +60,7 @@ export default function HistoryPage() {
           emptyDescription="Turn on “List on River Mobile” in Account → Edit shop so customers can book you."
         />
       )}
+      {details && shop ? <OrderDetails shopId={shop.id} order={details} onClose={() => setDetails(null)} /> : null}
     </div>
   );
 }

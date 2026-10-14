@@ -4,7 +4,7 @@ import type { Deps } from "../deps.js";
 import { requireMembership, requirePlan, requireRole } from "../middleware/business-middleware.js";
 import { getBusiness, getMember, getUser } from "../middleware/context.js";
 import { validateBody } from "../middleware/validate.js";
-import { badRequest, forbidden, HttpError } from "../lib/errors.js";
+import { badRequest, forbidden, HttpError, notFound } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
 import {
   baySchema,
@@ -23,7 +23,7 @@ import {
   updateServiceSchema,
   verifyScanSchema,
 } from "../models/schemas.js";
-import { BOOKING_STATUSES, type BookingStatus } from "../models/types.js";
+import { BOOKING_STATUSES, type BookingStatus, type QueueItem } from "../models/types.js";
 import { listBookings, getBooking, publicBooking, transitionBooking, verifyScan } from "../services/bookings-service.js";
 import {
   activateBilling,
@@ -209,6 +209,11 @@ export function businessRoutes(deps: Deps) {
     const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
     const [data, walkIns] = await Promise.all([listQueue(store, b.id, date), walkInAllowance(store, b.id, b.plan, deps.now())]);
     res.json({ data, date, walkIns });
+  });
+  r.get("/queue/:queueItemId", member, async (req, res) => {
+    const item = await store.get<QueueItem>(paths.queueItem(getBusiness(res).id, param(req.params.queueItemId)));
+    if (!item) throw notFound("Queue item not found.");
+    res.json({ data: item });
   });
   r.post("/queue", member, validateBody(queueCreateSchema), async (req, res) => {
     const b = getBusiness(res);

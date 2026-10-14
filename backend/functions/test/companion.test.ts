@@ -36,7 +36,7 @@ async function setup(plan: "partner" | "paid", opts: { enabled?: boolean } = {})
 
 /** Walk-ins today in every status, via the real API. */
 async function walkIns(app: ReturnType<typeof createApp>, shop: string) {
-  const add = async () => (await request(app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ plate: null, serviceIds: [], vehicleSize: "medium" })).body.data.id as string;
+  const add = async () => (await request(app).post(`/businesses/${shop}/queue`).set(auth("owner")).send({ serviceIds: [], vehicleSize: "medium" })).body.data.id as string;
   const patch = (id: string, body: object) => request(app).patch(`/businesses/${shop}/queue/${id}`).set(auth("owner")).send(body);
   for (let i = 0; i < 3; i++) await add(); // queued
   const bay = await add(); await patch(bay, { status: "in_bay" });

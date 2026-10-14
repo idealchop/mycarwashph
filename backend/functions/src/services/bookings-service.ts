@@ -101,7 +101,8 @@ export async function verifyScan(store: DocStore, business: Doc<Business>, paylo
         source: "booking",
         serviceIds: booking.serviceIds,
         vehicleSize: booking.vehicleSize,
-        plate: booking.plate,
+        customerName: booking.customerSnapshot?.name ?? null,
+        notes: booking.notes ?? null,
         customerId: null,
         bookingId: booking.id,
       }, now);
@@ -146,7 +147,7 @@ export async function createApiBooking(store: DocStore, clientId: string, input:
     status: "requested",
     serviceIds: input.serviceIds,
     vehicleSize: input.vehicleSize,
-    plate: input.plate ?? null,
+    plate: null, // River Mobile may still send one; it is not stored.
     scheduledStart: new Date(input.slotStart).toISOString(),
     customerSnapshot: { name: input.customer.name, phoneE164: input.customer.phoneE164 ?? null },
     verifyCodeHash: codeHash(bookingId, code),

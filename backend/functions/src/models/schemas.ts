@@ -78,7 +78,6 @@ export const updateBaySchema = baySchema.partial().strict();
 export const customerSchema = z.object({
   name,
   phoneE164: phoneE164.nullable().default(null),
-  plate: z.string().trim().max(12).nullable().default(null),
   vehicleSize: vehicleSize.nullable().default(null),
 });
 
@@ -87,10 +86,12 @@ export const verifyScanSchema = z.object({
   payload: z.string().trim().min(10).max(200),
 });
 
+/** Walk-in: services picked from Settings > Services; the price is computed server-side. No plate number. */
 export const queueCreateSchema = z.object({
   serviceIds: z.array(id).max(10).default([]),
-  vehicleSize: vehicleSize.nullable().default(null),
-  plate: z.string().trim().max(12).nullable().default(null),
+  vehicleSize: vehicleSize.default("medium"),
+  customerName: z.string().trim().max(80).nullable().default(null),
+  notes: z.string().trim().max(500).nullable().default(null),
   customerId: id.nullable().default(null),
 });
 
@@ -98,10 +99,15 @@ export const queueUpdateSchema = z
   .object({
     status: z.enum(QUEUE_STATUSES).optional(),
     bayId: id.nullable().optional(),
-    /** Required when moving to `paid`: sale amount + how the customer paid. */
+    /** Edit the order before it is paid: services and size (price recomputed), name, notes. */
+    serviceIds: z.array(id).min(1).max(10).optional(),
+    vehicleSize: vehicleSize.optional(),
+    customerName: z.string().trim().max(80).nullable().optional(),
+    notes: z.string().trim().max(500).nullable().optional(),
+    /** Required when moving to `paid`: how the customer paid. Amount defaults to the order total. */
     sale: z
       .object({
-        amountCentavos: centavos,
+        amountCentavos: centavos.optional(),
         method: z.enum(PAYMENT_METHODS),
         paymentRef: z.string().trim().max(80).nullable().optional(),
         paymentQrPayload: z.string().trim().max(500).nullable().optional(),
@@ -130,7 +136,6 @@ export const recordSaleSchema = z.object({
   paymentQrPayload: z.string().trim().max(500).nullable().optional(),
   serviceIds: z.array(id).max(10).default([]),
   vehicleSize: vehicleSize.nullable().optional(),
-  plate: z.string().trim().max(12).nullable().optional(),
   customerName: z.string().trim().max(80).nullable().optional(),
 });
 
@@ -138,6 +143,7 @@ export const v1CreateBookingSchema = z.object({
   shopId: id,
   serviceIds: z.array(id).min(1).max(10),
   vehicleSize,
+  /** Accepted for compatibility with River Mobile; not stored. */
   plate: z.string().trim().max(12).optional(),
   slotStart: z.iso.datetime({ offset: true }),
   customer: z.object({

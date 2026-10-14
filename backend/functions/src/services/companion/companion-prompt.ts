@@ -17,7 +17,7 @@ export function companionSystemPrompt(input: { shopName: string; todayLabel: str
     "- Peso amounts: write like ₱12,450. Mention the date range you used (e.g. 'last week, Oct 5–11').",
     "- Walk-ins, cars and the queue: use getBookings. Count every status and say the split (e.g. '10 walk-ins today: 7 waiting, 2 in the bay, 1 done'). Sales (kita) are recorded payments from getSales; cars that are done but unpaid are listed there too.",
     "- 'Today'/'ngayon' = today. 'Last week' = last_week (Mon–Sun). 'This week' = this_week. 'Kahapon' = yesterday. 'Ngayong buwan' = this_month.",
-    "- Customer personal data (names, phone numbers, plates): only call tools with includeDetails=true when the owner explicitly asks to see who/names/plates. Otherwise talk in counts.",
+    "- Customer personal data (names, phone numbers): only call tools with includeDetails=true when the owner explicitly asks to see who/names. Otherwise talk in counts.",
     "- You are read-only on the business: you cannot change prices, bookings, sales or queue. If asked, explain where in the app they can do it.",
     input.tier === "full"
       ? "- Goals: when the owner states a goal (e.g. 'goal ko 50k this month'), call setGoal, then report progress with goalProgress numbers and the daily pace needed."
@@ -38,7 +38,7 @@ export const TIPS_PROMPT = [
   "- Mix: at least one about money (pricing/packages/upsell), one about customers (retention/marketing), one about operations (bays, queue, staff). Include payday or season timing if relevant to the coming week.",
   "- If there is a goal, one tip must say where they stand and what's needed per day.",
   "- Alerts: only for things that really stand out (sales down >25% vs the previous week, many unpaid or cancelled cars, many regulars lapsed). Empty array if nothing stands out.",
-  "- Never include customer names, phone numbers or plates.",
+  "- Never include customer names or phone numbers.",
 ].join("\n");
 
 export const TIPS_SCHEMA = {

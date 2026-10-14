@@ -62,7 +62,7 @@ function priceOf(d: ShopData, ids: string[], size: string | null | undefined) {
 }
 
 /** A car that was actually washed: queue items done/paid/closed, completed bookings not in the queue, and sales without a queue item. */
-interface Visit { at: string; serviceIds: string[]; size: string | null; plate: string | null; bayId: string | null; startedAt: string | null; doneAt: string | null; centavos: number; paid: boolean }
+interface Visit { at: string; serviceIds: string[]; size: string | null; who: string | null; bayId: string | null; startedAt: string | null; doneAt: string | null; centavos: number; paid: boolean }
 
 function visits(d: ShopData, from: Date, to: Date): Visit[] {
   const saleByQueue = new Map(d.sales.filter((s) => s.status === "recorded" && s.queueItemId).map((s) => [s.queueItemId!, s]));
@@ -74,15 +74,15 @@ function visits(d: ShopData, from: Date, to: Date): Visit[] {
     const at = q.doneAt ?? q.updatedAt ?? q.createdAt;
     if (!within(at, from, to)) continue;
     const sale = saleByQueue.get(q.id);
-    out.push({ at, serviceIds: q.serviceIds, size: q.vehicleSize, plate: q.plate, bayId: q.bayId, startedAt: q.startedAt, doneAt: q.doneAt, centavos: sale?.amountCentavos ?? priceOf(d, q.serviceIds, q.vehicleSize), paid: q.status !== "done" });
+    out.push({ at, serviceIds: q.serviceIds, size: q.vehicleSize, who: q.customerName?.trim().toLowerCase() || null, bayId: q.bayId, startedAt: q.startedAt, doneAt: q.doneAt, centavos: sale?.amountCentavos ?? priceOf(d, q.serviceIds, q.vehicleSize), paid: q.status !== "done" });
   }
   for (const b of d.bookings) {
     if (!SERVED_BOOKING.has(b.status) || bookingInQueue.has(b.id) || !within(b.updatedAt, from, to)) continue;
-    out.push({ at: b.updatedAt, serviceIds: b.serviceIds, size: b.vehicleSize, plate: b.plate, bayId: null, startedAt: null, doneAt: b.updatedAt, centavos: priceOf(d, b.serviceIds, b.vehicleSize), paid: b.status !== "completed" && b.status !== "done" });
+    out.push({ at: b.updatedAt, serviceIds: b.serviceIds, size: b.vehicleSize, who: (b.customerSnapshot?.phoneE164 || b.customerSnapshot?.name || "").trim().toLowerCase() || null, bayId: null, startedAt: null, doneAt: b.updatedAt, centavos: priceOf(d, b.serviceIds, b.vehicleSize), paid: b.status !== "completed" && b.status !== "done" });
   }
   for (const s of d.sales) {
     if (s.status !== "recorded" || (s.queueItemId && queueIds.has(s.queueItemId)) || !within(s.paidAt, from, to)) continue;
-    out.push({ at: s.paidAt, serviceIds: s.serviceIds, size: s.vehicleSize, plate: s.plate, bayId: null, startedAt: null, doneAt: s.paidAt, centavos: s.amountCentavos, paid: true });
+    out.push({ at: s.paidAt, serviceIds: s.serviceIds, size: s.vehicleSize, who: s.customerName?.trim().toLowerCase() || null, bayId: null, startedAt: null, doneAt: s.paidAt, centavos: s.amountCentavos, paid: true });
   }
   return out;
 }
@@ -128,7 +128,7 @@ export function getBookings(d: ShopData, args: Record<string, unknown>) {
     byHour: tally(arrivals, hour), byWeekday: tally(arrivals, weekday),
     walkInsByWeekday: tally(walkIns.map((q) => q.createdAt), weekday),
     ...(args.includeDetails === true
-      ? { details: bookings.slice(0, 30).map((b) => ({ reference: b.reference, when: b.scheduledStart, status: b.status, customer: b.customerSnapshot?.name ?? null, plate: b.plate })) }
+      ? { details: bookings.slice(0, 30).map((b) => ({ reference: b.reference, when: b.scheduledStart, status: b.status, customer: b.customerSnapshot?.name ?? null })) }
       : {}),
     note: "Walk-in statuses: queued = waiting, in_bay = being washed, done = finished not yet paid, paid/closed = paid, cancelled.",
   };
@@ -170,22 +170,22 @@ export function staffPerformance(d: ShopData, args: Record<string, unknown>) {
   };
 }
 
-/** Returning customers (by plate) who haven't come back in N days. Plates only when the owner asked. */
+/** Returning customers (by name or River Mobile phone) who haven't come back in N days. Names only when the owner asked. */
 export function inactiveCustomers(d: ShopData, args: Record<string, unknown>, allowDetails: boolean) {
   const days = Math.min(180, Math.max(7, Number(args.days) || 30));
   const last = new Map<string, { last: number; visits: number }>();
   for (const v of visits(d, new Date(0), d.now)) {
-    if (!v.plate) continue;
-    const row = last.get(v.plate) ?? { last: 0, visits: 0 };
+    if (!v.who) continue;
+    const row = last.get(v.who) ?? { last: 0, visits: 0 };
     row.visits++; row.last = Math.max(row.last, ms(v.at));
-    last.set(v.plate, row);
+    last.set(v.who, row);
   }
   const cutoff = d.now.getTime() - days * 86_400_000;
   const lapsed = [...last.entries()].filter(([, r]) => r.last < cutoff).sort((a, b) => b[1].visits - a[1].visits);
   const show = allowDetails && args.includeDetails === true;
   return {
     days, inactiveCount: lapsed.length, knownCustomers: last.size, regularsLapsed: lapsed.filter(([, r]) => r.visits >= 2).length,
-    customers: show ? lapsed.slice(0, 25).map(([plate, r]) => ({ plate, visits: r.visits, lastVisit: new Date(r.last).toISOString().slice(0, 10) })) : undefined,
+    customers: show ? lapsed.slice(0, 25).map(([customer, r]) => ({ customer, visits: r.visits, lastVisit: new Date(r.last).toISOString().slice(0, 10) })) : undefined,
     detailsHidden: !show,
   };
 }
@@ -199,13 +199,13 @@ export const TOOL_DECLS: ToolDecl[] = [
   { name: "topServices", description: "Best-selling services/packages by revenue and cars, plus vehicle size mix, for a period.", parameters: withPeriod({ limit: { type: "integer" } }) },
   { name: "staffPerformance", description: "Per-bay cars, sales, average wash minutes, and the average wait before a car starts.", parameters: withPeriod() },
   { name: "branchComparison", description: "Sales and cars per shop (branch) this owner owns, side by side.", parameters: withPeriod() },
-  { name: "inactiveCustomers", description: "Customers (by plate) who haven't come back in N days (default 30). includeDetails=true lists plates ONLY when the owner explicitly asks who.", parameters: { type: "object", properties: { days: { type: "integer" }, includeDetails: { type: "boolean" } } } },
+  { name: "inactiveCustomers", description: "Customers (by name or phone) who haven't come back in N days (default 30). includeDetails=true lists names ONLY when the owner explicitly asks who.", parameters: { type: "object", properties: { days: { type: "integer" }, includeDetails: { type: "boolean" } } } },
   { name: "goalProgress", description: "The owner's saved goals and progress (actual, projection, needed per day).", parameters: { type: "object", properties: {} } },
   { name: "setGoal", description: "Save a goal the owner states (e.g. 'goal ko 50k a month'). metric revenue (pesos) or cars; period month or week. Only Companion memory; never business data.", parameters: { type: "object", properties: { metric: { type: "string", enum: ["revenue", "cars"] }, period: { type: "string", enum: ["month", "week"] }, target: { type: "number" } }, required: ["metric", "period", "target"] } },
 ];
 /** Same split as Barbers: multi-branch comparison and goals are Pro or Lifetime. */
 export const PRO_ONLY = new Set(["branchComparison", "setGoal"]);
-const DETAIL_ASK = /\b(name|names|plate|plates|who|list|sino|sinu|pangalan|plaka|contact|number|numero)\b/i;
+const DETAIL_ASK = /\b(name|names|who|list|sino|sinu|pangalan|contact|number|numero)\b/i;
 
 export interface ToolContext { store: DocStore; business: Doc<Business>; uid: string; now: Date; paid: boolean; lastUserText: string }
 
