@@ -1,5 +1,7 @@
 "use client";
 
+import { hasPaidFeatures } from "@/lib/plan-gating";
+
 import Link from "next/link";
 import { CarIllustration } from "@river-apps/icons";
 import { AppShell, Button, MobileTabBar, Sidebar } from "@river-apps/ui";
@@ -46,7 +48,7 @@ const FOCUS = ["/queue/new", "/settings/edit", "/scan"];
 export function ShopShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
   const { shop } = useShop();
-  const paid = shop?.plan === "paid";
+  const paid = hasPaidFeatures(shop);
   const focus = FOCUS.some((r) => pathname === r || pathname.startsWith(`${r}/`));
   const active = activeKeyFor(pathname);
 

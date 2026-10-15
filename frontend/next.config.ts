@@ -29,7 +29,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   turbopack: { root: fileURLToPath(new URL("..", import.meta.url)) },
   // AI Companion switch (lib/companion-flag.ts): on only where COMPANION_ENABLED=1.
-  env: { ...webConfigEnv(), NEXT_PUBLIC_COMPANION_ENABLED: process.env.COMPANION_ENABLED === "1" ? "1" : "0" },
+  // Plan gating switch (lib/plan-gating.ts): off unless PLAN_GATING_ENABLED=1.
+  env: {
+    ...webConfigEnv(),
+    NEXT_PUBLIC_COMPANION_ENABLED: process.env.COMPANION_ENABLED === "1" ? "1" : "0",
+    NEXT_PUBLIC_PLAN_GATING_ENABLED: process.env.PLAN_GATING_ENABLED === "1" ? "1" : "0",
+  },
   // River Maps is a source-only workspace package (vendored from idealchop/river-maps).
   transpilePackages: ["@river/map"],
   // Pages retired when Mycarwash moved to the Barbers.ph structure (3-item nav).

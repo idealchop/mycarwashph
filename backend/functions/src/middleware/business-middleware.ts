@@ -1,3 +1,4 @@
+import { planGatingEnabled } from "../config/plan-gating.js";
 import type { RequestHandler } from "express";
 import type { DocStore } from "../store/doc-store.js";
 import { forbidden, HttpError } from "../lib/errors.js";
@@ -50,6 +51,7 @@ export function requireRole(...roles: Role[]): RequestHandler {
 export function requirePlan(plan: Plan): RequestHandler {
   return (_req, res, next) => {
     const business = getBusiness(res);
+    if (!planGatingEnabled()) return next();
     if (business.plan !== plan || business.planStatus !== "active") {
       return next(new HttpError(402, "plan_required", plan === "paid" ? "This feature comes with Pro or Lifetime." : `This feature needs the ${plan} plan.`));
     }

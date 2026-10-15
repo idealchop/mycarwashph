@@ -1,5 +1,7 @@
 "use client";
 
+import { hasPaidFeatures } from "@/lib/plan-gating";
+
 import { CarIllustration, CoinIcon } from "@river-apps/icons";
 import { Plus, ScanLine } from "lucide-react";
 import { Avatar, Badge, Button, Card, CardHeader, HeroBanner, ProgressRing, SearchInput, SectionHeader, StatCard, Topbar } from "@river-apps/ui";
@@ -75,7 +77,7 @@ export function HomeScreen() {
   const { requireAuth } = useAuthGate();
   const today = useToday(shop);
   const [note, setNote] = useState("");
-  const paid = shop?.plan === "paid";
+  const paid = hasPaidFeatures(shop);
   const greeting = greetingFor();
   const fig = figures(today.jobs, today.summary);
   const fresh = today.jobs.filter((j) => j.status === "requested");
