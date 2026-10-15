@@ -1,5 +1,7 @@
 "use client";
 
+import { hasPaidFeatures, planGatingEnabled } from "@/lib/plan-gating";
+
 import { CompanionAvatar } from "@/features/companion/companion-mark";
 import { companionEnabled } from "@/lib/companion-flag";
 import { CarIllustration } from "@river-apps/icons";
@@ -23,14 +25,14 @@ export function AccountScreen() {
   const { requireAuth } = useAuthGate();
   const router = useRouter();
   const [partnerOn, setPartnerOn] = useState(false);
-  const paid = shop?.plan === "paid";
+  const paid = hasPaidFeatures(shop);
   const place = (shop?.location?.formattedAddress || shop?.address || "").split(",").slice(-2).join(",").trim();
   const shops = me?.businesses ?? [];
 
   const links = [
     { href: "/history", icon: History, title: "History", subtitle: "Past washes and bookings" },
     { href: "/settings/services", icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
-    { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: paid ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
+    { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: shop?.plan === "paid" ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
   ];
 
   return (
@@ -143,7 +145,7 @@ export function AccountScreen() {
               <b className="block truncate text-[15px]">AI Companion</b>
               <small className="block truncate text-[13px] font-medium text-muted">Ask about your numbers, weekly tips{paid ? ", goals" : ""}</small>
             </span>
-            <Badge variant="soft" size="sm">{paid ? "Unlimited" : "10/mo"}</Badge>
+            <Badge variant="soft" size="sm">{!planGatingEnabled() ? "Included" : paid ? "Unlimited" : "10/mo"}</Badge>
           </Link> : null}
           {paid ? (
             <div className="relative mx-1.5 mb-1 mt-11 rounded-card bg-grey-100 px-4 pb-4 pt-[78px] lg:hidden">
@@ -159,7 +161,7 @@ export function AccountScreen() {
               <b className="block truncate text-[15px]">Walk-in</b>
               <small className="block truncate text-[13px] font-medium text-muted">{paid ? "Add a car at the counter" : "10 a day on Partner"}</small>
             </span>
-            <Badge variant="soft" size="sm">{paid ? "Unlimited" : "10/day"}</Badge>
+            <Badge variant="soft" size="sm">{!planGatingEnabled() ? "Included" : paid ? "Unlimited" : "10/day"}</Badge>
           </Link>
         </Card>
 

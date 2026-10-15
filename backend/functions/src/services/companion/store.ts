@@ -1,3 +1,4 @@
+import { planGatingEnabled } from "../../config/plan-gating.js";
 import { logger } from "firebase-functions/logger";
 import type { Business } from "../../models/types.js";
 import type { DocStore } from "../../store/doc-store.js";
@@ -24,6 +25,7 @@ export type Tier = "full" | "partner";
 
 /** Pro (monthly) and Lifetime shops are on the "paid" plan; everything else is Partner. */
 export function tierOf(business: Pick<Business, "plan" | "planStatus">): Tier {
+  if (!planGatingEnabled()) return "full";
   return business.plan === "paid" && business.planStatus === "active" ? "full" : "partner";
 }
 

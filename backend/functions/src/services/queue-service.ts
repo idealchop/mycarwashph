@@ -1,3 +1,4 @@
+import { planGatingEnabled } from "../config/plan-gating.js";
 import { HttpError, notFound, unprocessable } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
 import type { Bay, OrderLine, Plan, PaymentMethod, QueueItem, QueueStatus, Service, VehicleSize } from "../models/types.js";
@@ -69,7 +70,7 @@ export async function allocateQueueItem(store: DocStore, tx: Tx, businessId: str
 /** Partner shops seat up to 10 walk-ins per Manila calendar day; Pro and Lifetime are unlimited (Barbers.ph parity). */
 export const PARTNER_WALKINS_PER_DAY = 10;
 export const WALKIN_LIMIT_MESSAGE = `You've added ${PARTNER_WALKINS_PER_DAY} walk-ins today, the Partner limit. Upgrade to Pro or Lifetime for unlimited walk-ins.`;
-export const walkInLimit = (plan: Plan) => (plan === "paid" ? null : PARTNER_WALKINS_PER_DAY);
+export const walkInLimit = (plan: Plan) => (plan === "paid" || !planGatingEnabled() ? null : PARTNER_WALKINS_PER_DAY);
 
 export interface WalkInAllowance { used: number; limit: number | null; left: number | null }
 

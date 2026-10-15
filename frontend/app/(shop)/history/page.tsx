@@ -1,5 +1,7 @@
 "use client";
 
+import { hasPaidFeatures } from "@/lib/plan-gating";
+
 import { Topbar } from "@river-apps/ui";
 import { useState } from "react";
 import { OrderDetails, type OrderRef } from "@/features/orders/order-details";
@@ -17,7 +19,7 @@ const when = (iso: string) =>
 /** Past visits, opened from Account (Barbers.ph HistoryScreen): every finished, paid wash, walk-ins and bookings. */
 export default function HistoryPage() {
   const { shop, loading } = useShop();
-  const paid = shop?.plan === "paid";
+  const paid = hasPaidFeatures(shop);
   const { data } = useLoad(
     () => (shop && paid ? api<{ data: Sale[] }>(`/businesses/${shop.id}/sales?limit=200`).then((r) => r.data) : Promise.resolve(null)),
     `history-${shop?.id ?? "none"}-${paid}`,

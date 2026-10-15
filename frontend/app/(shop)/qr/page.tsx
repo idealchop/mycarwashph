@@ -1,5 +1,7 @@
 "use client";
 
+import { hasPaidFeatures } from "@/lib/plan-gating";
+
 import { Button, Card } from "@river-apps/ui";
 import { Printer } from "lucide-react";
 import { RiverIcon } from "@/components/brand";
@@ -16,7 +18,7 @@ export default function QrPage() {
       empty={{ title: "Set up your shop first", description: "Your shop QR is ready once your shop is saved." }}
     >
       {(s) =>
-        s.plan === "paid" ? (
+        hasPaidFeatures(s) ? (
           <div className="mt-6 flex flex-col items-center">
             <Card className="flex w-full max-w-sm flex-col items-center gap-4 p-6 text-center print:shadow-none">
               <RiverIcon size={44} />

@@ -1,5 +1,7 @@
 "use client";
 
+import { hasPaidFeatures } from "@/lib/plan-gating";
+
 import { publishWalkIns, type WalkInAllowance } from "./walkin-limit";
 import { useMemo } from "react";
 import { api, type Bay, type Booking, type MeResponse, type QueueItem, type SalesSummary, type Service } from "./api";
@@ -38,7 +40,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString("en-PH", { timeZo
 
 /** Today's board for a shop: bookings + queue, bays, and sales, as Barbers.ph rows. */
 export function useToday(shop: Shop | null) {
-  const paid = shop?.plan === "paid";
+  const paid = hasPaidFeatures(shop);
   const { data, error, reload } = useLoad(async () => {
     if (!shop) return null;
     const [bookings, services, queueRes, bays, summary] = await Promise.all([

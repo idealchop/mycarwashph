@@ -1,5 +1,7 @@
 "use client";
 
+import { hasPaidFeatures } from "@/lib/plan-gating";
+
 import { Icon3D } from "@river-apps/icons";
 import { Button, Input, Topbar } from "@river-apps/ui";
 import { useState, type FormEvent } from "react";
@@ -17,7 +19,7 @@ export default function BaysPage() {
   const [note, setNote] = useState("");
   const holders = new Map(today.jobs.filter((j) => j.status === "in_bay" && j.queue?.bayId).map((j) => [j.queue!.bayId!, j]));
   const owner = shop?.role === "owner";
-  const paid = shop?.plan === "paid";
+  const paid = hasPaidFeatures(shop);
 
   async function run(fn: () => Promise<unknown>) {
     setBusy(true);

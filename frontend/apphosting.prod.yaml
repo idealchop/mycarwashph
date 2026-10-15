@@ -19,3 +19,7 @@ env:
   - variable: COMPANION_ENABLED
     value: "0"
     availability: [BUILD, RUNTIME]
+  # Plan gating (frontend/lib/plan-gating.ts, backend config/plan-gating.ts). Off while testing; "1" restores Partner limits.
+  - variable: PLAN_GATING_ENABLED
+    value: "0"
+    availability: [BUILD, RUNTIME]

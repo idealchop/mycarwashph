@@ -1,5 +1,7 @@
 "use client";
 
+import { hasPaidFeatures } from "@/lib/plan-gating";
+
 import { Button, EmptyState, StatCard } from "@river-apps/ui";
 import { Icon3D } from "@river-apps/icons";
 import { ShopContentCard } from "@/components/shop/content-card";
@@ -17,7 +19,7 @@ export default function SalesPage() {
       empty={{ title: "No sales yet", description: "Payments you record in the queue add up here." }}
     >
       {(s) =>
-        s.plan === "paid" ? (
+        hasPaidFeatures(s) ? (
           <SalesList shopId={s.id} />
         ) : (
           <div className="mt-6 rounded-card bg-grey-100 p-5">
