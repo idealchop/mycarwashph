@@ -2,7 +2,7 @@
 
 import { hasPaidFeatures } from "@/lib/plan-gating";
 
-import { CarIllustration, CoinIcon } from "@river-apps/icons";
+import { CoinIcon } from "@river-apps/icons";
 import { Plus, ScanLine } from "lucide-react";
 import { Avatar, Badge, Button, Card, CardHeader, HeroBanner, ProgressRing, SearchInput, SectionHeader, StatCard, Topbar } from "@river-apps/ui";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuthGate } from "@/components/auth/auth-gate";
 import { PageBack } from "@/components/shop/page-back";
+import { HeroArt } from "./hero-art";
 import { CompanionCard } from "@/features/companion/companion-card";
 import { SalesChartCard, type SalesRow } from "@/features/sales/sales-chart";
 import { useAuth } from "@/lib/auth";
@@ -130,7 +131,10 @@ export function HomeScreen() {
             </Link>
           </div>
         </header>
-        <section className="relative isolate mx-4 mt-3 flex h-[150px] items-center overflow-hidden rounded-banner bg-ink px-4 text-on-ink">
+        <section className="relative isolate mx-4 mt-3 flex h-[150px] items-center overflow-hidden rounded-banner bg-black px-4 text-on-ink">
+          <HeroArt className="w-[78%]" fade={45} />
+          {/* keeps the text readable where the art starts */}
+          <i aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-[62%] bg-gradient-to-r from-black from-45% to-transparent" />
           <div className="relative z-10 min-w-0 flex-1">
             <p className="truncate text-[12px] leading-4">
               <span className="font-medium text-on-ink-muted">{greeting}, </span>
@@ -143,7 +147,6 @@ export function HomeScreen() {
               <Button href="/scan" variant="ghost-inverse" size="sm" className={PILL} leadingIcon={<ScanLine size={14} strokeWidth={1.9} />}>Scan QR</Button>
             </div>
           </div>
-          <div aria-hidden className="relative z-0 -mr-6 w-[120px] flex-none"><CarIllustration size={120} /></div>
         </section>
         <div className="mx-4 mt-3 grid grid-cols-3 gap-3">
           <StatCard className="pb-3" label="To accept" value={String(fig.toAccept)} />
@@ -186,8 +189,9 @@ export function HomeScreen() {
                 <Button href="/scan" variant="ghost-inverse" size="md" leadingIcon={<ScanLine size={18} strokeWidth={1.75} />}>Scan QR</Button>
               </div>
             }
-            illustration={<CarIllustration size={300} />}
-            illustrationClassName="right-[10px] bottom-3"
+            tone="black"
+            illustration={<HeroArt className="w-full" fade={32} />}
+            illustrationClassName="inset-y-0 right-0 w-[64%]"
           />
           <StatCard
             className="px-5 pb-4 pt-[18px]"
