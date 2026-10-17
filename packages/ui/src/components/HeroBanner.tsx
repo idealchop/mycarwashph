@@ -17,6 +17,8 @@ export interface HeroBannerProps extends Omit<HTMLAttributes<HTMLElement>, "titl
   /** Max width of the text column so it never runs under the illustration. */
   contentWidth?: number | string;
   size?: "sm" | "md" | "lg";
+  /** "black": pure #000 card with no glows, for full-bleed photo art (River Apps standard hero). */
+  tone?: "ink" | "black";
 }
 
 const titleCls = { md: "text-[20px] leading-[1.12]", lg: "text-[30px] leading-[1.12]", display: "text-[34px] leading-[1.05] tracking-[-0.035em]" };
@@ -25,13 +27,13 @@ const sizeCls = { sm: "min-h-[164px] px-5 py-4", md: "min-h-[186px] px-5 py-4", 
 /** Black hero banner with a bold title, white call to action and a 3D illustration. */
 export function HeroBanner({
   eyebrow, title, titleSize = "md", description, actions, illustration, illustrationClassName,
-  contentWidth = "55%", size = "md", className, ...rest
+  contentWidth = "55%", size = "md", tone = "ink", className, ...rest
 }: HeroBannerProps) {
   return (
-    <section className={cn("relative isolate overflow-hidden rounded-banner bg-ink text-on-ink", sizeCls[size], className)} {...rest}>
-      {/* neutral glows */}
-      <i aria-hidden className="pointer-events-none absolute -right-20 -top-[120px] size-[260px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.16),rgba(255,255,255,0)_65%)]" />
-      <i aria-hidden className="pointer-events-none absolute -bottom-[140px] right-10 size-[220px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.08),rgba(255,255,255,0)_65%)]" />
+    <section className={cn("relative isolate overflow-hidden rounded-banner text-on-ink", tone === "black" ? "bg-black" : "bg-ink", sizeCls[size], className)} {...rest}>
+      {/* neutral glows (not on the pure-black photo variant) */}
+      {tone === "black" ? null : <i aria-hidden className="pointer-events-none absolute -right-20 -top-[120px] size-[260px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.16),rgba(255,255,255,0)_65%)]" />}
+      {tone === "black" ? null : <i aria-hidden className="pointer-events-none absolute -bottom-[140px] right-10 size-[220px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.08),rgba(255,255,255,0)_65%)]" />}
       <div className="relative z-10 flex flex-col items-start" style={{ maxWidth: contentWidth }}>
         {eyebrow ? <span className="rounded-pill bg-on-ink-subtle px-2.5 py-[5px] text-[11.5px] font-bold leading-none text-on-ink-muted">{eyebrow}</span> : null}
         <h2 className={cn("font-extrabold tracking-[-0.025em]", eyebrow ? (titleSize === "display" ? "mt-1.5" : "mt-2.5") : "", titleCls[titleSize])}>{title}</h2>
