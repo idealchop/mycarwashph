@@ -9,7 +9,6 @@ export function HeroArt({ className, fade = 38 }: { className?: string; fade?: n
   return (
     <picture className={cn("pointer-events-none absolute inset-y-0 right-0 block", className)}>
       <source srcSet="/hero/car-hero.webp" type="image/webp" />
-      {/* eslint-disable-next-line @next/next/no-img-element -- decorative art; <picture> gives the webp + png fallback */}
       <img
         src="/hero/car-hero.png"
         alt=""
