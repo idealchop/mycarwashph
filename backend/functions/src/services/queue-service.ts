@@ -89,6 +89,10 @@ export async function createQueueItem(store: DocStore, businessId: string, input
   if (!input.serviceIds.length && (await hasActiveServices(store, businessId))) {
     throw unprocessable("Pick at least one service.", "service_required");
   }
+  // Tenant wall: a customer reference must belong to this shop.
+  if (input.customerId && !(await store.get(paths.customer(businessId, input.customerId)))) {
+    throw unprocessable("That customer is not in this shop.", "invalid_customer");
+  }
   const priced = { ...input, ...(await priceOrder(store, businessId, input.serviceIds, input.vehicleSize)) };
   return store.runTransaction(async (tx) => {
     // Firestore transactions: all reads first. allocateQueueItem reads the queue counter before its writes.
