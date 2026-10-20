@@ -1,4 +1,4 @@
-import { notFound } from "../lib/errors.js";
+import { notFound, unprocessable } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
 import type { PaymentMethod, Sale, VehicleSize } from "../models/types.js";
 import type { Doc, DocStore } from "../store/doc-store.js";
@@ -24,6 +24,13 @@ export async function recordSale(
   recordedBy: string,
   now: Date,
 ): Promise<Doc<Sale>> {
+  // Tenant wall: linked queue items and bookings must belong to this shop.
+  if (input.queueItemId && !(await store.get(paths.queueItem(businessId, input.queueItemId)))) {
+    throw unprocessable("That queue item is not in this shop.", "invalid_queue_item");
+  }
+  if (input.bookingId && !(await store.get(paths.booking(businessId, input.bookingId)))) {
+    throw unprocessable("That booking is not in this shop.", "invalid_booking");
+  }
   const id = store.newId();
   const at = now.toISOString();
   const sale: Sale = {

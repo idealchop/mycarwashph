@@ -2,21 +2,22 @@ import type { Metadata, Viewport } from "next";
 import "@river-apps/tokens/fonts.css";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { brand } from "@/src/config/brand";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.NEXT_PUBLIC_APP_ENV === "prod"
     ? "https://mycarwash-prod--mycarwashph.asia-southeast1.hosted.app"
     : "https://mycarwash-dev--mycarwashph.asia-southeast1.hosted.app");
-const DESCRIPTION = "Run your carwash from your phone: River Mobile bookings, scan to verify, queue, bays and sales.";
+const DESCRIPTION = brand.tagline;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "Mycarwash.ph", template: "%s · Mycarwash.ph" },
+  title: { default: brand.productName, template: `%s · ${brand.productName}` },
   description: DESCRIPTION,
-  applicationName: "Mycarwash.ph",
-  openGraph: { type: "website", siteName: "Mycarwash.ph", title: "Mycarwash.ph", description: DESCRIPTION, locale: "en_PH" },
-  twitter: { card: "summary", title: "Mycarwash.ph", description: DESCRIPTION },
+  applicationName: brand.productName,
+  openGraph: { type: "website", siteName: brand.productName, title: brand.productName, description: DESCRIPTION, locale: "en_PH" },
+  twitter: { card: "summary", title: brand.productName, description: DESCRIPTION },
   robots: process.env.NEXT_PUBLIC_APP_ENV === "prod" ? { index: true, follow: true } : { index: false, follow: false },
   formatDetection: { telephone: false },
 };

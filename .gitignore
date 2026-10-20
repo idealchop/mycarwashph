@@ -14,7 +14,6 @@ coverage/
 .env
 .env.*
 !.env.example
-!backend/functions/.env.mycarwashph
 *.local
 service-account*.json
 *-firebase-adminsdk-*.json

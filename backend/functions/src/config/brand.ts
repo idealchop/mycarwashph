@@ -4,7 +4,13 @@
  */
 export const brand = {
   appName: "Mycarwash.ph",
+  /** River rules name for appName; same value as frontend/src/config/brand.ts productName. */
+  productName: "Mycarwash.ph",
   slug: "mycarwash",
+  /** River rules product id; must match frontend/src/config/brand.ts productSlug. */
+  productSlug: "mycarwash",
+  tagline: "Run your carwash from your phone: River Mobile bookings, scan to verify, queue, bays and sales.",
+  colors: { primary: "#000000" },
   company: "River Apps",
   supportEmail: "support@mycarwash.ph",
   appUrl: "https://mycarwash.ph",
