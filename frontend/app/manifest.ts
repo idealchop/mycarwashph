@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/home",
     name: "Mycarwash.ph",
     short_name: "Mycarwash",
     description: "Run your carwash from your phone: bookings, scan to verify, queue and bays.",

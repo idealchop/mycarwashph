@@ -16,7 +16,10 @@ export class ApiError extends Error {
 
 /** Calls the shop API (via /api) with the signed-in user's Firebase ID token. */
 export async function api<T>(path: string, init: { method?: string; body?: unknown; guest?: boolean } = {}): Promise<T> {
-  const user = firebaseAuth().currentUser;
+  const auth = firebaseAuth();
+  // Screens may load from cache before Firebase restores the session; wait for it instead of failing with 401.
+  if (!auth.currentUser && !init.guest) await auth.authStateReady();
+  const user = auth.currentUser;
   if (!user && !init.guest) throw new ApiError(401, "unauthorized", "Please sign in.");
   const token = user ? await user.getIdToken() : null;
   const res = await fetch(`${apiBase()}${path}`, {
