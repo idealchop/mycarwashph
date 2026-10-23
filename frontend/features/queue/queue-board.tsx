@@ -59,7 +59,7 @@ function Actions({ row, freeBay, noBays, onAct, onPay }: { row: Job; freeBay: { 
 
 function Row({ row, onOpen, ...rest }: { row: Job; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void; onOpen: (row: Job) => void }) {
   const where = row.status === "in_bay" && row.bayName ? row.bayName : row.slotLabel;
-  const pay = row.paid ? "Paid" : row.kind === "booking" ? "Booked on River Mobile" : "Pay at the shop";
+  const pay = row.paid ? "Paid" : row.kind === "booking" ? (row.booking?.source === "online_link" ? "Booked from your QR" : "Booked on River Mobile") : "Pay at the shop";
   return (
     <li className="rounded-card bg-surface py-3 pl-3 pr-3.5 shadow-card">
       <div className="flex items-center gap-3">
@@ -174,7 +174,7 @@ export function QueueBoard() {
           className="mt-4"
           illustration={search ? undefined : <Art name="empty-queue" size={96} />}
           title={search ? "No matches" : channel === "online" ? "No bookings yet" : "The bays are clear"}
-          description={search ? undefined : channel === "online" ? "Customers who book you on River Mobile show up here." : "Walk-ins you add at the counter show up here."}
+          description={search ? undefined : channel === "online" ? "Bookings from River Mobile and your shop QR show up here." : "Walk-ins you add at the counter show up here."}
         />
       ) : null}
 

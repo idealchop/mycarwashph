@@ -8,6 +8,7 @@ import { businessRoutes } from "./routes/business-routes.js";
 import { companionRoutes } from "./routes/companion-routes.js";
 import { meRoutes } from "./routes/me-routes.js";
 import { momentsRoutes } from "./routes/moments-routes.js";
+import { linkRoutes } from "./routes/link-routes.js";
 import { publicRoutes } from "./routes/v1/public-routes.js";
 
 function base() {
@@ -26,6 +27,8 @@ export function createApp(deps: Deps) {
   app.use(limiter(deps.config, 300));
   // Moments is readable by guests, so it mounts before requireAuth.
   app.use(momentsRoutes(deps));
+  // Booking link (/book page from the shop QR): customers have no account.
+  app.use(linkRoutes(deps));
   app.use(requireAuth(deps.verifier));
   app.use(meRoutes(deps));
   app.use("/businesses/:businessId", companionRoutes(deps));

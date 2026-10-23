@@ -4,6 +4,7 @@ import { Button, Input } from "@river-apps/ui";
 import { useState } from "react";
 import { PageBack } from "@/components/shop/page-back";
 import { LocationPicker } from "@/components/shop/location-picker";
+import { BottomSheet } from "@/components/shop/bottom-sheet";
 import { api, type ShopLocation } from "@/lib/api";
 import { currentShop } from "@/lib/shop";
 import { useShop } from "@/lib/shop-context";
@@ -18,6 +19,7 @@ export default function ShopsPage() {
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const shops = me?.businesses ?? [];
+  const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
 
   async function onAdd() {
     setError("");
@@ -65,6 +67,7 @@ export default function ShopsPage() {
                 ) : (
                   <Button size="sm" variant="secondary" onClick={() => { currentShop.set(b.id); reload(); }}>Open</Button>
                 )}
+                {b.role === "owner" ? <Button size="sm" variant="ghost" onClick={() => setRemoving({ id: b.id, name: b.name })}>Remove</Button> : null}
               </div>
             </li>
           ))}
@@ -79,6 +82,28 @@ export default function ShopsPage() {
           <Button fullWidth disabled={busy || name.trim().length < 2} data-auth="action" onClick={() => void onAdd()}>{busy ? "Saving…" : "Add shop"}</Button>
         </div>
       </section>
+      {removing ? <RemoveShopSheet shop={removing} onClose={() => setRemoving(null)} onRemoved={(n) => { setRemoving(null); setNote(`${n} was removed.`); reload(); }} /> : null}
     </div>
+  );
+}
+
+/** Remove a shop (Barbers.ph "Remove location"): type the name to confirm. Owner only; the server soft-deletes. */
+function RemoveShopSheet({ shop, onClose, onRemoved }: { shop: { id: string; name: string }; onClose: () => void; onRemoved: (name: string) => void }) {
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const ok = typed.trim().toLowerCase() === shop.name.trim().toLowerCase();
+  async function remove() {
+    setBusy(true); setError("");
+    try { await api(`/businesses/${shop.id}`, { method: "DELETE" }); onRemoved(shop.name); }
+    catch (e) { setError((e as Error).message); setBusy(false); }
+  }
+  return (
+    <BottomSheet title={`Remove ${shop.name}?`} subtitle="Its queue, bays, services and River Mobile listing close for everyone. Records are kept." onClose={onClose}>
+      <Input label={`Type “${shop.name}” to confirm`} value={typed} onChange={(e) => setTyped(e.target.value)} disabled={busy} />
+      {error ? <p role="alert" className="mt-2 text-[13px] font-semibold">{error}</p> : null}
+      <Button className="mt-4" fullWidth disabled={!ok || busy} onClick={() => void remove()}>{busy ? "Removing…" : "Remove shop"}</Button>
+      <Button className="mt-2" fullWidth variant="ghost" onClick={onClose}>Keep it</Button>
+    </BottomSheet>
   );
 }

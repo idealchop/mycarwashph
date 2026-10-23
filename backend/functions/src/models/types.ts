@@ -89,6 +89,8 @@ export interface Business {
   photoUrls: string[];
   /** Opening hours as free text, e.g. "Mon–Sat 8 AM–6 PM". */
   hours?: string | null;
+  /** Soft delete (owner removed the shop). Hidden from /me, members deactivated, River Mobile listing off. */
+  deletedAt?: string | null;
   /** Shop logo HTTPS URL. */
   logoUrl?: string | null;
   /** Billing for the Pro / Lifetime upgrade. */
@@ -194,6 +196,10 @@ export interface Booking {
   acceptedBy: string | null;
   checkedInAt: string | null;
   queueItemId: string | null;
+  /** Booking-link (QR web page) bookings: sha256 of the customer ticket token. */
+  linkTokenHash?: string | null;
+  /** Customer pay preference from the booking link ("shop" today; "online" when checkout is on). */
+  payPref?: "shop" | "online" | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -238,7 +244,7 @@ export interface QueueItem {
 
 /** businesses/{businessId}/audit_logs/{id} */
 export interface AuditLog {
-  actor: { type: "user" | "api_client"; id: string };
+  actor: { type: "user" | "api_client" | "customer"; id: string };
   action: string;
   target: string;
   meta: Record<string, unknown> | null;

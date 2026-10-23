@@ -84,7 +84,7 @@ export function OrderDetails({ shopId, order, onClose, onChanged }: { shopId: st
   const bay = data?.bays.find((x) => x.id === q?.bayId)?.name ?? null;
   const freeBay = data?.bays.find((x) => x.active) ?? null;
   const title = q ? `#${q.queueNumber}` : b?.reference ?? "";
-  const channel = b ? "River Mobile booking" : "Walk-in";
+  const channel = b ? (b.source === "online_link" ? "Booking link (shop QR)" : "River Mobile booking") : "Walk-in";
   const open = q && ["queued", "in_bay", "done"].includes(q.status);
   const timeline: [string, string | null | undefined][] = [
     [b ? "Booked" : "Added", b?.createdAt ?? q?.createdAt],

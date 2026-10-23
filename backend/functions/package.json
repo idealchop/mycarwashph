@@ -1,6 +1,6 @@
 {
   "name": "@mycarwash/functions",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Mycarwash.ph backend: Express API on Firebase Cloud Functions v2 with Firestore.",
   "license": "UNLICENSED",

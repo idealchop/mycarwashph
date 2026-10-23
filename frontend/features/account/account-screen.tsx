@@ -8,6 +8,8 @@ import { CarIllustration } from "@river-apps/icons";
 import { ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
 import { useInstallHidden } from "@/lib/pwa";
 import { RiverIcon } from "@/components/river-icon";
+import { AppVersion } from "@/components/app-version";
+import { NotificationBell } from "@/features/activity/activity-screen";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -42,7 +44,10 @@ export function AccountScreen() {
 
   return (
     <div className="mx-auto w-full max-w-[402px] px-4 pb-6 pt-4 lg:max-w-[880px] lg:px-[30px] lg:pt-6">
-      <Topbar className="px-1" leading={<PageBack fallback="/home" />} title="Account" subtitle="Your shop on Mycarwash.ph" />
+      <div className="flex items-start gap-2">
+        <Topbar className="min-w-0 flex-1 px-1" leading={<PageBack fallback="/home" />} title="Account" subtitle="Your shop on Mycarwash.ph" />
+        {user && shop ? <div className="pt-1.5"><NotificationBell /></div> : null}
+      </div>
 
       <section className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card">
         <div className="flex items-center gap-3.5">
@@ -156,7 +161,7 @@ export function AccountScreen() {
             <div className="relative mx-1.5 mb-1 mt-11 rounded-card bg-grey-100 px-4 pb-4 pt-[78px] lg:hidden">
               <div className="absolute inset-x-0 -top-9 flex justify-center"><CarIllustration size={170} /></div>
               <b className="block text-[14.5px]">Shop QR code</b>
-              <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">Print it for your counter</small>
+              <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">Customers scan to book</small>
               <Button size="sm" fullWidth href="/qr">Get QR code</Button>
             </div>
           ) : null}
@@ -188,7 +193,10 @@ export function AccountScreen() {
         <Link href="/terms" className="underline-offset-[3px] hover:underline">Terms of Service</Link>
         <span aria-hidden> · </span>
         <Link href="/privacy" className="underline-offset-[3px] hover:underline">Privacy Policy</Link>
+        <span aria-hidden> · </span>
+        <Link href="/settings/map-credits" className="underline-offset-[3px] hover:underline">Map credits</Link>
       </p>
+      <AppVersion className="mt-2 pb-2" />
     </div>
   );
 }
