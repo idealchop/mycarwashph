@@ -168,10 +168,11 @@ export function QueueBoard() {
 
       {note ? <p className="mt-3 px-1 text-[13.5px] font-semibold">{note}</p> : null}
       {!today.ready ? (
-        <p className="mt-4 rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold text-muted">Loading the queue…</p>
+        <div role="status" aria-label="Loading the queue" className="mt-4 flex flex-col gap-2.5"><span className="skeleton h-[72px] rounded-card" /><span className="skeleton h-[72px] rounded-card" /></div>
       ) : list.length === 0 ? (
         <EmptyState
           className="mt-4"
+          illustration={search ? undefined : <Art name="empty-queue" size={96} />}
           title={search ? "No matches" : channel === "online" ? "No bookings yet" : "The bays are clear"}
           description={search ? undefined : channel === "online" ? "Customers who book you on River Mobile show up here." : "Walk-ins you add at the counter show up here."}
         />
