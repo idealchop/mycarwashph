@@ -1,7 +1,7 @@
 "use client";
 
 import { OrderDetails, type OrderRef } from "@/features/orders/order-details";
-import { Icon3D } from "@river-apps/icons";
+import { Art } from "@/components/river-icon";
 import { Plus } from "lucide-react";
 import { Button, Card, EmptyState, Input, SearchInput, StatCard, cn } from "@river-apps/ui";
 import Link from "next/link";
@@ -63,7 +63,7 @@ function Row({ row, onOpen, ...rest }: { row: Job; freeBay: { id: string; name: 
   return (
     <li className="rounded-card bg-surface py-3 pl-3 pr-3.5 shadow-card">
       <div className="flex items-center gap-3">
-        <Icon3D name={row.channel === "online" ? "car" : "bubbles"} size={40} />
+        <Art name={row.channel === "online" ? "ticket" : "carwash"} size={40} />
         <div className="flex min-w-0 flex-1 flex-col leading-[1.3]">
           <b className="truncate text-[15.5px] tracking-[-0.01em]">{row.who}</b>
           <span className="mt-0.5 truncate text-[13px] font-medium text-muted">{row.serviceName} · {where}</span>

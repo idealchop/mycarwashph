@@ -5,8 +5,9 @@ import { hasPaidFeatures, planGatingEnabled } from "@/lib/plan-gating";
 import { CompanionAvatar } from "@/features/companion/companion-mark";
 import { companionEnabled } from "@/lib/companion-flag";
 import { CarIllustration } from "@river-apps/icons";
-import { Car, ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
+import { ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
 import { useInstallHidden } from "@/lib/pwa";
+import { RiverIcon } from "@/components/river-icon";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -32,8 +33,8 @@ export function AccountScreen() {
   const installHidden = useInstallHidden();
 
   const links = [
-    { href: "/history", icon: History, title: "History", subtitle: "Past washes and bookings" },
-    { href: "/settings/services", icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
+    { href: "/history", art: "ticket" as const, icon: History, title: "History", subtitle: "Past washes and bookings" },
+    { href: "/settings/services", art: "carwash" as const, icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
     { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: shop?.plan === "paid" ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
     // Hidden once installed (home screen open, or remembered on this device); /settings/install still says Installed.
     ...(installHidden ? [] : [{ href: "/settings/install", icon: Download, title: "Install app", subtitle: "Add Mycarwash to your home screen" }]),
@@ -129,7 +130,7 @@ export function AccountScreen() {
                     <ListItem
                       variant="row"
                       className="py-2"
-                      leading={<span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Icon size={18} strokeWidth={1.75} /></span>}
+                      leading={"art" in it && it.art ? <RiverIcon name={it.art} size={40} /> : <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Icon size={18} strokeWidth={1.75} /></span>}
                       title={it.title}
                       subtitle={it.subtitle}
                       trailing={<ChevronRight size={20} strokeWidth={1.75} className="text-subtle" />}
@@ -160,7 +161,7 @@ export function AccountScreen() {
             </div>
           ) : null}
           <Link href="/queue/new" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
-            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Car size={18} strokeWidth={1.75} /></span>
+            <RiverIcon name="queue" size={40} />
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[15px]">Walk-in</b>
               <small className="block truncate text-[13px] font-medium text-muted">{paid ? "Add a car at the counter" : "10 a day on Partner"}</small>

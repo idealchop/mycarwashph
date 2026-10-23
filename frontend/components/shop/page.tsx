@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, EmptyState } from "@river-apps/ui";
-import { Icon3D, type IconName } from "@river-apps/icons";
+import { Art, type ArtName } from "@/components/river-icon";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -38,11 +38,11 @@ export function LoadingBlock() {
 }
 
 /** Shown to guests and to signed-in users who have not saved a shop yet. */
-export function SetUpShop({ icon = "car", title, description }: { icon?: IconName; title: string; description: string }) {
+export function SetUpShop({ icon = "carwash", title, description }: { icon?: ArtName; title: string; description: string }) {
   return (
     <EmptyState
       className="mt-8"
-      illustration={<Icon3D name={icon} size={64} />}
+      illustration={<Art name={icon} size={64} />}
       title={title}
       description={description}
       action={<Button href="/settings/edit" data-auth="action">Set up your shop</Button>}
@@ -68,7 +68,7 @@ export function ShopPage({
   subtitle?: ReactNode;
   back?: string;
   actions?: ReactNode;
-  icon?: IconName;
+  icon?: ArtName;
   /** Copy for the set-up prompt when there is no shop yet. */
   empty: { title: string; description: string };
   /** Shown under the set-up prompt for guests and new owners. */

@@ -116,8 +116,12 @@ export interface Member {
 /** businesses/{businessId}/services/{serviceId} */
 export const SERVICE_CATEGORIES = ["car-wash", "interior", "detailing", "wax-coating", "engine", "add-ons"] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
-/** 3D icon names the frontend can render (packages/icons ICON_NAMES subset). */
-export const SERVICE_ICONS = ["bubbles", "vacuum", "sparkle", "tyre", "drop", "car", "shield", "coin", "check"] as const;
+/** 3D icon names the frontend can render (generic pack names kept for older docs, plus the carwash set). */
+export const SERVICE_ICONS = [
+  "bubbles", "vacuum", "sparkle", "tyre", "drop", "car", "shield", "coin", "check",
+  // Mycarwash carwash 3D set (frontend public/icons3d/carwash), Oct 24, 2026.
+  "carwash", "foam", "pressure-washer", "wax", "tire-shine", "engine", "interior", "detailing", "sedan", "suv", "motorcycle",
+] as const;
 export type ServiceIcon = (typeof SERVICE_ICONS)[number];
 
 export interface Service {

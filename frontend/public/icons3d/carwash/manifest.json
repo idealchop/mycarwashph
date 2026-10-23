@@ -1,0 +1,234 @@
+{
+  "name": "mycarwash-ph-3d-icons",
+  "version": "1.0.0",
+  "app": "Mycarwash.ph",
+  "style": "River 3D glossy soft plastic (River UI kit docs/icons/ICON-STYLE.md), top-left light, soft contact shadow, transparent background",
+  "palette": {
+    "blue": "#2F8CF0",
+    "orange": "#F57C1F",
+    "green": "#4CB860",
+    "teal": "#20B2AA",
+    "yellow": "#F8C32E",
+    "cream": "#F6F0E4"
+  },
+  "sizes": {
+    "webp": [
+      256,
+      128
+    ]
+  },
+  "icons": [
+    {
+      "concept": "carwash",
+      "group": "service",
+      "aliases": [
+        "car-wash",
+        "wash",
+        "basic-wash"
+      ],
+      "files": {
+        "webp256": "256/carwash.webp",
+        "webp128": "128/carwash.webp"
+      }
+    },
+    {
+      "concept": "foam",
+      "group": "service",
+      "aliases": [
+        "soap",
+        "snow-foam",
+        "bubbles"
+      ],
+      "files": {
+        "webp256": "256/foam.webp",
+        "webp128": "128/foam.webp"
+      }
+    },
+    {
+      "concept": "pressure-washer",
+      "group": "service",
+      "aliases": [
+        "pressure",
+        "rinse",
+        "jet"
+      ],
+      "files": {
+        "webp256": "256/pressure-washer.webp",
+        "webp128": "128/pressure-washer.webp"
+      }
+    },
+    {
+      "concept": "vacuum",
+      "group": "service",
+      "aliases": [
+        "vacuum-only"
+      ],
+      "files": {
+        "webp256": "256/vacuum.webp",
+        "webp128": "128/vacuum.webp"
+      }
+    },
+    {
+      "concept": "wax",
+      "group": "service",
+      "aliases": [
+        "wax-coating",
+        "coating",
+        "polish"
+      ],
+      "files": {
+        "webp256": "256/wax.webp",
+        "webp128": "128/wax.webp"
+      }
+    },
+    {
+      "concept": "tire-shine",
+      "group": "service",
+      "aliases": [
+        "add-ons",
+        "tire-black",
+        "tyre"
+      ],
+      "files": {
+        "webp256": "256/tire-shine.webp",
+        "webp128": "128/tire-shine.webp"
+      }
+    },
+    {
+      "concept": "engine",
+      "group": "service",
+      "aliases": [
+        "engine-wash",
+        "engine-bay"
+      ],
+      "files": {
+        "webp256": "256/engine.webp",
+        "webp128": "128/engine.webp"
+      }
+    },
+    {
+      "concept": "interior",
+      "group": "service",
+      "aliases": [
+        "interior-clean",
+        "seats"
+      ],
+      "files": {
+        "webp256": "256/interior.webp",
+        "webp128": "128/interior.webp"
+      }
+    },
+    {
+      "concept": "detailing",
+      "group": "service",
+      "aliases": [
+        "detail",
+        "sparkle"
+      ],
+      "files": {
+        "webp256": "256/detailing.webp",
+        "webp128": "128/detailing.webp"
+      }
+    },
+    {
+      "concept": "sedan",
+      "group": "vehicle",
+      "aliases": [
+        "small",
+        "medium",
+        "car"
+      ],
+      "files": {
+        "webp256": "256/sedan.webp",
+        "webp128": "128/sedan.webp"
+      }
+    },
+    {
+      "concept": "suv",
+      "group": "vehicle",
+      "aliases": [
+        "large",
+        "xl",
+        "pickup"
+      ],
+      "files": {
+        "webp256": "256/suv.webp",
+        "webp128": "128/suv.webp"
+      }
+    },
+    {
+      "concept": "motorcycle",
+      "group": "vehicle",
+      "aliases": [
+        "motor",
+        "bike"
+      ],
+      "files": {
+        "webp256": "256/motorcycle.webp",
+        "webp128": "128/motorcycle.webp"
+      }
+    },
+    {
+      "concept": "queue",
+      "group": "nav",
+      "aliases": [
+        "walk-ins",
+        "line",
+        "bays"
+      ],
+      "files": {
+        "webp256": "256/queue.webp",
+        "webp128": "128/queue.webp"
+      }
+    },
+    {
+      "concept": "home",
+      "group": "nav",
+      "aliases": [
+        "shop",
+        "dashboard"
+      ],
+      "files": {
+        "webp256": "256/home.webp",
+        "webp128": "128/home.webp"
+      }
+    },
+    {
+      "concept": "ticket",
+      "group": "nav",
+      "aliases": [
+        "order",
+        "booking",
+        "history"
+      ],
+      "files": {
+        "webp256": "256/ticket.webp",
+        "webp128": "128/ticket.webp"
+      }
+    },
+    {
+      "concept": "moments",
+      "group": "nav",
+      "aliases": [
+        "community",
+        "feed"
+      ],
+      "files": {
+        "webp256": "256/moments.webp",
+        "webp128": "128/moments.webp"
+      }
+    },
+    {
+      "concept": "empty-queue",
+      "group": "empty",
+      "aliases": [
+        "no-queue",
+        "no-cars"
+      ],
+      "files": {
+        "webp256": "256/empty-queue.webp",
+        "webp128": "128/empty-queue.webp"
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, EmptyState } from "@river-apps/ui";
-import { Icon3D } from "@river-apps/icons";
+import { Art } from "@/components/river-icon";
 import { useState } from "react";
 import { LoadingBlock } from "@/components/shop/page";
 import { ShopContentCard } from "@/components/shop/content-card";
@@ -64,7 +64,7 @@ export function BookingList({
   if (!data) return <LoadingBlock />;
   const rows = filter ? data.bookings.filter(filter) : data.bookings;
   if (rows.length === 0) {
-    return <EmptyState className="mt-6" illustration={<Icon3D name="car" size={56} />} title={emptyTitle} description={emptyDescription} />;
+    return <EmptyState className="mt-6" illustration={<Art name="empty-queue" size={72} />} title={emptyTitle} description={emptyDescription} />;
   }
   return (
     <ShopContentCard>

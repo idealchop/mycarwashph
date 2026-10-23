@@ -1,6 +1,6 @@
 "use client";
 
-import { Icon3D } from "@river-apps/icons";
+import { Art } from "@/components/river-icon";
 import { Avatar, Badge, Button, Card, CardHeader, Input, StatusDot } from "@river-apps/ui";
 import { ArrowLeft, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -102,7 +102,7 @@ export function OrderDetails({ shopId, order, onClose, onChanged }: { shopId: st
       <div className="mx-auto w-full max-w-[560px] px-4 pb-[calc(env(safe-area-inset-bottom)+28px)] pt-3">
         <header className="flex items-center gap-3 px-1">
           <button type="button" onClick={onClose} aria-label="Back" className="inline-flex size-11 flex-none items-center justify-center rounded-full bg-surface shadow-card"><ArrowLeft size={20} strokeWidth={2.2} /></button>
-          <Icon3D name={b ? "car" : "bubbles"} size={52} />
+          <Art name="ticket" size={52} />
           <div className="flex min-w-0 flex-1 flex-col leading-[1.25]">
             <h1 id="order-title" className="truncate text-[26px] font-extrabold leading-[1.15] tracking-[-0.03em]">{title || "Order"}</h1>
             <p className="mt-0.5 truncate text-[13.5px] font-semibold text-ink-2">{channel}{bay ? ` · ${bay}` : ""}</p>

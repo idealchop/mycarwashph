@@ -1,6 +1,6 @@
 "use client";
 
-import { BubblesIcon, CarIcon } from "@river-apps/icons";
+import { RiverIcon } from "@/components/river-icon";
 import { Avatar, Button, Card, IconButton, Input, StatusDot, SuccessState } from "@river-apps/ui";
 import { Camera, ScanLine, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -109,8 +109,8 @@ function ScanInner() {
         </Card>
         <div className="mx-5 mt-2.5 grid grid-cols-2 gap-2.5">
           {[
-            { i: <BubblesIcon size={34} />, k: "Service", v: serviceNames(b.serviceIds, services ?? []) },
-            { i: <CarIcon size={34} />, k: result.queueItem ? "Queue number" : "Booked for", v: result.queueItem ? `#${result.queueItem.queueNumber}` : `${longDatePHT(new Date(b.scheduledStart))}, ${timePHT(b.scheduledStart)}` },
+            { i: <RiverIcon name="carwash" size={34} />, k: "Service", v: serviceNames(b.serviceIds, services ?? []) },
+            { i: <RiverIcon name="ticket" size={34} />, k: result.queueItem ? "Queue number" : "Booked for", v: result.queueItem ? `#${result.queueItem.queueNumber}` : `${longDatePHT(new Date(b.scheduledStart))}, ${timePHT(b.scheduledStart)}` },
           ].map((t) => (
             <Card key={t.k} tone="muted" radius="panel" padding="none" className="flex flex-col gap-0.5 rounded-[22px] p-3.5">
               <span className="mb-2">{t.i}</span>
