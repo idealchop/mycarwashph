@@ -3,7 +3,7 @@
 import { hasPaidFeatures } from "@/lib/plan-gating";
 
 import { Button, EmptyState, StatCard } from "@river-apps/ui";
-import { Icon3D } from "@river-apps/icons";
+import { Art } from "@/components/river-icon";
 import { ShopContentCard } from "@/components/shop/content-card";
 import { LoadingBlock, ShopPage } from "@/components/shop/page";
 import { api, type Sale, type SalesSummary } from "@/lib/api";
@@ -50,7 +50,7 @@ function SalesList({ shopId }: { shopId: string }) {
         <StatCard label="Cars today" value={String(data.summary.cars)} />
       </div>
       {data.list.length === 0 ? (
-        <EmptyState className="mt-8" illustration={<Icon3D name="coin" size={64} />} title="No sales recorded yet" description="Record a payment on a finished car in the queue." />
+        <EmptyState className="mt-8" illustration={<Art name="coin" size={64} />} title="No sales recorded yet" description="Record a payment on a finished car in the queue." />
       ) : (
         <ShopContentCard>
           <ul className="divide-y divide-grey-200">

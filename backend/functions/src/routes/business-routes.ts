@@ -35,7 +35,7 @@ import {
   requirePlatformAdmin,
   selectPartnerBilling,
 } from "../services/billing-service.js";
-import { setPlan, updateBusiness } from "../services/businesses-service.js";
+import { removeBusiness, setPlan, updateBusiness } from "../services/businesses-service.js";
 import { createItem, listItems, updateItem } from "../services/catalog-service.js";
 import { growthMetrics } from "../services/growth-service.js";
 import { createInvite, listInvites, revokeInvite } from "../services/invites-service.js";
@@ -155,6 +155,11 @@ export function businessRoutes(deps: Deps) {
   });
   r.delete("/members/:uid", owner, async (req, res) => {
     await removeMember(store, getBusiness(res).id, param(req.params.uid), getUser(res).uid, deps.now());
+    res.status(204).end();
+  });
+
+  r.delete("/", owner, async (_req, res) => {
+    await removeBusiness(store, getBusiness(res).id, getUser(res).uid, deps.now());
     res.status(204).end();
   });
 

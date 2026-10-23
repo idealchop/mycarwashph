@@ -1,7 +1,7 @@
 "use client";
 
 import { OrderDetails, type OrderRef } from "@/features/orders/order-details";
-import { Icon3D } from "@river-apps/icons";
+import { Art } from "@/components/river-icon";
 import { Plus } from "lucide-react";
 import { Button, Card, EmptyState, Input, SearchInput, StatCard, cn } from "@river-apps/ui";
 import Link from "next/link";
@@ -59,11 +59,11 @@ function Actions({ row, freeBay, noBays, onAct, onPay }: { row: Job; freeBay: { 
 
 function Row({ row, onOpen, ...rest }: { row: Job; freeBay: { id: string; name: string } | null; noBays?: boolean; onAct: (fn: (shopId: string) => Promise<void>, full?: string) => void; onPay: (row: Job) => void; onOpen: (row: Job) => void }) {
   const where = row.status === "in_bay" && row.bayName ? row.bayName : row.slotLabel;
-  const pay = row.paid ? "Paid" : row.kind === "booking" ? "Booked on River Mobile" : "Pay at the shop";
+  const pay = row.paid ? "Paid" : row.kind === "booking" ? (row.booking?.source === "online_link" ? "Booked from your QR" : "Booked on River Mobile") : "Pay at the shop";
   return (
     <li className="rounded-card bg-surface py-3 pl-3 pr-3.5 shadow-card">
       <div className="flex items-center gap-3">
-        <Icon3D name={row.channel === "online" ? "car" : "bubbles"} size={40} />
+        <Art name={row.channel === "online" ? "ticket" : "carwash"} size={40} />
         <div className="flex min-w-0 flex-1 flex-col leading-[1.3]">
           <b className="truncate text-[15.5px] tracking-[-0.01em]">{row.who}</b>
           <span className="mt-0.5 truncate text-[13px] font-medium text-muted">{row.serviceName} · {where}</span>
@@ -168,12 +168,13 @@ export function QueueBoard() {
 
       {note ? <p className="mt-3 px-1 text-[13.5px] font-semibold">{note}</p> : null}
       {!today.ready ? (
-        <p className="mt-4 rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold text-muted">Loading the queue…</p>
+        <div role="status" aria-label="Loading the queue" className="mt-4 flex flex-col gap-2.5"><span className="skeleton h-[72px] rounded-card" /><span className="skeleton h-[72px] rounded-card" /></div>
       ) : list.length === 0 ? (
         <EmptyState
           className="mt-4"
+          illustration={search ? undefined : <Art name="empty-queue" size={96} />}
           title={search ? "No matches" : channel === "online" ? "No bookings yet" : "The bays are clear"}
-          description={search ? undefined : channel === "online" ? "Customers who book you on River Mobile show up here." : "Walk-ins you add at the counter show up here."}
+          description={search ? undefined : channel === "online" ? "Bookings from River Mobile and your shop QR show up here." : "Walk-ins you add at the counter show up here."}
         />
       ) : null}
 

@@ -2,7 +2,7 @@
 
 import { hasPaidFeatures } from "@/lib/plan-gating";
 
-import { Icon3D } from "@river-apps/icons";
+import { Art } from "@/components/river-icon";
 import { Button, Input, Topbar } from "@river-apps/ui";
 import { useState, type FormEvent } from "react";
 import { PageBack } from "@/components/shop/page-back";
@@ -55,7 +55,7 @@ export default function BaysPage() {
             const job = holders.get(bay.id);
             return (
               <li key={bay.id} className="flex items-center gap-3 rounded-card bg-surface px-3 py-3 shadow-card">
-                <Icon3D name="drop" size={44} />
+                <Art name="carwash" size={44} />
                 <span className="min-w-0">
                   <b className="block text-[15.5px]">{bay.name}</b>
                   <small className="block text-[12.5px] font-semibold text-muted">

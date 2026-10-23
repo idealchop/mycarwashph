@@ -1,6 +1,6 @@
 "use client";
 
-import { Icon3D } from "@river-apps/icons";
+import { Art } from "@/components/river-icon";
 import { Button, Input, cn } from "@river-apps/ui";
 import { Pencil, Plus } from "lucide-react";
 import { useState } from "react";
@@ -76,14 +76,14 @@ export function ShopServices({ businessId, canEdit }: { businessId: string; canE
       {data
         ? groupByCategory(data).map((g) => (
             <div key={g.id} className="mt-4 rounded-card bg-surface px-4 py-3 shadow-card">
-              <h2 className="flex items-center gap-2 text-[16px] font-extrabold"><Icon3D name={g.icon} size={34} />{g.label}</h2>
+              <h2 className="flex items-center gap-2 text-[16px] font-extrabold"><Art name={g.icon} size={34} />{g.label}</h2>
               <ul className="mt-1 divide-y divide-grey-200">
                 {g.services.map((s) =>
                   editing === s.id ? (
                     <li key={s.id} className="py-3"><ServiceForm initial={fromService(s)} busy={busy} onCancel={() => setEditing(null)} onSave={(d) => void save(d, s.id)} /></li>
                   ) : (
                     <li key={s.id} className="flex items-center gap-3 py-3">
-                      <Icon3D name={iconOf(s)} size={40} />
+                      <Art name={iconOf(s)} size={40} />
                       <div className="min-w-0 flex-1">
                         <b className={cn("block truncate text-[15px]", s.active === false && "text-muted")}>{s.name}</b>
                         <p className="text-[13px] font-medium text-muted">{priceLabel(s)}{s.active === false ? " · hidden" : ""}</p>
@@ -125,7 +125,7 @@ function ServiceForm({ initial, busy, onSave, onCancel }: { initial: Draft; busy
           {CATEGORIES.map((c) => (
             <button key={c.id} type="button" role="radio" aria-checked={d.category === c.id} onClick={() => setD({ ...d, category: c.id })}
               className={cn("flex h-12 items-center gap-2 rounded-[14px] px-2.5 text-left text-[13.5px] font-bold", d.category === c.id ? "bg-ink text-on-ink" : "bg-surface ring-1 ring-grey-200")}>
-              <Icon3D name={c.icon} size={28} />{c.label}
+              <Art name={c.icon} size={28} />{c.label}
             </button>
           ))}
         </div>
@@ -138,7 +138,7 @@ function ServiceForm({ initial, busy, onSave, onCancel }: { initial: Draft; busy
             return (
               <button key={n} type="button" role="radio" aria-checked={on} aria-label={n} onClick={() => setD({ ...d, icon: n === catIcon ? null : n })}
                 className={cn("inline-flex size-12 items-center justify-center rounded-[14px]", on ? "bg-grey-100 ring-2 ring-ink" : "ring-1 ring-grey-200")}>
-                <Icon3D name={n} size={34} />
+                <Art name={n} size={34} />
               </button>
             );
           })}

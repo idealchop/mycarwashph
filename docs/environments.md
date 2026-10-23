@@ -44,6 +44,7 @@ Local: copy `frontend/.env.example` to `frontend/.env.local`.
 | :--- | :--- | :--- |
 | `PLAN_GATING_ENABLED` | `0` (dev and prod) | `"1"` enforces Partner limits server-side; unset or anything else = off |
 | `COMPANION_ENABLED` / `INSIGHTS_PROD_ENABLED` | unset | Turns the companion on for **prod** functions (dev is always on) |
+| `ONLINE_CHECKOUT_ENABLED` | unset (off) | `"1"` shows "Pay online" on the booking link; no payment provider yet |
 | `COMPANION_MODEL`, `COMPANION_LOCATION` | optional | Gemini model / Vertex location overrides |
 | `SHOP_PHOTOS_BUCKET` | optional | Storage bucket for photo uploads |
 | `ALLOWED_ORIGINS`, `API_KEY_PEPPER` | emulator only | Local overrides |

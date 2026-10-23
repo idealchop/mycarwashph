@@ -5,8 +5,11 @@ import { hasPaidFeatures, planGatingEnabled } from "@/lib/plan-gating";
 import { CompanionAvatar } from "@/features/companion/companion-mark";
 import { companionEnabled } from "@/lib/companion-flag";
 import { CarIllustration } from "@river-apps/icons";
-import { Car, ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
+import { ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
 import { useInstallHidden } from "@/lib/pwa";
+import { RiverIcon } from "@/components/river-icon";
+import { AppVersion } from "@/components/app-version";
+import { NotificationBell } from "@/features/activity/activity-screen";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -32,8 +35,8 @@ export function AccountScreen() {
   const installHidden = useInstallHidden();
 
   const links = [
-    { href: "/history", icon: History, title: "History", subtitle: "Past washes and bookings" },
-    { href: "/settings/services", icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
+    { href: "/history", art: "ticket" as const, icon: History, title: "History", subtitle: "Past washes and bookings" },
+    { href: "/settings/services", art: "carwash" as const, icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
     { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: shop?.plan === "paid" ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
     // Hidden once installed (home screen open, or remembered on this device); /settings/install still says Installed.
     ...(installHidden ? [] : [{ href: "/settings/install", icon: Download, title: "Install app", subtitle: "Add Mycarwash to your home screen" }]),
@@ -41,7 +44,10 @@ export function AccountScreen() {
 
   return (
     <div className="mx-auto w-full max-w-[402px] px-4 pb-6 pt-4 lg:max-w-[880px] lg:px-[30px] lg:pt-6">
-      <Topbar className="px-1" leading={<PageBack fallback="/home" />} title="Account" subtitle="Your shop on Mycarwash.ph" />
+      <div className="flex items-start gap-2">
+        <Topbar className="min-w-0 flex-1 px-1" leading={<PageBack fallback="/home" />} title="Account" subtitle="Your shop on Mycarwash.ph" />
+        {user && shop ? <div className="pt-1.5"><NotificationBell /></div> : null}
+      </div>
 
       <section className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card">
         <div className="flex items-center gap-3.5">
@@ -129,7 +135,7 @@ export function AccountScreen() {
                     <ListItem
                       variant="row"
                       className="py-2"
-                      leading={<span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Icon size={18} strokeWidth={1.75} /></span>}
+                      leading={"art" in it && it.art ? <RiverIcon name={it.art} size={40} /> : <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Icon size={18} strokeWidth={1.75} /></span>}
                       title={it.title}
                       subtitle={it.subtitle}
                       trailing={<ChevronRight size={20} strokeWidth={1.75} className="text-subtle" />}
@@ -155,12 +161,12 @@ export function AccountScreen() {
             <div className="relative mx-1.5 mb-1 mt-11 rounded-card bg-grey-100 px-4 pb-4 pt-[78px] lg:hidden">
               <div className="absolute inset-x-0 -top-9 flex justify-center"><CarIllustration size={170} /></div>
               <b className="block text-[14.5px]">Shop QR code</b>
-              <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">Print it for your counter</small>
+              <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">Customers scan to book</small>
               <Button size="sm" fullWidth href="/qr">Get QR code</Button>
             </div>
           ) : null}
           <Link href="/queue/new" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
-            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Car size={18} strokeWidth={1.75} /></span>
+            <RiverIcon name="queue" size={40} />
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[15px]">Walk-in</b>
               <small className="block truncate text-[13px] font-medium text-muted">{paid ? "Add a car at the counter" : "10 a day on Partner"}</small>
@@ -187,7 +193,10 @@ export function AccountScreen() {
         <Link href="/terms" className="underline-offset-[3px] hover:underline">Terms of Service</Link>
         <span aria-hidden> · </span>
         <Link href="/privacy" className="underline-offset-[3px] hover:underline">Privacy Policy</Link>
+        <span aria-hidden> · </span>
+        <Link href="/settings/map-credits" className="underline-offset-[3px] hover:underline">Map credits</Link>
       </p>
+      <AppVersion className="mt-2 pb-2" />
     </div>
   );
 }

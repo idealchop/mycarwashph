@@ -1,6 +1,6 @@
 "use client";
 
-import { Icon3D } from "@river-apps/icons";
+import { Art } from "@/components/river-icon";
 import { cn } from "@river-apps/ui";
 import { Check } from "lucide-react";
 import type { Service } from "@/lib/api";
@@ -29,7 +29,8 @@ export function ServicePicker({ services, picked, onPick, size, onSize }: { serv
       <p className="text-[13px] font-bold">Car size</p>
       <div className="mt-2 grid grid-cols-4 gap-2" role="radiogroup" aria-label="Car size">
         {SIZES.map(([k, label]) => (
-          <button key={k} type="button" role="radio" aria-checked={size === k} onClick={() => onSize(k)} className={cn("h-11 rounded-[14px] text-[14px] font-bold", size === k ? "bg-ink text-on-ink" : "bg-surface ring-1 ring-grey-200")}>
+          <button key={k} type="button" role="radio" aria-checked={size === k} onClick={() => onSize(k)} className={cn("flex h-[60px] flex-col items-center justify-center gap-0.5 rounded-[14px] text-[13px] font-bold", size === k ? "bg-ink text-on-ink" : "bg-surface ring-1 ring-grey-200")}>
+            <Art name={k === "large" || k === "xl" ? "suv" : "sedan"} size={k === "small" ? 22 : k === "xl" ? 28 : 25} />
             {label}
           </button>
         ))}
@@ -37,7 +38,7 @@ export function ServicePicker({ services, picked, onPick, size, onSize }: { serv
       <div className="mt-4 flex flex-col gap-4" data-testid="service-picker">
         {groupByCategory(active).map((g) => (
           <section key={g.id} aria-label={g.label}>
-            <p className="flex items-center gap-1.5 text-[13px] font-bold"><Icon3D name={g.icon} size={22} />{g.label}</p>
+            <p className="flex items-center gap-1.5 text-[13px] font-bold"><Art name={g.icon} size={22} />{g.label}</p>
             <div className="mt-2 flex flex-col gap-2">
               {g.services.map((s) => {
                 const on = picked.includes(s.id);
@@ -49,7 +50,7 @@ export function ServicePicker({ services, picked, onPick, size, onSize }: { serv
                     onClick={() => onPick(on ? picked.filter((id) => id !== s.id) : [...picked, s.id])}
                     className={cn("flex items-center gap-3 rounded-[16px] px-3 py-2.5 text-left", on ? "bg-ink text-on-ink" : "bg-surface ring-1 ring-grey-200")}
                   >
-                    <Icon3D name={iconOf(s)} size={40} />
+                    <Art name={iconOf(s)} size={40} />
                     <b className="min-w-0 flex-1 truncate">{s.name}</b>
                     <span className="text-[14px] font-bold">{priceFor(s, size) ? peso(priceFor(s, size)!) : "—"}</span>
                     <span aria-hidden className={cn("inline-flex size-6 flex-none items-center justify-center rounded-full", on ? "bg-on-ink text-ink" : "ring-1 ring-grey-300")}>{on ? <Check size={15} strokeWidth={3} /> : null}</span>

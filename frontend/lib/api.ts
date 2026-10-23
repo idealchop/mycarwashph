@@ -112,7 +112,10 @@ export interface Booking {
   updatedAt?: string;
 }
 export type ServiceCategory = "car-wash" | "interior" | "detailing" | "wax-coating" | "engine" | "add-ons";
-export type ServiceIconName = "bubbles" | "vacuum" | "sparkle" | "tyre" | "drop" | "car" | "shield" | "coin" | "check";
+/** Carwash 3D set; older docs may still hold generic pack names (rendered through the legacy map). */
+export type ServiceIconName =
+  | "carwash" | "foam" | "pressure-washer" | "vacuum" | "wax" | "tire-shine" | "engine" | "interior" | "detailing" | "sedan" | "suv" | "motorcycle"
+  | "bubbles" | "sparkle" | "tyre" | "drop" | "car" | "shield" | "coin" | "check";
 export interface Service {
   id: string;
   name: string;
