@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuthGate } from "@/components/auth/auth-gate";
 import { PageBack } from "@/components/shop/page-back";
+import { ShopSwitcher } from "@/components/shop/shop-switcher";
 import { HeroArt } from "./hero-art";
 import { CompanionCard } from "@/features/companion/companion-card";
 import { SalesChartCard, type SalesRow } from "@/features/sales/sales-chart";
@@ -50,7 +51,14 @@ function BookingCard({ job, onAct }: { job: Job; onAct: (fn: () => Promise<void>
 function Bookings({ rows, loading, max, onAct }: { rows: Job[]; loading: boolean; max: number; onAct: (fn: () => Promise<void>) => void }) {
   const shown = rows.slice(0, max);
   const more = rows.length - shown.length;
-  if (loading) return <p className="rounded-card bg-grey-100 px-4 py-3 text-[13.5px] font-semibold text-muted">Loading bookings…</p>;
+  if (loading) {
+    return (
+      <div role="status" aria-label="Loading bookings" className="flex flex-col gap-2.5">
+        <span className="skeleton h-[68px] rounded-card" />
+        <span className="skeleton h-[68px] rounded-card" />
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-3">
       {shown.length === 0 ? (
@@ -109,13 +117,16 @@ export function HomeScreen() {
             <div className="flex min-w-0 items-center">
               <PageBack fallback="/home" />
               {user ? (
-                <Link href="/account" aria-label="My Account" className="flex min-h-11 items-center gap-2 rounded-[14px] py-1 pl-1 pr-1.5">
-                  <Avatar name={owner || displayName} src={user.photoURL ?? undefined} preset="sky" size={36} />
+                <div className="flex min-h-11 items-center gap-2 py-1 pl-1 pr-1.5">
+                  <Link href="/account" aria-label="My Account" className="flex-none rounded-full">
+                    <Avatar name={owner || displayName} src={user.photoURL ?? undefined} preset="sky" size={36} />
+                  </Link>
                   <span className="flex min-w-0 flex-col leading-[1.2]">
-                    <span className="max-w-[150px] truncate text-[13px] font-medium">{displayName}</span>
-                    {contact ? <span className="max-w-[150px] truncate text-[11px] font-medium text-muted">{contact}</span> : null}
+                    <Link href="/account" className="max-w-[170px] truncate text-[13px] font-medium">{displayName}</Link>
+                    {/* Location dropdown (Barbers.ph): opens "Choose location"; falls back to the contact line */}
+                    <ShopSwitcher className="max-w-[170px] text-[11.5px] font-semibold text-muted" fallback={contact ? <span className="max-w-[150px] truncate text-[11px] font-medium text-muted">{contact}</span> : null} />
                   </span>
-                </Link>
+                </div>
               ) : (
                 <button type="button" onClick={() => requireAuth()} className="flex min-h-11 items-center gap-2 rounded-[14px] py-1 pl-1 pr-1.5 text-left">
                   <span aria-hidden className="inline-flex size-9 items-center justify-center rounded-full bg-grey-100 text-[15px] font-bold">?</span>
@@ -251,7 +262,7 @@ function DesktopBar({ name, owner, greeting, dayLabel, photoUrl, onSignIn }: { n
       className="px-1"
       leading={<PageBack fallback="/home" />}
       title={owner ? `${greeting}, ${owner}` : greeting}
-      subtitle={`${dayLabel} · ${name}`}
+      subtitle={<span className="inline-flex max-w-full items-center gap-1">{dayLabel} · <ShopSwitcher className="text-ink" fallback={name} /></span>}
       actions={
         <>
           <form className="hidden xl:flex" onSubmit={(e) => { e.preventDefault(); router.push(search.trim() ? `/scan?code=${encodeURIComponent(search.trim())}` : "/scan"); }}>

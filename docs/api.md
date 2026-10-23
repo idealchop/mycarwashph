@@ -69,6 +69,8 @@ and are not in the code.
 | `PUT /businesses/:id/plan` | platform admin | | Switch `partner` / `paid` (custom claim `platformAdmin`) |
 | `GET /businesses/:id/members` | owner, staff | | Team |
 | `DELETE /businesses/:id/members/:uid` | owner | | Remove staff (owner cannot be removed) |
+| `GET /businesses/:id/feedback` | owner, staff | | App rating summary + my rating (Install page) |
+| `POST /businesses/:id/feedback` | owner, staff | | Save my app rating `{ rating: 1-5, comment? }` (replaces an earlier one) |
 | `GET /businesses/:id/services` | owner, staff | | Service menu |
 | `POST /businesses/:id/services` | owner | | Add service (`pricesBySize` in centavos, owner-entered) |
 | `PATCH /businesses/:id/services/:serviceId` | owner | | Edit service |

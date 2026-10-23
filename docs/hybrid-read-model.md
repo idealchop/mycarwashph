@@ -22,3 +22,10 @@ Firebase client SDKs in the frontend (`frontend/lib/firebase.ts`):
 `firestore.rules` already allow members to read their shop's `services`, `bays`, `customers` and `queue`
 so a live listener could be added later. Before adding any frontend Firestore read, document the screen,
 path and reason here first (River rules 00-core §9) and keep writes on the API.
+
+## Last-seen cache (PWA rule)
+
+`lib/screen-cache.ts` keeps the last `/me` and every `useLoad` result in localStorage per user. On open the
+app paints that data at once (even before Firebase Auth restores the session) and refreshes from the API in
+the background; `api()` waits for `authStateReady()` instead of failing. Signing out clears the cache.
+Loading placeholders use the `.skeleton` class (visible grey with a shimmer).

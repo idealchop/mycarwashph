@@ -54,3 +54,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .companion-idle svg, .companion-face .cm-smile, .companion-face .cm-spark, .companion-dots i, .companion-enter { animation: none !important; }
 }
+
+/* PWA rule (Jimboy): a skeleton must read clearly as loading, with a subtle shimmer, never a pale blank. */
+.skeleton { display: block; position: relative; overflow: hidden; background: var(--color-grey-200, #e4e4e7); }
+.skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent); animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+@keyframes skeleton-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; } }

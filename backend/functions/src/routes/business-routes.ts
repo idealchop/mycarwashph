@@ -4,6 +4,9 @@ import type { Deps } from "../deps.js";
 import { requireMembership, requirePlan, requireRole } from "../middleware/business-middleware.js";
 import { getBusiness, getMember, getUser } from "../middleware/context.js";
 import { validateBody } from "../middleware/validate.js";
+import { feedbackSummary, myFeedback, saveFeedback } from "../services/feedback-service.js";
+
+const feedbackSchema = z.object({ rating: z.number().int().min(1).max(5), comment: z.string().max(500).optional() }).strict();
 import { badRequest, forbidden, HttpError, notFound } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
 import {
@@ -153,6 +156,16 @@ export function businessRoutes(deps: Deps) {
   r.delete("/members/:uid", owner, async (req, res) => {
     await removeMember(store, getBusiness(res).id, param(req.params.uid), getUser(res).uid, deps.now());
     res.status(204).end();
+  });
+
+  r.get("/feedback", member, async (_req, res) => {
+    const b = getBusiness(res);
+    res.json({ data: { summary: await feedbackSummary(store), mine: await myFeedback(store, b.id, getUser(res).uid) } });
+  });
+  r.post("/feedback", member, validateBody(feedbackSchema), async (req, res) => {
+    const b = getBusiness(res);
+    const summary = await saveFeedback(store, b.id, getUser(res).uid, { rating: req.body.rating, comment: (req.body.comment ?? "").trim() }, deps.now());
+    res.json({ data: { summary, mine: { rating: req.body.rating, comment: (req.body.comment ?? "").trim() } } });
   });
 
   r.get("/services", member, async (_req, res) => {

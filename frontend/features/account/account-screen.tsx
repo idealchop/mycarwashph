@@ -5,7 +5,8 @@ import { hasPaidFeatures, planGatingEnabled } from "@/lib/plan-gating";
 import { CompanionAvatar } from "@/features/companion/companion-mark";
 import { companionEnabled } from "@/lib/companion-flag";
 import { CarIllustration } from "@river-apps/icons";
-import { Car, ChevronRight, CreditCard, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
+import { Car, ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
+import { useInstallHidden } from "@/lib/pwa";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -28,11 +29,14 @@ export function AccountScreen() {
   const paid = hasPaidFeatures(shop);
   const place = (shop?.location?.formattedAddress || shop?.address || "").split(",").slice(-2).join(",").trim();
   const shops = me?.businesses ?? [];
+  const installHidden = useInstallHidden();
 
   const links = [
     { href: "/history", icon: History, title: "History", subtitle: "Past washes and bookings" },
     { href: "/settings/services", icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
     { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: shop?.plan === "paid" ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
+    // Hidden once installed (home screen open, or remembered on this device); /settings/install still says Installed.
+    ...(installHidden ? [] : [{ href: "/settings/install", icon: Download, title: "Install app", subtitle: "Add Mycarwash to your home screen" }]),
   ];
 
   return (
