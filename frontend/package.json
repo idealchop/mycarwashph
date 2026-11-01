@@ -1,6 +1,6 @@
 {
   "name": "@mycarwash/web",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "Mycarwash.ph shop web app (owners and staff), mobile-first, built with the River Apps UI Kit.",
   "license": "UNLICENSED",
