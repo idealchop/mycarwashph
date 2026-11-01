@@ -2,12 +2,13 @@
 
 import { Art } from "@/components/river-icon";
 import { Button, Input, cn } from "@river-apps/ui";
-import { Pencil, Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
+import { BottomSheet } from "@/components/shop/bottom-sheet";
 import { useState } from "react";
 import { Spinner } from "@/components/screen";
 import { api, type Service, type ServiceCategory, type ServiceIconName } from "@/lib/api";
 import { pesoFromCentavos } from "@/lib/pricing";
-import { CATEGORIES, categoryOf, groupByCategory, iconOf, SERVICE_ICONS } from "@/lib/service-categories";
+import { CATEGORIES, categoryOf, groupByCategory, SERVICE_ICONS } from "@/lib/service-categories";
 import { useLoad } from "@/lib/use-load";
 
 const SIZES = [["small", "Small"], ["medium", "Medium"], ["large", "Large"], ["xl", "XL"]] as const;
@@ -46,11 +47,11 @@ export function ShopServices({ businessId, canEdit }: { businessId: string; canE
     }
   }
 
-  const save = (d: Draft, id?: string) => {
+  const save = (d: Draft, id: string | undefined, listed: boolean) => {
     const pricesBySize = Object.fromEntries(SIZES.map(([k]) => [k, d.prices[k] ? Math.round(Number(d.prices[k]) * 100) : null]));
-    const body = { name: d.name.trim(), category: d.category, icon: d.icon, pricesBySize };
+    const body = { name: d.name.trim(), category: d.category, icon: d.icon, pricesBySize, listedOnRiverMobile: listed };
     return run(
-      () => api(id ? `/businesses/${businessId}/services/${id}` : `/businesses/${businessId}/services`, { method: id ? "PATCH" : "POST", body: id ? body : { ...body, active: true, listedOnRiverMobile: true } }),
+      () => api(id ? `/businesses/${businessId}/services/${id}` : `/businesses/${businessId}/services`, { method: id ? "PATCH" : "POST", body: id ? body : { ...body, active: true } }),
       id ? "Service saved." : "Service added.",
     );
   };
@@ -59,61 +60,90 @@ export function ShopServices({ businessId, canEdit }: { businessId: string; canE
 
   const priceLabel = (s: Service) => {
     const values = Object.values(s.pricesBySize).filter((v): v is number => typeof v === "number");
-    if (!values.length) return "No price";
+    if (!values.length) return null;
     const min = Math.min(...values);
     const max = Math.max(...values);
     return min === max ? pesoFromCentavos(min) : `${pesoFromCentavos(min)}–${pesoFromCentavos(max)}`;
   };
 
+  const groups = data ? groupByCategory(data) : [];
+  const current = data?.find((s) => s.id === editing) ?? null;
+
   return (
-    <section className="mt-6" data-testid="services-list">
-      <p className="px-1 text-[13px] font-medium text-muted">
-        Starter prices are yours to edit. Active services show in the walk-in picker; “On River Mobile” ones can be booked there.
-      </p>
+    <section className="mt-4" data-testid="services-list">
+      <div className="flex items-center justify-between gap-3 px-1">
+        <p className="text-[13px] font-medium text-muted">Tap a service to edit it.</p>
+        {canEdit ? <Button size="md" pill leadingIcon={<Plus size={16} aria-hidden />} onClick={() => setEditing("new")}>Add service</Button> : null}
+      </div>
+      {groups.length > 1 ? (
+        <nav aria-label="Jump to category" className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1">
+          {groups.map((g) => (
+            <a key={g.id} href={`#cat-${g.id}`} className="flex h-9 flex-none items-center gap-1.5 rounded-pill bg-surface pl-1.5 pr-3 text-[13px] font-bold ring-1 ring-line">
+              <Art name={g.icon} size={24} />{g.label}
+            </a>
+          ))}
+        </nav>
+      ) : null}
       {error ? <p role="alert" className="mt-3 text-[14px] font-semibold">{error}</p> : null}
       {!data && !error ? <Spinner label="Loading services" /> : null}
       {data && data.length === 0 ? <p className="mt-3 text-[14px] font-medium text-muted">No services yet.</p> : null}
-      {data
-        ? groupByCategory(data).map((g) => (
-            <div key={g.id} className="mt-4 rounded-card bg-surface px-4 py-3 shadow-card">
-              <h2 className="flex items-center gap-2 text-[16px] font-extrabold"><Art name={g.icon} size={34} />{g.label}</h2>
-              <ul className="mt-1 divide-y divide-grey-200">
-                {g.services.map((s) =>
-                  editing === s.id ? (
-                    <li key={s.id} className="py-3"><ServiceForm initial={fromService(s)} busy={busy} onCancel={() => setEditing(null)} onSave={(d) => void save(d, s.id)} /></li>
-                  ) : (
-                    <li key={s.id} className="flex items-center gap-3 py-3">
-                      <Art name={iconOf(s)} size={40} />
-                      <div className="min-w-0 flex-1">
-                        <b className={cn("block truncate text-[15px]", s.active === false && "text-muted")}>{s.name}</b>
-                        <p className="text-[13px] font-medium text-muted">{priceLabel(s)}{s.active === false ? " · hidden" : ""}</p>
-                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] font-semibold">
-                          <label className="flex items-center gap-1.5"><input type="checkbox" checked={s.active !== false} disabled={!canEdit || busy} onChange={(e) => void toggle(s, "active", e.target.checked)} />Active</label>
-                          <label className="flex items-center gap-1.5"><input type="checkbox" checked={!!s.listedOnRiverMobile} disabled={!canEdit || busy} onChange={(e) => void toggle(s, "listedOnRiverMobile", e.target.checked)} />On River Mobile</label>
-                        </div>
-                      </div>
-                      {canEdit ? <Button size="sm" variant="secondary" aria-label={`Edit ${s.name}`} leadingIcon={<Pencil size={14} />} onClick={() => setEditing(s.id)}>Edit</Button> : null}
-                    </li>
-                  ),
-                )}
-              </ul>
-            </div>
-          ))
-        : null}
-      {canEdit ? (
-        editing === "new" ? (
-          <div className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card"><ServiceForm initial={blank()} busy={busy} onCancel={() => setEditing(null)} onSave={(d) => void save(d)} /></div>
-        ) : (
-          <Button className="mt-4" fullWidth leadingIcon={<Plus size={18} />} onClick={() => setEditing("new")}>Add service</Button>
-        )
+      {groups.map((g) => (
+        <div key={g.id} id={`cat-${g.id}`} className="mt-4 scroll-mt-4 overflow-hidden rounded-card bg-surface shadow-card">
+          <h2 className="flex items-center gap-2.5 px-4 pb-1 pt-3.5 text-[16px] font-extrabold">
+            <Art name={g.icon} size={36} />{g.label}
+            <span className="ml-auto text-[12.5px] font-semibold text-muted">{g.services.length}</span>
+          </h2>
+          <ul className="divide-y divide-line">
+            {g.services.map((s) => {
+              const on = s.active !== false;
+              const price = priceLabel(s);
+              return (
+                <li key={s.id} className="flex items-center gap-3 pr-4">
+                  <button type="button" data-testid="service-row" disabled={!canEdit} onClick={() => setEditing(s.id)} aria-label={`Edit ${s.name}`}
+                    className="flex min-w-0 flex-1 items-center gap-2 py-3.5 pl-4 text-left disabled:cursor-default">
+                    <span className="min-w-0 flex-1 leading-[1.3]">
+                      <b className={cn("block truncate text-[15px]", !on && "text-muted")}>{s.name}</b>
+                      <span className={cn("block text-[13.5px] font-semibold tabular-nums", price ? "text-muted" : "text-[#C2410C]")}>{price ?? "Set price"}</span>
+                      {s.listedOnRiverMobile && on ? <span className="mt-1 inline-flex h-5 items-center rounded-pill bg-grey-100 px-2 text-[11px] font-bold text-muted">On River Mobile</span> : null}
+                    </span>
+                    {canEdit ? <ChevronRight size={18} className="flex-none text-subtle" aria-hidden /> : null}
+                  </button>
+                  <Switch label={`${s.name} active`} checked={on} disabled={!canEdit || busy} onChange={(v) => void toggle(s, "active", v)} />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+      {msg ? <p className="mt-3 px-1 text-[14px] font-semibold" role="status">{msg}</p> : null}
+      {canEdit && editing ? (
+        <BottomSheet title={current ? "Edit service" : "Add service"} subtitle={current ? current.name : "Shows in the walk-in picker"} tall onClose={() => setEditing(null)}>
+          <ServiceForm
+            initial={current ? fromService(current) : blank()}
+            listed={current ? !!current.listedOnRiverMobile : true}
+            busy={busy}
+            onCancel={() => setEditing(null)}
+            onSave={(d, listed) => void save(d, current?.id, listed)}
+          />
+        </BottomSheet>
       ) : null}
-      {msg ? <p className="mt-2 px-1 text-[14px] font-semibold" role="status">{msg}</p> : null}
     </section>
   );
 }
 
-function ServiceForm({ initial, busy, onSave, onCancel }: { initial: Draft; busy: boolean; onSave: (d: Draft) => void; onCancel: () => void }) {
+/** One clear on/off switch (Active). */
+function Switch({ checked, onChange, disabled, label }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; label: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} onClick={() => onChange(!checked)}
+      className={cn("relative inline-flex h-7 w-12 flex-none items-center rounded-pill transition-colors disabled:opacity-50", checked ? "bg-[#0B7A3E]" : "bg-grey-200")}>
+      <span className={cn("inline-block size-6 rounded-full bg-white shadow transition-transform", checked ? "translate-x-[22px]" : "translate-x-0.5")} />
+    </button>
+  );
+}
+
+function ServiceForm({ initial, listed: listed0, busy, onSave, onCancel }: { initial: Draft; listed: boolean; busy: boolean; onSave: (d: Draft, listed: boolean) => void; onCancel: () => void }) {
   const [d, setD] = useState(initial);
+  const [listed, setListed] = useState(listed0);
   const valid = d.name.trim().length > 0 && SIZES.some(([k]) => Number(d.prices[k]) > 0);
   const catIcon = CATEGORIES.find((c) => c.id === d.category)!.icon;
   return (
@@ -152,9 +182,13 @@ function ServiceForm({ initial, busy, onSave, onCancel }: { initial: Draft; busy
           ))}
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center justify-between gap-3 rounded-[14px] bg-grey-50 px-3.5 py-3">
+        <span className="leading-[1.3]"><b className="block text-[14px]">On River Mobile</b><span className="text-[12.5px] font-medium text-muted">Customers can book it online</span></span>
+        <Switch label="On River Mobile" checked={listed} disabled={busy} onChange={setListed} />
+      </div>
+      <div className="flex gap-2 pb-2">
         <Button variant="secondary" className="flex-1" onClick={onCancel}>Cancel</Button>
-        <Button className="flex-1" disabled={busy || !valid} onClick={() => onSave(d)}>Save</Button>
+        <Button className="flex-1" disabled={busy || !valid} onClick={() => onSave(d, listed)}>Save</Button>
       </div>
     </div>
   );
