@@ -185,6 +185,8 @@ export interface SalesSummary {
   byHour: { hour: number; label: string; centavos: number; count: number }[];
   recent: Sale[];
   previousDayTotalCentavos: number;
+  /** Mon–Sun week holding `date` (older API builds may omit it). */
+  week?: { from: string; to: string; totalCentavos: number; cars: number; days: { date: string; dow: string; centavos: number; cars: number }[] };
 }
 
 export interface Member {

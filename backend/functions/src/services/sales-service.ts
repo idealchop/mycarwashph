@@ -73,7 +73,11 @@ export interface SalesSummary {
   byHour: { hour: number; label: string; centavos: number; count: number }[];
   recent: Doc<Sale>[];
   previousDayTotalCentavos: number;
+  /** Mon–Sun week holding `date` (Home "Your weekly sales" card, Barbers.ph weekly profit layout). */
+  week: { from: string; to: string; totalCentavos: number; cars: number; days: { date: string; dow: string; centavos: number; cars: number }[] };
 }
+
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /** Aggregates sales for a Manila calendar day (and previous day for change %). */
 export async function salesSummary(store: DocStore, businessId: string, dayKey: string, recentLimit = 8): Promise<SalesSummary> {
@@ -111,7 +115,19 @@ export async function salesSummary(store: DocStore, businessId: string, dayKey: 
     byHour.push({ hour: h, label, centavos: row.centavos, count: row.count });
   }
 
+  // Monday-start week around dayKey (Manila calendar days; noon avoids DST/offset edge cases).
+  const dow = new Date(noon.getTime()).getUTCDay();
+  const monday = noon.getTime() - ((dow + 6) % 7) * 86_400_000;
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday + i * 86_400_000);
+    const key = manilaDayKey(d);
+    const inIt = active.filter((x) => inDay(x, key));
+    return { date: key, dow: DOW[d.getUTCDay()]!, centavos: inIt.reduce((t, x) => t + x.amountCentavos, 0), cars: inIt.length };
+  });
+  const week = { from: days[0]!.date, to: days[6]!.date, totalCentavos: days.reduce((t, d) => t + d.centavos, 0), cars: days.reduce((t, d) => t + d.cars, 0), days };
+
   return {
+    week,
     date: dayKey,
     totalCentavos: today.reduce((t, s) => t + s.amountCentavos, 0),
     cars: today.length,

@@ -3,7 +3,7 @@
 import { hasPaidFeatures } from "@/lib/plan-gating";
 
 import { CoinIcon } from "@river-apps/icons";
-import { Plus, ScanLine } from "lucide-react";
+import { ChevronRight, Plus, ScanLine, User } from "lucide-react";
 import { Avatar, Badge, Button, Card, CardHeader, HeroBanner, ProgressRing, SearchInput, SectionHeader, StatCard, Topbar } from "@river-apps/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,12 +14,15 @@ import { ShopSwitcher } from "@/components/shop/shop-switcher";
 import { HeroArt } from "./hero-art";
 import { CompanionCard } from "@/features/companion/companion-card";
 import { SalesChartCard, type SalesRow } from "@/features/sales/sales-chart";
+import { WeeklySalesCard } from "@/features/sales/weekly-sales-card";
+import { RiverIcon, iconSrc, type CarwashIcon } from "@/components/river-icon";
 import { useAuth } from "@/lib/auth";
 import { greeting as greetingFor, peso } from "@/lib/format";
 import { useShop } from "@/lib/shop-context";
 import { acceptJob, declineJob, figures, useToday, type Job } from "@/lib/today";
 
 const linkCls = "text-[14px] font-bold underline decoration-grey-300 underline-offset-[3px]";
+const QR_SM = "relative size-8 rounded-pill p-0 after:absolute after:-inset-1.5 after:content-['']";
 const PILL = "relative h-8 gap-1 rounded-pill px-2.5 text-[12px] after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-['']";
 
 function shortPhone(phone: string) {
@@ -95,10 +98,10 @@ export function HomeScreen() {
   // Phone sign-ins have no name: greet with the shop instead (Barbers.ph 7c64812).
   const realName = user?.displayName && !/^[+\d]/.test(user.displayName) ? user.displayName : "";
   const owner = realName ? (realName.split(" ")[0] || realName) : (user ? shop?.name ?? "" : "");
-  const displayName = user?.displayName || user?.phoneNumber || user?.email || "Me";
   const shopName = shop?.name || (signedIn ? "your shop" : "Mycarwash.ph");
   const contact = user ? shortPhone(user.phoneNumber || shop?.phoneE164 || "") || user.email || "" : "";
   const needsSetup = signedIn && !loading && !shop;
+  const area = (shop?.location?.formattedAddress || shop?.address || "").split(",").slice(-2).join(",").trim();
   const dayLabel = new Date().toLocaleDateString("en-US", { timeZone: "Asia/Manila", weekday: "long", month: "short", day: "numeric" });
   const dayTotal = fig.cars + fig.toAccept + fig.waiting + fig.inBay;
   const pct = dayTotal ? Math.round((fig.cars / dayTotal) * 100) : 0;
@@ -115,30 +118,31 @@ export function HomeScreen() {
         <header className="px-4 pt-1">
           <div className="flex h-16 items-center justify-between gap-2">
             <div className="flex min-w-0 items-center">
-              <PageBack fallback="/home" />
               {user ? (
-                <div className="flex min-h-11 items-center gap-2 py-1 pl-1 pr-1.5">
-                  <Link href="/account" aria-label="My Account" className="flex-none rounded-full">
-                    <Avatar name={owner || displayName} src={user.photoURL ?? undefined} preset="sky" size={36} />
+                <div className="flex min-h-11 min-w-0 items-center gap-2 py-1 pl-1 pr-1.5">
+                  <Link href="/account" aria-label="My Account" className="flex-none">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- shop logo or the carwash 3D home icon */}
+                    <img src={shop?.logoUrl || iconSrc("home", 36)} alt="" width={36} height={36} className={`size-9 rounded-[11px] ${shop?.logoUrl ? "object-cover ring-1 ring-line" : "bg-grey-50 object-contain p-0.5"}`} />
                   </Link>
                   <span className="flex min-w-0 flex-col leading-[1.2]">
-                    <Link href="/account" className="max-w-[170px] truncate text-[13px] font-medium">{displayName}</Link>
-                    {/* Location dropdown (Barbers.ph): opens "Choose location"; falls back to the contact line */}
-                    <ShopSwitcher className="max-w-[170px] text-[11.5px] font-semibold text-muted" fallback={contact ? <span className="max-w-[150px] truncate text-[11px] font-medium text-muted">{contact}</span> : null} />
+                    <Link href="/account" className="max-w-[170px] truncate text-[14px] font-extrabold tracking-[-0.01em]">{shopName}</Link>
+                    {/* Location dropdown (Barbers.ph): opens "Choose location"; falls back to the area */}
+                    <ShopSwitcher className="max-w-[170px] text-[11.5px] font-semibold text-muted" fallback={<span className="max-w-[170px] truncate text-[11.5px] font-semibold text-muted">{area || contact || "Your shop"}</span>} />
                   </span>
                 </div>
               ) : (
                 <button type="button" onClick={() => requireAuth()} className="flex min-h-11 items-center gap-2 rounded-[14px] py-1 pl-1 pr-1.5 text-left">
-                  <span aria-hidden className="inline-flex size-9 items-center justify-center rounded-full bg-grey-100 text-[15px] font-bold">?</span>
+                  <span aria-hidden className="inline-flex size-9 flex-none items-center justify-center rounded-full bg-grey-100 text-ink"><User size={18} strokeWidth={2.2} /></span>
                   <span className="flex min-w-0 flex-col leading-[1.2]">
-                    <span className="text-[13px] font-bold">Sign in</span>
+                    <span className="text-[13px] font-bold">Sign up or log in</span>
                     <span className="text-[11px] font-medium text-muted">Save your shop</span>
                   </span>
                 </button>
               )}
             </div>
-            <Link href="/sales" aria-label="Sales" className="inline-flex size-11 flex-none items-center justify-center">
-              <CoinIcon size={36} />
+            <Link href="/sales" aria-label="Sales" className="inline-flex min-h-11 flex-none items-center gap-1.5 rounded-full border border-line py-1 pl-1 pr-3">
+              <CoinIcon size={26} />
+              <span className="text-[13px] font-bold leading-none text-ink">Sales</span>
             </Link>
           </div>
         </header>
@@ -153,21 +157,21 @@ export function HomeScreen() {
             </p>
             <h2 className="mt-1 text-[18px] font-extrabold leading-[1.15] tracking-[-0.025em]">{todayTitle}</h2>
             <p className="mt-0.5 text-[12.5px] font-medium text-on-ink-muted">{fig.cars} cars · {fig.inBay} in bay</p>
-            <div className="mt-2 flex flex-nowrap items-center gap-1.5">
+            <div className="mt-2.5 flex flex-nowrap items-center gap-1.5">
               <Button href="/queue/new" variant="white" size="sm" className={PILL} leadingIcon={<Plus size={14} strokeWidth={2} />}>Walk-in</Button>
-              <Button href="/scan" variant="ghost-inverse" size="sm" className={PILL} leadingIcon={<ScanLine size={14} strokeWidth={1.9} />}>Scan QR</Button>
+              <Button href="/scan" variant="ghost-inverse" size="sm" aria-label="Scan QR" title="Scan QR" className={QR_SM}><ScanLine size={16} strokeWidth={1.9} aria-hidden /></Button>
             </div>
           </div>
         </section>
         <div className="mx-4 mt-3 grid grid-cols-3 gap-3">
-          <StatCard className="pb-3" label="To accept" value={String(fig.toAccept)} />
-          <Link href="/queue/bays" aria-label="In bay" className="block min-w-0 rounded-card">
-            <StatCard className="pb-3" label="In bay" value={String(fig.inBay)} />
-          </Link>
-          <StatCard className="pb-3" label="Unpaid" value={peso(fig.unpaid) || "₱0"} />
+          <Link href="/queue?tab=done" aria-label="Cars today" className="block min-w-0 rounded-card"><StatCard className="min-w-0 overflow-hidden px-3 pb-3" label="Cars" value={<FitValue full={String(fig.cars)} compact={compactCount(fig.cars)} />} /></Link>
+          <Link href="/queue" aria-label="Online bookings to accept" className="block min-w-0 rounded-card"><StatCard className="min-w-0 overflow-hidden px-3 pb-3" label="Online" value={<FitValue full={String(fig.toAccept)} compact={compactCount(fig.toAccept)} />} /></Link>
+          <Link href="/queue" aria-label="Unpaid today" className="block min-w-0 rounded-card"><StatCard className="min-w-0 overflow-hidden px-3 pb-3" label="Unpaid" value={<FitValue full={peso(fig.unpaid) || "₱0"} compact={compactPeso(fig.unpaid)} />} /></Link>
         </div>
+        <WeeklySalesCard className="mx-4 mt-3" summary={today.summary} unpaid={fig.unpaid} loading={signedIn && !today.ready} />
         {needsSetup ? <SetupCard className="mx-4 mt-3" /> : null}
         <CompanionCard className="mx-4 mt-3" />
+        <HomeShortcuts className="mx-4 mt-3" />
         <SalesChartCard className="mx-4 mt-3" series={series} sales={fig.sales} />
         <SectionHeader className="px-5 pb-1 pt-4" title="Bookings to accept" aside={aside} />
         {note ? <p className="mx-4 mb-2 text-[13px] font-semibold">{note}</p> : null}
@@ -224,13 +228,13 @@ export function HomeScreen() {
           </StatCard>
         </div>
         <div className="mt-5 grid grid-cols-3 gap-5">
-          <StatCard className="pb-3" label="To accept" value={String(fig.toAccept)} />
-          <Link href="/queue/bays" aria-label="In bay" className="block min-w-0 rounded-card">
-            <StatCard className="pb-3" label="In bay" value={String(fig.inBay)} />
-          </Link>
-          <StatCard className="pb-3" label="Unpaid" value={peso(fig.unpaid) || "₱0"} />
+          <Link href="/queue?tab=done" aria-label="Cars today" className="block min-w-0 rounded-card"><StatCard className="pb-3" label="Cars" value={String(fig.cars)} /></Link>
+          <Link href="/queue" aria-label="Online bookings to accept" className="block min-w-0 rounded-card"><StatCard className="pb-3" label="Online" value={String(fig.toAccept)} /></Link>
+          <Link href="/queue" aria-label="Unpaid today" className="block min-w-0 rounded-card"><StatCard className="pb-3" label="Unpaid" value={peso(fig.unpaid) || "₱0"} /></Link>
         </div>
+        <WeeklySalesCard className="mt-5" summary={today.summary} unpaid={fig.unpaid} loading={signedIn && !today.ready} />
         <CompanionCard className="mt-5" />
+        <HomeShortcuts className="mt-5" />
         <SalesChartCard className="mt-5" series={series} sales={fig.sales} />
         <Card padding="none" className="mt-5 px-[18px] pb-4 pt-4">
           <CardHeader className="mb-3" title="Bookings to accept" subtitle={aside} action={<Link href="/queue?channel=online" className={linkCls}>All bookings</Link>} />
@@ -282,4 +286,40 @@ function DesktopBar({ name, owner, greeting, dayLabel, photoUrl, onSignIn }: { n
       }
     />
   );
+}
+
+/** Shortcuts under the Companion card (Barbers.ph HomeShortcuts). */
+function HomeShortcuts({ className = "" }: { className?: string }) {
+  const items: { href: string; icon: CarwashIcon; title: string; sub: string }[] = [
+    { href: "/settings/shops", icon: "home", title: "Manage shops", sub: "Locations, bays, QR" },
+    { href: "/settings/services", icon: "carwash", title: "Services", sub: "Washes and prices" },
+  ];
+  return (
+    <nav aria-label="Shortcuts" className={`grid grid-cols-2 gap-3 ${className}`}>
+      {items.map((it) => (
+        <Link key={it.href} href={it.href} className="relative flex min-w-0 flex-col items-start rounded-card bg-surface px-3.5 pb-3 pt-3 shadow-card active:scale-[0.99]">
+          <RiverIcon name={it.icon} size={44} />
+          <b className="mt-2 block w-full truncate text-[15px] tracking-[-0.01em]">{it.title}</b>
+          <small className="block w-full truncate text-[12px] font-semibold text-muted">{it.sub}</small>
+          <ChevronRight size={16} className="absolute right-3 top-3.5 text-subtle" aria-hidden />
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+function compactNum(n: number) {
+  const a = Math.abs(n);
+  if (a >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;
+  if (a >= 1_000) return `${+(n / 1_000).toFixed(1)}k`;
+  return String(Math.round(n));
+}
+function compactCount(n: number) { return n >= 10_000 ? compactNum(n) : String(n); }
+function compactPeso(centavos: number) { return `₱${compactNum(centavos / 100)}`; }
+
+/** Phone stat value that never overflows its card: shrinks by length, then switches to compact (₱22.8k). */
+function FitValue({ full, compact }: { full: string; compact: string }) {
+  const text = full.length > 8 ? compact : full;
+  const size = text.length <= 5 ? "text-[20px]" : text.length <= 7 ? "text-[17px]" : "text-[15px]";
+  return <span title={full} aria-label={full} className={`block max-w-full truncate tabular-nums ${size}`}>{text}</span>;
 }

@@ -8,8 +8,8 @@ const BASE: { key: string; label: string; href: string; icon: Nav3DName }[] = [
 ];
 
 /** Partner and Paid share the same three places, with the River 3D icons. */
-export function appNav(size: number): NavItem[] {
-  return BASE.map((it) => ({ key: it.key, label: it.label, href: it.href, icon: <NavIcon3D name={it.icon} size={size} /> }));
+export function appNav(activeKey: string | undefined, size: number): NavItem[] {
+  return BASE.map((it) => ({ key: it.key, label: it.label, href: it.href, icon: <NavIcon3D name={it.icon} size={size} active={it.key === activeKey} /> }));
 }
 
 export function activeKeyFor(pathname: string): string | undefined {
