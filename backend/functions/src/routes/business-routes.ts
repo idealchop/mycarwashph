@@ -18,6 +18,7 @@ import {
   activateBillingSchema,
   confirmBillingPaymentSchema,
   recordSaleSchema,
+  createExpenseSchema,
   selectPartnerBillingSchema,
   serviceSchema,
   setPlanSchema,
@@ -45,6 +46,7 @@ import { paths } from "../services/paths.js";
 import { ensureStarterServices } from "../services/starter-services.js";
 import { createQueueItem, listQueue, updateQueueItem, walkInAllowance } from "../services/queue-service.js";
 import { listSales, recordSale, salesSummary } from "../services/sales-service.js";
+import { createExpense, deleteExpense, financeWeek } from "../services/expenses-service.js";
 
 const PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
@@ -258,6 +260,19 @@ export function businessRoutes(deps: Deps) {
     const b = getBusiness(res);
     const sale = await recordSale(store, b.id, req.body, getUser(res).uid, deps.now());
     res.status(201).json({ data: sale });
+  });
+
+  // Week calendar (Sales / Expenses / Profit) + shop expenses. Additive endpoints.
+  r.get("/finance/week", member, paid, async (req, res) => {
+    const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
+    res.json({ data: await financeWeek(store, getBusiness(res).id, date) });
+  });
+  r.post("/expenses", member, paid, validateBody(createExpenseSchema), async (req, res) => {
+    res.status(201).json({ data: await createExpense(store, getBusiness(res).id, req.body, getUser(res).uid, deps.now()) });
+  });
+  r.delete("/expenses/:expenseId", member, paid, async (req, res) => {
+    await deleteExpense(store, getBusiness(res).id, param(req.params.expenseId), getUser(res).uid, deps.now());
+    res.status(204).end();
   });
 
   r.get("/alerts", member, async (_req, res) => {

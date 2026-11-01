@@ -255,3 +255,10 @@ The public `/book?shop=<id>` page behind the shop QR. Mounted before `requireAut
 | `GET /public/shops/:shopId/bookings/:bookingId?t=<token>` | Customer ticket: `stage` (sent, accepted, in_bay, done, closed), queue number, lines, total |
 
 `payPref: "online"` is only kept when the functions env has `ONLINE_CHECKOUT_ENABLED=1` (no payment provider yet; default off).
+
+### Expenses and week calendar (v0.5.0)
+
+- `GET /businesses/{id}/finance/week?date=YYYYMMDD` — Mon–Sun week holding `date` (default today, Manila): `days[]` with `salesCentavos`, `cars`, `expensesCentavos`, `profitCentavos` (sales − expenses), `totals`, and the week's `expenses[]`. Member only.
+- `POST /businesses/{id}/expenses` — `{ amountCentavos > 0, note (1–80), date? YYYYMMDD }`. Member only. Audited (`expense.create`).
+- `DELETE /businesses/{id}/expenses/{expenseId}` — 204; 404 if not in this shop. Audited (`expense.delete`).
+- Stored at `businesses/{id}/expenses/{expenseId}`; Firestore rules deny all client reads/writes (API-only).
