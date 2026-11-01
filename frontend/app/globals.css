@@ -60,3 +60,12 @@ body {
 .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent); animation: skeleton-shimmer 1.4s ease-in-out infinite; }
 @keyframes skeleton-shimmer { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; } }
+
+/* Phones: typing must never zoom the page. iOS zooms any field under 16px. */
+@media (max-width: 1023px) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}

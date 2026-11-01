@@ -131,7 +131,7 @@ function Replies({ post, now, me, replyRef, onReply }: { post: MomentPost; now: 
       <form data-auth="action" className="mt-3 flex items-end gap-2.5" onSubmit={(e) => { e.preventDefault(); submit(); }}>
         <Avatar name={me.name || "Shop"} src={me.photoUrl} preset={me.avatar} size={32} />
         <label htmlFor={id} className="sr-only">Reply to {post.author.name}</label>
-        <textarea id={id} ref={replyRef} rows={1} value={text} onChange={(e) => setText(e.target.value)} placeholder={`Reply to ${post.author.name}…`} className="max-h-32 min-h-10 flex-1 resize-none rounded-[20px] bg-grey-100 px-4 py-2.5 text-[14.5px] font-medium outline-none placeholder:text-muted" />
+        <textarea id={id} ref={replyRef} rows={1} value={text} onChange={(e) => setText(e.target.value)} placeholder={`Reply to ${post.author.name}…`} className="max-h-32 min-h-10 flex-1 resize-none rounded-[20px] bg-grey-100 px-4 py-2.5 text-[16px] font-medium outline-none placeholder:text-muted" />
         <button type="submit" disabled={!text.trim()} className="h-10 rounded-pill px-3 text-[14px] font-extrabold disabled:text-subtle">Post</button>
       </form>
     </div>
