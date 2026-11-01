@@ -2,9 +2,9 @@ import type { NavItem } from "@river-apps/ui";
 import { NavIcon3D, type Nav3DName } from "@/components/nav-icon";
 
 const BASE: { key: string; label: string; href: string; icon: Nav3DName }[] = [
-  { key: "home", label: "Home", href: "/home", icon: "house" },
-  { key: "queue", label: "Queue", href: "/queue", icon: "ticket" },
-  { key: "moments", label: "Moments", href: "/moments", icon: "sparkle" },
+  { key: "home", label: "Home", href: "/home", icon: "home" },
+  { key: "queue", label: "Queue", href: "/queue", icon: "queue" },
+  { key: "moments", label: "Moments", href: "/moments", icon: "moments" },
 ];
 
 /** Partner and Paid share the same three places, with the River 3D icons. */

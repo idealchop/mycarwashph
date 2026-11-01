@@ -16,6 +16,7 @@ shop-facing times render in PHT. Only the API (Admin SDK) writes. Every business
 | `plan` (`partner` \| `paid`), `planStatus` (`active` \| `suspended`), `billing {partnerOption,status,lastPayment,activatedAt,expiresAt,checkoutProvider}` | Plan + billing records (kept even while plan gating is off) |
 | `riverMobile {listed, listedAt}` | Opt-in to River Mobile (`/v1`) listing |
 | `bookingCapacity`, `settings` | Booking slots, daily target |
+| `deletedAt` | Set when the owner removes the shop (soft delete) |
 | `starterServicesAt` | Set once the starter menu was seeded or the backfill checked the shop |
 | `createdAt`, `updatedAt` | |
 
@@ -28,7 +29,7 @@ shop-facing times render in PHT. Only the API (Admin SDK) writes. Every business
 | `services/{serviceId}` | `name, category (car-wash\|interior\|detailing\|wax-coating\|engine\|add-ons; missing = car-wash), icon?, pricesBySize {small,medium,large,xl}, active, listedOnRiverMobile, durationMins? (legacy, not shown)` |
 | `bays/{bayId}` | `name, active, sortOrder` |
 | `customers/{customerId}` | Customer records (name, phone; `plate` legacy, no longer collected) |
-| `bookings/{bookingId}` | `reference (CWS-…), source, status (requested→accepted→checked_in→completed, or into the queue), serviceIds, vehicleSize, scheduledStart, customerSnapshot {name, phoneE164}, verifyCodeHash, external {clientId, customerRef, externalBookingRef}, notes, queueItemId` |
+| `bookings/{bookingId}` | `reference (CWS-…), source, status (requested→accepted→checked_in→completed, or into the queue), serviceIds, vehicleSize, scheduledStart, customerSnapshot {name, phoneE164}, verifyCodeHash, external {clientId, customerRef, externalBookingRef}, notes, queueItemId, linkTokenHash? + payPref? (booking-link bookings, source online_link)` |
 | `queue/{queueItemId}` | `queueNumber, status (queued\|in_bay\|done\|paid\|closed\|cancelled), bayId, serviceIds, vehicleSize, lines[{serviceId,name,priceCentavos}], totalCentavos, customerName, notes, customerId, source (staff\|booking), bookingId, startedAt, doneAt, paidAt, paymentMethod` |
 | `sales/{saleId}` | `queueItemId, bookingId, amountCentavos, method (cash\|gcash\|maya\|other), paymentRef, serviceIds, vehicleSize, customerName, recordedBy, paidAt` |
 | `counters/walkins-{YYYYMMDD}`, `counters/queue-{YYYYMMDD}` | Walk-in count (Partner limit) and queue numbers per Manila day |

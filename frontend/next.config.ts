@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
 
 /**
  * Firebase web config. On App Hosting, FIREBASE_WEBAPP_CONFIG is injected at build
@@ -33,6 +36,8 @@ const nextConfig: NextConfig = {
   env: {
     ...webConfigEnv(),
     NEXT_PUBLIC_COMPANION_ENABLED: process.env.COMPANION_ENABLED === "1" ? "1" : "0",
+    NEXT_PUBLIC_APP_VERSION: pkg.version,
+    NEXT_PUBLIC_BUILD_ID: process.env.K_REVISION || process.env.BUILD_ID || `${pkg.version}-${Date.now().toString(36)}`,
     NEXT_PUBLIC_PLAN_GATING_ENABLED: process.env.PLAN_GATING_ENABLED === "1" ? "1" : "0",
   },
   // River Maps is a source-only workspace package (vendored from idealchop/river-maps).

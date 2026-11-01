@@ -17,7 +17,7 @@ import { useAuth } from "@/lib/auth";
 import { useShop } from "@/lib/shop-context";
 import { usePwaInstall } from "@/lib/pwa";
 
-/** art: a small River 3D icon (~30px, Icon3D from @river-apps/icons). */
+/** art: a small River 3D icon (~30px, Art / RiverIcon from components/river-icon). */
 export interface InstallFeature { art: React.ReactNode; text: string }
 
 export function InstallPanel({ features }: { features: InstallFeature[] }) {

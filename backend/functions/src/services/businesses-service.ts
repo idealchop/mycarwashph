@@ -71,7 +71,7 @@ export async function listMyBusinesses(store: DocStore, uid: string) {
   const rows = await Promise.all(
     active.map(async (m) => {
       const business = await store.get<Business>(paths.business(m.businessId));
-      return business ? { business, role: m.role } : null;
+      return business && !business.deletedAt ? { business, role: m.role } : null;
     }),
   );
   return rows.filter((r): r is NonNullable<typeof r> => r !== null);
@@ -133,4 +133,20 @@ export async function setPlan(store: DocStore, businessId: string, plan: Plan, a
   await store.update(paths.business(businessId), { plan, updatedAt: now.toISOString() });
   await writeAudit(store, businessId, { actor: { type: "user", id: adminUid }, action: "business.plan.set", target: paths.business(businessId), meta: { from: business.plan, to: plan } }, now);
   return { ...business, plan };
+}
+
+/**
+ * Remove a shop (owner, Barbers.ph "Remove location"). Soft delete: the documents stay for records and audit,
+ * every membership is deactivated so nobody can open it, and the River Mobile listing is turned off.
+ */
+export async function removeBusiness(store: DocStore, businessId: string, actorUid: string, now: Date) {
+  const at = now.toISOString();
+  const members = await store.list<Member>(paths.members(businessId));
+  await store.runTransaction(async (tx) => {
+    const b = await tx.get<Business>(paths.business(businessId));
+    if (!b || b.deletedAt) return;
+    tx.update(paths.business(businessId), { deletedAt: at, updatedAt: at, riverMobile: { ...(b.riverMobile ?? {}), listed: false } });
+    for (const m of members) tx.update(paths.member(businessId, m.id), { status: "removed", updatedAt: at });
+    await writeAudit(store, businessId, { actor: { type: "user", id: actorUid }, action: "business.remove", target: paths.business(businessId), meta: null }, now, tx);
+  });
 }

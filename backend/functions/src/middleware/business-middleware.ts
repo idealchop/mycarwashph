@@ -29,7 +29,7 @@ export function requireMembership(store: DocStore, roles: readonly Role[] = ["ow
         throw forbidden(`This action needs the ${roles.join(" or ")} role.`);
       }
       const business = await store.get<Business>(paths.business(businessId));
-      if (!business) throw forbidden();
+      if (!business || business.deletedAt) throw forbidden();
       setContext(res, { member, business });
       next();
     } catch (err) {

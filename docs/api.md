@@ -69,6 +69,7 @@ and are not in the code.
 | `PUT /businesses/:id/plan` | platform admin | | Switch `partner` / `paid` (custom claim `platformAdmin`) |
 | `GET /businesses/:id/members` | owner, staff | | Team |
 | `DELETE /businesses/:id/members/:uid` | owner | | Remove staff (owner cannot be removed) |
+| `DELETE /businesses/:id` | owner | | Remove the shop (soft delete: `deletedAt`, members deactivated, River Mobile listing off) |
 | `GET /businesses/:id/feedback` | owner, staff | | App rating summary + my rating (Install page) |
 | `POST /businesses/:id/feedback` | owner, staff | | Save my app rating `{ rating: 1-5, comment? }` (replaces an earlier one) |
 | `GET /businesses/:id/services` | owner, staff | | Service menu |
@@ -242,3 +243,15 @@ Owners choose monthly vs lifetime Partner packages, then record a manual payment
 (GCash / Maya / bank + reference). Status flow: `trial` → `unpaid` → `pending` →
 `active` (platform admin activates). No live PSP charge without provider keys;
 `checkoutProvider: manual|stub` is reserved for Xendit/PayMongo later.
+
+## Booking link (no sign-in, shop API)
+
+The public `/book?shop=<id>` page behind the shop QR. Mounted before `requireAuth`; POST is rate-limited to 10/min per IP.
+
+| Endpoint | Purpose |
+| :--- | :--- |
+| `GET /public/shops/:shopId` | Shop name, address, logo, active services (category, icon, `pricesBySize`), `onlineCheckout` flag |
+| `POST /public/shops/:shopId/bookings` | `{ serviceIds, vehicleSize, scheduledStart?, name?, contact?, notes?, payPref? }` → `requested` booking with `source: "online_link"`; returns `token` + check-in `qrPayload` |
+| `GET /public/shops/:shopId/bookings/:bookingId?t=<token>` | Customer ticket: `stage` (sent, accepted, in_bay, done, closed), queue number, lines, total |
+
+`payPref: "online"` is only kept when the functions env has `ONLINE_CHECKOUT_ENABLED=1` (no payment provider yet; default off).
