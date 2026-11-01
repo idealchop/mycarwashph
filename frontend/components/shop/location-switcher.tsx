@@ -34,7 +34,7 @@ export function LocationSwitcher({ value, options, allId, onChange, label, loadi
           {options.length > 5 ? (
             <label className="sticky top-0 z-[1] flex h-11 items-center gap-2 rounded-pill bg-grey-100 px-3.5">
               <Search size={16} className="flex-none text-muted" aria-hidden />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search locations" aria-label="Search locations" className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:text-muted" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search locations" aria-label="Search locations" className="min-w-0 flex-1 bg-transparent text-[16px] font-semibold outline-none placeholder:text-muted" />
             </label>
           ) : null}
           <ul role="listbox" aria-label="Locations" className="mt-2 flex flex-col">

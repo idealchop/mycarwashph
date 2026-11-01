@@ -156,7 +156,7 @@ function RateSheet({ fb, onClose }: { fb: ReturnType<typeof useFeedback>; onClos
               ))}
             </div>
             <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={500} rows={3} placeholder="Tell us what to improve (optional)" aria-label="Feedback"
-              className="mt-4 w-full resize-none rounded-[16px] bg-grey-100 px-3.5 py-3 text-[14px] font-semibold outline-none placeholder:text-muted" />
+              className="mt-4 w-full resize-none rounded-[16px] bg-grey-100 px-3.5 py-3 text-[16px] font-semibold outline-none placeholder:text-muted" />
             {error ? <p className="mt-2 text-[13px] font-semibold" role="alert">{error}</p> : null}
             <Button className="mt-4" fullWidth onClick={() => void send()} disabled={busy}>{busy ? "Sending…" : "Submit"}</Button>
           </>

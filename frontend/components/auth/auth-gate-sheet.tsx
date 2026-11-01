@@ -116,7 +116,6 @@ function Sheet({ subtitle, onClose, onAuthenticated }: { subtitle?: string; onCl
                 label="Mobile number"
                 value={formatted}
                 onChange={(f, v) => { setFormatted(f); setE164(v); setError(null); }}
-                autoFocus
               />
               <Button id="auth-phone-send" type="submit" fullWidth disabled={!e164 || busy} leadingIcon={<MessageSquareText size={18} strokeWidth={2.2} />}>{busy ? "Sending…" : "Text me a code"}</Button>
               <Button type="button" fullWidth variant="ghost" leadingIcon={<ArrowLeft size={18} strokeWidth={2.2} />} onClick={() => setStep("methods")}>Back</Button>
@@ -125,7 +124,7 @@ function Sheet({ subtitle, onClose, onAuthenticated }: { subtitle?: string; onCl
 
           {step === "code" ? (
             <div className="mt-5 flex flex-col gap-3">
-              <OtpInput value={code} onChange={setCode} onComplete={(v) => verify(v)} autoFocus />
+              <OtpInput value={code} onChange={setCode} onComplete={(v) => verify(v)} />
               <Button fullWidth disabled={code.length < 6 || busy} onClick={() => verify()}>{busy ? "Checking…" : "Verify & continue"}</Button>
               <Button fullWidth variant="ghost" onClick={() => { setCode(""); setStep("phone"); }}>Use a different number</Button>
             </div>

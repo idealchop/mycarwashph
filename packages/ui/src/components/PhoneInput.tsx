@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, useState, type InputHTMLAttributes } from "react";
+import { useId, useRef, useState, type InputHTMLAttributes } from "react";
 import { cn } from "../cn";
 import { FieldShell, type FieldProps } from "./Input";
 import { formatPhilippineMobile, toE164Philippines } from "../phone";
@@ -26,8 +26,8 @@ function PhFlag() {
 export function PhoneInput({ label = "Mobile number", hideLabel, hint, error, value, defaultValue, onChange, countryCode = "+63", id, className, autoFocus, ...rest }: PhoneInputProps) {
   const auto = useId();
   const ref = useRef<HTMLInputElement>(null);
-  // Focus after hydration too (the autoFocus attribute alone is ignored for server-rendered inputs).
-  useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus]);
+  // Never focus on mount: the keyboard opens only on a user tap.
+  void autoFocus;
   const fid = id ?? auto;
   const [inner, setInner] = useState(formatPhilippineMobile(defaultValue ?? ""));
   const shown = value !== undefined ? formatPhilippineMobile(value) : inner;

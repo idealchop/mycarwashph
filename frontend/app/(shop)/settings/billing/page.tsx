@@ -102,7 +102,7 @@ function Billing({ shop }: { shop: Shop }) {
                         <label className="text-[13px] font-bold">
                           Method
                           <select
-                            className="mt-1 w-full rounded-xl border border-grey-200 px-3 py-2.5 text-[15px]"
+                            className="mt-1 w-full rounded-xl border border-grey-200 px-3 py-2.5 text-[16px]"
                             value={payMethod}
                             onChange={(e) => setPayMethod(e.target.value as BillingPaymentMethod)}
                           >
