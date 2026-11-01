@@ -37,14 +37,49 @@ let verifier: RecaptchaVerifier | null = null;
 
 /** Sends the SMS code using an invisible reCAPTCHA attached to the Send button. */
 export async function sendPhoneCode(phoneE164: string, buttonId: string) {
+  const left = resendCooldownLeft(phoneE164);
+  if (left > 0) throw new Error(`Please wait ${left}s before asking for a new code.`);
   const auth = firebaseAuth();
   verifier?.clear();
   verifier = new RecaptchaVerifier(auth, buttonId, { size: "invisible" });
   const confirmation = await signInWithPhoneNumber(auth, phoneE164, verifier);
   pending = { phoneE164, confirmation, sentAt: Date.now() };
+  markCodeSent(phoneE164, pending.sentAt);
 }
 
 export const pendingPhone = () => pending;
+
+/* Resend cooldown: 60s per number after a code is sent. Kept in sessionStorage so it
+   survives the sheet closing/reopening and a page reload in the same tab. */
+export const RESEND_COOLDOWN_MS = 60_000;
+const SENT_KEY = "mc.otpSentAt";
+
+function readSent(): Record<string, number> {
+  try {
+    return JSON.parse(sessionStorage.getItem(SENT_KEY) ?? "{}") as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+function markCodeSent(phoneE164: string, at: number) {
+  try {
+    const all = readSent();
+    for (const [k, v] of Object.entries(all)) if (at - v > RESEND_COOLDOWN_MS) delete all[k];
+    sessionStorage.setItem(SENT_KEY, JSON.stringify({ ...all, [phoneE164]: at }));
+  } catch {
+    /* storage blocked: the in-memory pending.sentAt still applies */
+  }
+}
+
+/** Seconds left before a new code may be sent to this number (0 = may send). */
+export function resendCooldownLeft(phoneE164: string, now = Date.now()): number {
+  const at = Math.max(readSent()[phoneE164] ?? 0, pending?.phoneE164 === phoneE164 ? pending.sentAt : 0);
+  return Math.max(0, Math.ceil((at + RESEND_COOLDOWN_MS - now) / 1000));
+}
+
+/** "0:59" style label. */
+export const formatCooldown = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 
 export async function confirmPhoneCode(code: string) {
   if (!pending) throw new Error("Your code expired. Please request a new one.");
