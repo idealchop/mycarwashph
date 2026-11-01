@@ -229,3 +229,12 @@ export interface VerifyResult {
   booking: Booking;
   queueItem: QueueItem | null;
 }
+
+export type Expense = { id: string; amountCentavos: number; note: string; date: string; createdBy: string; createdAt: string };
+export type FinanceWeek = {
+  from: string;
+  to: string;
+  days: { date: string; dow: string; salesCentavos: number; cars: number; expensesCentavos: number; profitCentavos: number }[];
+  totals: { salesCentavos: number; cars: number; expensesCentavos: number; profitCentavos: number };
+  expenses: Expense[];
+};
