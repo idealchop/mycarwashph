@@ -11,15 +11,15 @@ import { useShop } from "@/lib/shop-context";
 /** Page title row with an optional back link and right-side actions. */
 export function PageHeader({ title, subtitle, back, actions }: { title: ReactNode; subtitle?: ReactNode; back?: string; actions?: ReactNode }) {
   return (
-    <header className="flex items-center justify-between gap-3">
-      <div className="flex min-w-0 items-center gap-2">
+    <header className="flex items-center justify-between gap-3 border-b border-line px-1 pb-3">
+      <div className="flex min-w-0 items-center gap-1">
         {back ? (
           <Link href={back} aria-label="Back" className="-ml-2 inline-flex size-11 items-center justify-center rounded-full hover:bg-grey-100">
             <ChevronLeft size={22} strokeWidth={1.75} />
           </Link>
         ) : null}
         <div className="min-w-0">
-          <h1 className="truncate text-[26px] font-extrabold leading-[1.15] tracking-[-0.03em]">{title}</h1>
+          <h1 className="flex min-w-0 items-center gap-1.5 truncate text-[28px] font-extrabold leading-[1.15] tracking-[-0.03em]">{title}</h1>
           {subtitle ? <p className="mt-0.5 text-[14px] font-semibold text-muted">{subtitle}</p> : null}
         </div>
       </div>
@@ -30,9 +30,10 @@ export function PageHeader({ title, subtitle, back, actions }: { title: ReactNod
 
 export function LoadingBlock() {
   return (
-    <div role="status" className="flex justify-center py-16">
-      <span className="size-7 animate-spin rounded-full border-[3px] border-grey-200 border-t-ink" />
-      <span className="sr-only">Loading</span>
+    <div role="status" aria-label="Loading" className="mt-4 flex flex-col gap-3">
+      <span className="skeleton h-[96px] rounded-card" />
+      <span className="skeleton h-[64px] rounded-card" />
+      <span className="skeleton h-[64px] rounded-card" />
     </div>
   );
 }

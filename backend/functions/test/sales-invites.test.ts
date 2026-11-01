@@ -25,6 +25,11 @@ describe("sales + invites + alerts", () => {
     expect(summary.status).toBe(200);
     expect(summary.body.data.totalCentavos).toBe(35000);
     expect(summary.body.data.cars).toBe(1);
+    const week = summary.body.data.week;
+    expect(week.days).toHaveLength(7);
+    expect(week.days[0].dow).toBe("Mon");
+    expect(week.totalCentavos).toBe(35000);
+    expect(week.days.find((d: { date: string }) => d.date === summary.body.data.date).centavos).toBe(35000);
   });
 
   it("lets an invited staff member accept by matching phone", async () => {

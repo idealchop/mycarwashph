@@ -7,13 +7,13 @@ import { companionEnabled } from "@/lib/companion-flag";
 import { CarIllustration } from "@river-apps/icons";
 import { ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
 import { useInstallHidden } from "@/lib/pwa";
-import { RiverIcon } from "@/components/river-icon";
+import { RiverIcon, iconSrc } from "@/components/river-icon";
 import { AppVersion } from "@/components/app-version";
 import { NotificationBell } from "@/features/activity/activity-screen";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Avatar, Badge, Button, Card, ListItem, Topbar, cn } from "@river-apps/ui";
+import { Badge, Button, Card, ListItem, Topbar, cn } from "@river-apps/ui";
 import { useAuthGate } from "@/components/auth/auth-gate";
 import { PageBack } from "@/components/shop/page-back";
 import { signOut, useAuth } from "@/lib/auth";
@@ -45,13 +45,15 @@ export function AccountScreen() {
   return (
     <div className="mx-auto w-full max-w-[402px] px-4 pb-6 pt-4 lg:max-w-[880px] lg:px-[30px] lg:pt-6">
       <div className="flex items-start gap-2">
-        <Topbar className="min-w-0 flex-1 px-1" leading={<PageBack fallback="/home" />} title="Account" subtitle="Your shop on Mycarwash.ph" />
+        <Topbar className="min-w-0 flex-1 px-1" leading={<PageBack fallback="/home" />} title="Settings" subtitle="Your shop on Mycarwash.ph" />
         {user && shop ? <div className="pt-1.5"><NotificationBell /></div> : null}
       </div>
 
       <section className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card">
         <div className="flex items-center gap-3.5">
-          <Avatar name={shop?.name || "Shop"} src={shop?.logoUrl || undefined} preset="sky" size={72} decorative={false} className="flex-none shadow-tile ring-1 ring-line" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- shop logo or the carwash 3D home icon (Barbers.ph shop card) */}
+          <img src={shop?.logoUrl || iconSrc("home", 72)} alt={shop?.name ? `${shop.name} logo` : "Shop"} width={72} height={72}
+            className={cn("size-[72px] flex-none rounded-[22px]", shop?.logoUrl ? "object-cover shadow-tile ring-1 ring-line" : "bg-grey-50 object-contain p-1.5")} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h2 className="min-w-0 text-[18px] font-extrabold leading-[1.2] tracking-[-0.02em] sm:text-[20px]">{shop?.name || (user ? "Name your shop" : "Your shop")}</h2>
@@ -118,8 +120,8 @@ export function AccountScreen() {
       ) : (
         <section className="mt-3 rounded-card bg-surface px-4 py-4 shadow-card">
           <p className="text-[13px] font-semibold text-muted">Location</p>
-          <p className="mt-1 text-[14px] font-semibold">{shops.length ? "One shop. Add a branch any time." : "Your shop’s pin shows on River Maps."}</p>
-          <Button className="mt-4" href="/settings/shops" size="md" fullWidth variant="secondary">Manage shops</Button>
+          <p className="mt-2 text-[14.5px] font-semibold">{shops.length ? "One shop. Add more shops in Manage Locations." : "Your shop’s pin shows on River Maps."}</p>
+          <Button className="mt-4" href="/settings/shops" size="md" fullWidth variant="secondary">Manage Locations</Button>
         </section>
       )}
 

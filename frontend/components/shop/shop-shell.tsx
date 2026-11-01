@@ -4,12 +4,13 @@ import { hasPaidFeatures } from "@/lib/plan-gating";
 
 import Link from "next/link";
 import { CarIllustration } from "@river-apps/icons";
-import { AppShell, Button, MobileTabBar, Sidebar } from "@river-apps/ui";
+import { AppShell, Button, Sidebar } from "@river-apps/ui";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { MycarwashBrand } from "@/components/brand";
 import { useShop } from "@/lib/shop-context";
 import { activeKeyFor, appNav } from "./nav";
+import { ShopTabBar } from "./shop-tab-bar";
 
 function ShopQrPromo() {
   return (
@@ -58,12 +59,12 @@ export function ShopShell({ children }: { children: ReactNode }) {
         <Sidebar
           className="sticky top-0 h-dvh"
           brand={<Link href="/home" aria-label="Mycarwash.ph home"><MycarwashBrand /></Link>}
-          items={appNav(26)}
+          items={appNav(active, 26)}
           activeKey={active}
           footer={<div>{paid ? <ShopQrPromo /> : <PartnerPlanCard />}<LegalLinks /></div>}
         />
       }
-      mobileTabBar={focus ? undefined : <MobileTabBar items={appNav(28)} activeKey={active ?? ""} />}
+      mobileTabBar={focus ? undefined : <ShopTabBar items={appNav(active, 32)} activeKey={active ?? ""} />}
       mainClassName={focus ? "w-full min-w-0 pb-0" : "w-full min-w-0"}
     >
       {children}
