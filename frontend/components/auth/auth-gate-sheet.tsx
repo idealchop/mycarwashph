@@ -6,15 +6,21 @@
  */
 import { Button, OtpInput, PhoneInput, cn } from "@river-apps/ui";
 import { ArrowLeft, MessageSquareText, Phone, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { RiverIcon } from "@/components/brand";
-import { authErrorMessage, confirmPhoneCode, sendPhoneCode, signInWithGoogle } from "@/lib/auth";
+import { authErrorMessage, confirmPhoneCode, formatCooldown, pendingPhone, resendCooldownLeft, sendPhoneCode, signInWithGoogle } from "@/lib/auth";
 
 type Step = "methods" | "phone" | "code";
 
 export function AuthGateSheet({ open, subtitle, onClose, onAuthenticated }: { open: boolean; subtitle?: string; onClose: () => void; onAuthenticated?: () => void }) {
   if (!open) return null;
   return <Sheet subtitle={subtitle} onClose={onClose} onAuthenticated={onAuthenticated ?? onClose} />;
+}
+
+/** +639171234567 -> "917 123 4567" (matches PhoneInput's display). */
+function formatNational(e164: string) {
+  const d = e164.replace(/^\+63/, "");
+  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`.trim();
 }
 
 function GoogleMark() {
@@ -29,9 +35,22 @@ function GoogleMark() {
 }
 
 function Sheet({ subtitle, onClose, onAuthenticated }: { subtitle?: string; onClose: () => void; onAuthenticated: () => void }) {
-  const [step, setStep] = useState<Step>("methods");
-  const [formatted, setFormatted] = useState("");
-  const [e164, setE164] = useState<string | null>(null);
+  // Reopening the sheet while a code is still fresh for a number goes straight back to the code step.
+  const [resume] = useState(() => {
+    const p = pendingPhone();
+    return p && resendCooldownLeft(p.phoneE164) > 0 ? p.phoneE164 : null;
+  });
+  const [step, setStep] = useState<Step>(resume ? "code" : "methods");
+  const [formatted, setFormatted] = useState(resume ? formatNational(resume) : "");
+  const [e164, setE164] = useState<string | null>(resume);
+  const [left, setLeft] = useState(() => (resume ? resendCooldownLeft(resume) : 0));
+  // Tick the resend countdown once a second while it runs.
+  useEffect(() => {
+    const tick = () => setLeft(e164 ? resendCooldownLeft(e164) : 0);
+    tick();
+    const t = window.setInterval(tick, 1000);
+    return () => window.clearInterval(t);
+  }, [e164, step]);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +68,7 @@ function Sheet({ subtitle, onClose, onAuthenticated }: { subtitle?: string; onCl
     }
   }
 
-  async function sendCode(e?: FormEvent) {
+  async function sendCode(e?: FormEvent, buttonId = "auth-phone-send") {
     e?.preventDefault();
     if (!e164) {
       setError("Enter your 10-digit mobile number, e.g. 917 123 4567.");
@@ -58,7 +77,13 @@ function Sheet({ subtitle, onClose, onAuthenticated }: { subtitle?: string; onCl
     setBusy(true);
     setError(null);
     try {
-      await sendPhoneCode(e164, "auth-phone-send");
+      if (resendCooldownLeft(e164) > 0 && pendingPhone()?.phoneE164 === e164) {
+        setStep("code"); // a fresh code is already on its way to this number
+        return;
+      }
+      await sendPhoneCode(e164, buttonId);
+      setCode("");
+      setLeft(resendCooldownLeft(e164));
       setStep("code");
     } catch (err) {
       setError(authErrorMessage(err));
@@ -117,7 +142,9 @@ function Sheet({ subtitle, onClose, onAuthenticated }: { subtitle?: string; onCl
                 value={formatted}
                 onChange={(f, v) => { setFormatted(f); setE164(v); setError(null); }}
               />
-              <Button id="auth-phone-send" type="submit" fullWidth disabled={!e164 || busy} leadingIcon={<MessageSquareText size={18} strokeWidth={2.2} />}>{busy ? "Sending…" : "Text me a code"}</Button>
+              <Button id="auth-phone-send" type="submit" fullWidth disabled={!e164 || busy || (left > 0 && pendingPhone()?.phoneE164 !== e164)} leadingIcon={<MessageSquareText size={18} strokeWidth={2.2} />}>
+                {busy ? "Sending…" : left > 0 ? (pendingPhone()?.phoneE164 === e164 ? "Enter the code we sent" : `Resend code in ${formatCooldown(left)}`) : "Text me a code"}
+              </Button>
               <Button type="button" fullWidth variant="ghost" leadingIcon={<ArrowLeft size={18} strokeWidth={2.2} />} onClick={() => setStep("methods")}>Back</Button>
             </form>
           ) : null}
@@ -126,6 +153,9 @@ function Sheet({ subtitle, onClose, onAuthenticated }: { subtitle?: string; onCl
             <div className="mt-5 flex flex-col gap-3">
               <OtpInput value={code} onChange={setCode} onComplete={(v) => verify(v)} />
               <Button fullWidth disabled={code.length < 6 || busy} onClick={() => verify()}>{busy ? "Checking…" : "Verify & continue"}</Button>
+              <Button id="auth-phone-resend" fullWidth variant="secondary" disabled={left > 0 || busy} onClick={() => void sendCode(undefined, "auth-phone-resend")} aria-live="polite">
+                {left > 0 ? `Resend code in ${formatCooldown(left)}` : busy ? "Sending…" : "Resend code"}
+              </Button>
               <Button fullWidth variant="ghost" onClick={() => { setCode(""); setStep("phone"); }}>Use a different number</Button>
             </div>
           ) : null}
