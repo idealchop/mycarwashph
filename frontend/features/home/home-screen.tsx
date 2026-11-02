@@ -120,7 +120,7 @@ export function HomeScreen() {
         <header className="px-4 pt-1">
           <div className="flex h-16 items-center justify-between gap-2">
             <div className="flex min-w-0 items-center">
-              {user ? (
+              {user || staff ? (
                 <div className="flex min-h-11 min-w-0 items-center gap-2 py-1 pl-1 pr-1.5">
                   <Link href="/account" aria-label="My Account" className="flex-none">
                     {/* eslint-disable-next-line @next/next/no-img-element -- shop logo or the carwash 3D home icon */}
@@ -193,7 +193,7 @@ export function HomeScreen() {
       </div>
 
       <div className="mx-auto hidden w-full max-w-[1120px] px-4 pb-6 pt-4 lg:block lg:px-[30px] lg:pt-6">
-        <DesktopBar name={shopName} owner={owner} greeting={greeting} dayLabel={dayLabel} photoUrl={user?.photoURL ?? undefined} onSignIn={user ? undefined : () => requireAuth()} />
+        <DesktopBar name={shopName} owner={owner} greeting={greeting} dayLabel={dayLabel} photoUrl={user?.photoURL ?? undefined} onSignIn={user || staff ? undefined : () => requireAuth()} />
         {needsSetup ? <SetupCard className="mt-5" /> : null}
         <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_286px]">
           <HeroBanner

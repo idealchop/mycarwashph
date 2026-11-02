@@ -5,6 +5,7 @@ import { forbidden, HttpError } from "../lib/errors.js";
 import type { Business, Member, Plan, Role } from "../models/types.js";
 import { paths } from "../services/paths.js";
 import { getBusiness, getMember, getUser, setContext } from "./context.js";
+import { staffLinkMember } from "./staff-link-middleware.js";
 
 /**
  * Tenancy guard (fixes River Kit's gap where the workspace id was trusted as-is).
@@ -23,7 +24,8 @@ export function requireMembership(store: DocStore, roles: readonly Role[] = ["ow
       const businessId = req.params.businessId;
       if (typeof businessId !== "string" || !businessId) throw forbidden();
       const user = getUser(res);
-      const member = await store.get<Member>(paths.member(businessId, user.uid));
+      const linked = staffLinkMember(res.locals);
+      const member = linked ?? (await store.get<Member>(paths.member(businessId, user.uid)));
       if (!member || member.status !== "active" || member.businessId !== businessId) throw forbidden();
       if (!roles.includes(member.role)) {
         throw forbidden(`This action needs the ${roles.join(" or ")} role.`);

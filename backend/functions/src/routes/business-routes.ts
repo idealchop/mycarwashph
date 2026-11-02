@@ -40,6 +40,7 @@ import { removeBusiness, setPlan, updateBusiness } from "../services/businesses-
 import { createItem, listItems, updateItem } from "../services/catalog-service.js";
 import { growthMetrics } from "../services/growth-service.js";
 import { createInvite, listInvites, revokeInvite } from "../services/invites-service.js";
+import { createStaffLink, listStaffLinks, resetStaffLink, revokeStaffLink } from "../services/staff-links-service.js";
 import { listMembers, removeMember } from "../services/members-service.js";
 import { listAlerts, markAlertRead } from "../services/notify-service.js";
 import { paths } from "../services/paths.js";
@@ -147,6 +148,20 @@ export function businessRoutes(deps: Deps) {
     const b = getBusiness(res);
     const invite = await createInvite(store, b.id, req.body, getUser(res).uid, deps.now());
     res.status(201).json({ data: invite });
+  });
+  // Staff links (no account, Barbers.ph barber link): owner creates, resets or turns off.
+  r.get("/staff-links", owner, async (_req, res) => {
+    res.json({ data: await listStaffLinks(store, getBusiness(res).id) });
+  });
+  r.post("/staff-links", owner, validateBody(z.object({ name: z.string().trim().min(1).max(40) }).strict()), async (req, res) => {
+    res.status(201).json({ data: await createStaffLink(store, getBusiness(res).id, req.body.name, getUser(res).uid, deps.now()) });
+  });
+  r.post("/staff-links/:linkId/reset", owner, async (req, res) => {
+    res.json({ data: await resetStaffLink(store, getBusiness(res).id, param(req.params.linkId), getUser(res).uid, deps.now()) });
+  });
+  r.delete("/staff-links/:linkId", owner, async (req, res) => {
+    await revokeStaffLink(store, getBusiness(res).id, param(req.params.linkId), getUser(res).uid, deps.now());
+    res.status(204).end();
   });
   r.get("/members/invites", owner, async (_req, res) => {
     res.json({ data: await listInvites(store, getBusiness(res).id) });

@@ -9,7 +9,7 @@ export function cors(config: AppConfig): RequestHandler {
     if (origin && config.allowedOrigins.includes(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Vary", "Origin");
-      res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key");
+      res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key, X-Staff-Link");
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
     }
     if (req.method === "OPTIONS") return void res.status(204).end();

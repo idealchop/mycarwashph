@@ -8,6 +8,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
+import { useStaffLinkToken } from "@/lib/staff-link";
 import { AuthGateSheet } from "./auth-gate-sheet";
 
 type Ctx = {
@@ -31,7 +32,8 @@ export function AuthGateProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || "/";
-  const authed = Boolean(user);
+  const staffLink = useStaffLinkToken();
+  const authed = Boolean(user) || Boolean(staffLink);
   const authedRef = useRef(authed);
   useEffect(() => { authedRef.current = authed; }, [authed]);
   const [open, setOpen] = useState(false);

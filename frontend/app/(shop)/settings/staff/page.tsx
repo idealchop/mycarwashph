@@ -1,107 +1,101 @@
 "use client";
 
-import { Button, PhoneInput } from "@river-apps/ui";
-import { Share2, UserPlus, X } from "lucide-react";
+import { Button, Input } from "@river-apps/ui";
+import { RotateCcw, Share2, UserPlus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { BottomSheet } from "@/components/shop/bottom-sheet";
 import { LoadingBlock, ShopPage } from "@/components/shop/page";
 import { RiverIcon } from "@/components/river-icon";
-import { ShareInvite } from "@/features/staff/share-invite";
-import { api, type Invite, type Member } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
+import { ShareStaffLink } from "@/features/staff/share-invite";
+import { api } from "@/lib/api";
 import { useLoad } from "@/lib/use-load";
 
-const fmt = (e164: string | null) => (e164 ? e164.replace(/^\+63(\d{3})(\d{3})(\d{4})$/, "0$1 $2 $3") : null);
+type StaffLink = { id: string; name: string; token: string; createdAt: string; lastUsedAt: string | null };
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { timeZone: "Asia/Manila", month: "short", day: "numeric" }) : null);
 
-/** Settings › Staff: invite by mobile number and share the join link (share sheet, copy, QR). */
+/** Settings › Staff (Barbers.ph barber links): one private link per staff person, no sign-in. Reset or turn off any time. */
 export default function StaffPage() {
   return (
-    <ShopPage title="Staff" back="/account" icon="queue" empty={{ title: "Set up your shop first", description: "Then invite staff to run the queue with you." }}>
-      {(s) => <Staff shopId={s.id} shopName={s.name} isOwner={s.role === "owner"} />}
+    <ShopPage title="Staff" back="/account" icon="queue" empty={{ title: "Set up your shop first", description: "Then share staff links to run the queue with you." }}>
+      {(s) => (s.role === "owner" ? <Staff shopId={s.id} shopName={s.name} /> : <p className="mt-4 px-1 text-[14px] font-semibold text-muted">Only the owner can share staff links.</p>)}
     </ShopPage>
   );
 }
 
-function Staff({ shopId, shopName, isOwner }: { shopId: string; shopName: string; isOwner: boolean }) {
-  const { user } = useAuth();
-  const { data, error, reload } = useLoad(async () => {
-    const [members, invites] = await Promise.all([
-      api<{ data: Member[] }>(`/businesses/${shopId}/members`).then((r) => r.data),
-      isOwner ? api<{ data: Invite[] }>(`/businesses/${shopId}/members/invites`).then((r) => r.data) : Promise.resolve([] as Invite[]),
-    ]);
-    return { members: members.filter((m) => m.status === "active"), invites };
-  }, `staff-${shopId}`);
-  const [formatted, setFormatted] = useState("");
-  const [e164, setE164] = useState<string | null>(null);
+function Staff({ shopId, shopName }: { shopId: string; shopName: string }) {
+  const { data, error, reload } = useLoad(async () => (await api<{ data: StaffLink[] }>(`/businesses/${shopId}/staff-links`)).data, `staff-links-${shopId}`);
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [sharing, setSharing] = useState<Invite | null>(null);
+  const [sharing, setSharing] = useState<StaffLink | null>(null);
+  const [manage, setManage] = useState<StaffLink | null>(null);
 
-  async function invite(e: FormEvent) {
+  async function add(e: FormEvent) {
     e.preventDefault();
-    if (!e164) return setMsg("Enter a 10-digit mobile number, e.g. 917 123 4567.");
+    if (!name.trim()) return setMsg("Enter the staff member’s name.");
     setBusy(true); setMsg(null);
     try {
-      const r = await api<{ data: Invite }>(`/businesses/${shopId}/members/invites`, { method: "POST", body: { phoneE164: e164, role: "staff" } });
-      setFormatted(""); setE164(null); reload(); setSharing(r.data);
+      const r = await api<{ data: StaffLink }>(`/businesses/${shopId}/staff-links`, { method: "POST", body: { name: name.trim() } });
+      setName(""); reload(); setSharing(r.data);
     } catch (x) { setMsg((x as Error).message); } finally { setBusy(false); }
   }
-  async function act(path: string) {
+  async function reset(l: StaffLink) {
     setBusy(true); setMsg(null);
-    try { await api(path, { method: "DELETE" }); reload(); } catch (x) { setMsg((x as Error).message); } finally { setBusy(false); }
+    try {
+      const r = await api<{ data: StaffLink }>(`/businesses/${shopId}/staff-links/${l.id}/reset`, { method: "POST" });
+      setManage(null); reload(); setSharing(r.data);
+    } catch (x) { setMsg((x as Error).message); } finally { setBusy(false); }
+  }
+  async function turnOff(l: StaffLink) {
+    setBusy(true); setMsg(null);
+    try { await api(`/businesses/${shopId}/staff-links/${l.id}`, { method: "DELETE" }); setManage(null); reload(); }
+    catch (x) { setMsg((x as Error).message); } finally { setBusy(false); }
   }
 
   return (
     <>
-      {isOwner ? (
-        <form onSubmit={invite} className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card">
-          <div className="flex items-center gap-3">
-            <RiverIcon name="queue" size={44} />
-            <span className="leading-[1.3]"><b className="block text-[16px]">Share to staff</b><span className="text-[13px] font-medium text-muted">Invite by mobile number, then send them the link.</span></span>
-          </div>
-          <div className="mt-3"><PhoneInput label="Staff mobile number" value={formatted} onChange={(f, v) => { setFormatted(f); setE164(v); setMsg(null); }} /></div>
-          <Button type="submit" className="mt-3" fullWidth disabled={!e164 || busy} leadingIcon={<UserPlus size={18} aria-hidden />}>{busy ? "Creating link…" : "Create invite link"}</Button>
-        </form>
-      ) : null}
+      <form onSubmit={add} className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card">
+        <div className="flex items-center gap-3">
+          <RiverIcon name="queue" size={44} />
+          <span className="leading-[1.3]"><b className="block text-[16px]">Share to staff</b><span className="text-[13px] font-medium text-muted">Each person gets a private link. No sign-in.</span></span>
+        </div>
+        <div className="mt-3"><Input label="Staff name" placeholder="e.g. Jun" maxLength={40} value={name} onChange={(e) => { setName(e.target.value); setMsg(null); }} /></div>
+        <Button type="submit" className="mt-3" fullWidth disabled={!name.trim() || busy} leadingIcon={<UserPlus size={18} aria-hidden />}>{busy ? "Creating link…" : "Create staff link"}</Button>
+      </form>
       {msg ? <p role="alert" className="mt-3 px-1 text-[13.5px] font-semibold text-[#C2410C]">{msg}</p> : null}
       {error && !data ? <p role="alert" className="mt-4 font-semibold">{error}</p> : null}
       {!data ? <LoadingBlock /> : (
         <>
-          {isOwner ? (
-            <>
-              <p className="mt-5 px-1 text-[13px] font-bold text-muted">Waiting to join · {data.invites.length}</p>
-              {data.invites.length === 0 ? (
-                <p className="mt-2 rounded-card bg-grey-50 px-4 py-4 text-center text-[13.5px] font-medium text-muted ring-1 ring-line">No open invites. Create one above to share with staff.</p>
-              ) : (
-                <ul className="mt-2 divide-y divide-line overflow-hidden rounded-card bg-surface shadow-card">
-                  {data.invites.map((i) => (
-                    <li key={i.id} className="flex items-center gap-2 px-4 py-3">
-                      <span className="min-w-0 flex-1 leading-[1.3]"><b className="block truncate text-[15px] tabular-nums">{fmt(i.phoneE164) ?? i.email}</b><span className="text-[12.5px] font-semibold text-muted">Staff · not joined yet</span></span>
-                      <button type="button" onClick={() => setSharing(i)} className="inline-flex h-9 items-center gap-1 rounded-pill bg-ink px-3.5 text-[13px] font-bold text-on-ink"><Share2 size={14} aria-hidden /> Share</button>
-                      <button type="button" aria-label="Cancel invite" disabled={busy} onClick={() => void act(`/businesses/${shopId}/members/invites/${i.id}`)} className="inline-flex size-9 items-center justify-center rounded-full bg-grey-100"><X size={16} aria-hidden /></button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          ) : null}
-          <p className="mt-5 px-1 text-[13px] font-bold text-muted">Team · {data.members.length}</p>
-          <ul className="mt-2 divide-y divide-line overflow-hidden rounded-card bg-surface shadow-card">
-            {data.members.map((m) => (
-              <li key={m.uid} className="flex items-center gap-2 px-4 py-3">
-                <span className="min-w-0 flex-1 leading-[1.3]">
-                  <b className="block truncate text-[15px]">{m.displayName || fmt(m.phoneE164) || m.email || "Staff"}{m.uid === user?.uid ? " (you)" : ""}</b>
-                  <span className="text-[12.5px] font-semibold text-muted">{m.role === "owner" ? "Owner" : "Staff"}</span>
-                </span>
-                {isOwner && m.role !== "owner" ? <Button size="sm" variant="secondary" disabled={busy} onClick={() => void act(`/businesses/${shopId}/members/${m.uid}`)}>Remove</Button> : null}
-              </li>
-            ))}
-          </ul>
+          <p className="mt-5 px-1 text-[13px] font-bold text-muted">Staff links · {data.length}</p>
+          {data.length === 0 ? (
+            <p className="mt-2 rounded-card bg-grey-50 px-4 py-4 text-center text-[13.5px] font-medium text-muted ring-1 ring-line">No staff links yet. Add a name above to share one.</p>
+          ) : (
+            <ul className="mt-2 divide-y divide-line overflow-hidden rounded-card bg-surface shadow-card">
+              {data.map((l) => (
+                <li key={l.id} className="flex items-center gap-2 px-4 py-3">
+                  <button type="button" onClick={() => setManage(l)} className="min-w-0 flex-1 text-left leading-[1.3]">
+                    <b className="block truncate text-[15px]">{l.name}</b>
+                    <span className="text-[12.5px] font-semibold text-muted">Staff · {l.lastUsedAt ? `opened ${when(l.lastUsedAt)}` : "not opened yet"}</span>
+                  </button>
+                  <button type="button" onClick={() => setSharing(l)} className="inline-flex h-9 items-center gap-1 rounded-pill bg-ink px-3.5 text-[13px] font-bold text-on-ink"><Share2 size={14} aria-hidden /> Share</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 px-1 text-[12.5px] font-medium text-muted">Staff can take walk-ins and run the queue. They can’t see sales totals, settings or billing. Tap a name to reset or turn off its link.</p>
         </>
       )}
       {sharing ? (
-        <BottomSheet title="Share to staff" subtitle={fmt(sharing.phoneE164) ?? sharing.email ?? undefined} onClose={() => setSharing(null)}>
-          <div className="pb-2"><ShareInvite inviteId={sharing.id} shopName={shopName} phone={fmt(sharing.phoneE164)} /></div>
+        <BottomSheet title="Share to staff" subtitle={sharing.name} onClose={() => setSharing(null)}>
+          <div className="pb-2"><ShareStaffLink token={sharing.token} shopName={shopName} name={sharing.name} /></div>
+        </BottomSheet>
+      ) : null}
+      {manage ? (
+        <BottomSheet title={manage.name} subtitle="Staff link" onClose={() => setManage(null)}>
+          <div className="flex flex-col gap-2.5 pb-2">
+            <Button variant="secondary" fullWidth disabled={busy} leadingIcon={<RotateCcw size={16} aria-hidden />} onClick={() => void reset(manage)}>Reset link (old link stops working)</Button>
+            <Button variant="secondary" fullWidth disabled={busy} onClick={() => void turnOff(manage)}>Turn off link</Button>
+          </div>
         </BottomSheet>
       ) : null}
     </>
