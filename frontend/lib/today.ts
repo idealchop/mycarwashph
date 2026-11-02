@@ -48,7 +48,7 @@ export function useToday(shop: Shop | null) {
       api<{ data: Service[] }>(`/businesses/${shop.id}/services`).then((r) => r.data),
       api<{ data: QueueItem[]; walkIns?: WalkInAllowance }>(`/businesses/${shop.id}/queue`),
       paid ? api<{ data: Bay[] }>(`/businesses/${shop.id}/bays`).then((r) => r.data) : Promise.resolve([] as Bay[]),
-      paid ? api<{ data: SalesSummary }>(`/businesses/${shop.id}/sales/summary`).then((r) => r.data) : Promise.resolve(null),
+      paid && shop.role !== "staff" ? api<{ data: SalesSummary }>(`/businesses/${shop.id}/sales/summary`).then((r) => r.data) : Promise.resolve(null),
     ]);
     if (queueRes.walkIns) publishWalkIns(shop.id, queueRes.walkIns);
     return { bookings, services, queue: queueRes.data, bays, summary };

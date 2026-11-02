@@ -92,9 +92,11 @@ export function HomeScreen() {
   const paid = hasPaidFeatures(shop);
   const greeting = greetingFor();
   const fig = figures(today.jobs, today.summary);
+  // Staff view (Barbers.ph): queue + walk-ins only, no sales totals, settings or billing.
+  const staff = shop?.role === "staff";
   const fresh = today.jobs.filter((j) => j.status === "requested");
   const aside = !today.ready ? "" : fresh.length ? `${fresh.length} new` : "Live";
-  const todayTitle = `Today: ${peso(fig.sales) || "₱0"}`;
+  const todayTitle = staff ? `Today: ${fig.cars} ${fig.cars === 1 ? "car" : "cars"}` : `Today: ${peso(fig.sales) || "₱0"}`;
   // Phone sign-ins have no name: greet with the shop instead (Barbers.ph 7c64812).
   const realName = user?.displayName && !/^[+\d]/.test(user.displayName) ? user.displayName : "";
   const owner = realName ? (realName.split(" ")[0] || realName) : (user ? shop?.name ?? "" : "");
@@ -140,10 +142,10 @@ export function HomeScreen() {
                 </button>
               )}
             </div>
-            <Link href="/sales" aria-label="Sales" className="inline-flex min-h-11 flex-none items-center gap-1.5 rounded-full border border-line py-1 pl-1 pr-3">
+            {staff ? <span className="inline-flex h-8 flex-none items-center rounded-pill bg-grey-100 px-3 text-[12.5px] font-bold">Staff</span> : <Link href="/sales" aria-label="Sales" className="inline-flex min-h-11 flex-none items-center gap-1.5 rounded-full border border-line py-1 pl-1 pr-3">
               <CoinIcon size={26} />
               <span className="text-[13px] font-bold leading-none text-ink">Sales</span>
-            </Link>
+            </Link>}
           </div>
         </header>
         <section className="relative isolate mx-4 mt-3 flex h-[150px] items-center overflow-hidden rounded-banner bg-black px-4 text-on-ink">
@@ -166,13 +168,16 @@ export function HomeScreen() {
         <div className="mx-4 mt-3 grid grid-cols-3 gap-3">
           <Link href="/queue?tab=done" aria-label="Cars today" className="block min-w-0 rounded-card"><StatCard className="min-w-0 overflow-hidden px-3 pb-3" label="Cars" value={<FitValue full={String(fig.cars)} compact={compactCount(fig.cars)} />} /></Link>
           <Link href="/queue" aria-label="Online bookings to accept" className="block min-w-0 rounded-card"><StatCard className="min-w-0 overflow-hidden px-3 pb-3" label="Online" value={<FitValue full={String(fig.toAccept)} compact={compactCount(fig.toAccept)} />} /></Link>
-          <Link href="/queue" aria-label="Unpaid today" className="block min-w-0 rounded-card"><StatCard className="min-w-0 overflow-hidden px-3 pb-3" label="Unpaid" value={<FitValue full={peso(fig.unpaid) || "₱0"} compact={compactPeso(fig.unpaid)} />} /></Link>
+          {staff ? <Link href="/queue" aria-label="Cars in bay" className="block min-w-0 rounded-card"><StatCard className="min-w-0 overflow-hidden px-3 pb-3" label="In bay" value={String(fig.inBay)} /></Link>
+            : <Link href="/queue" aria-label="Unpaid today" className="block min-w-0 rounded-card"><StatCard className="min-w-0 overflow-hidden px-3 pb-3" label="Unpaid" value={<FitValue full={peso(fig.unpaid) || "₱0"} compact={compactPeso(fig.unpaid)} />} /></Link>}
         </div>
+        {staff ? null : <>
         <WeeklySalesCard className="mx-4 mt-3" summary={today.summary} unpaid={fig.unpaid} loading={signedIn && !today.ready} />
         {needsSetup ? <SetupCard className="mx-4 mt-3" /> : null}
         <CompanionCard className="mx-4 mt-3" />
         <HomeShortcuts className="mx-4 mt-3" />
         <SalesChartCard className="mx-4 mt-3" series={series} sales={fig.sales} />
+        </>}
         <SectionHeader className="px-5 pb-1 pt-4" title="Bookings to accept" aside={aside} />
         {note ? <p className="mx-4 mb-2 text-[13px] font-semibold">{note}</p> : null}
         <div className="mx-4"><Bookings rows={fresh} loading={!today.ready} max={4} onAct={act} /></div>
@@ -230,12 +235,14 @@ export function HomeScreen() {
         <div className="mt-5 grid grid-cols-3 gap-5">
           <Link href="/queue?tab=done" aria-label="Cars today" className="block min-w-0 rounded-card"><StatCard className="pb-3" label="Cars" value={String(fig.cars)} /></Link>
           <Link href="/queue" aria-label="Online bookings to accept" className="block min-w-0 rounded-card"><StatCard className="pb-3" label="Online" value={String(fig.toAccept)} /></Link>
-          <Link href="/queue" aria-label="Unpaid today" className="block min-w-0 rounded-card"><StatCard className="pb-3" label="Unpaid" value={peso(fig.unpaid) || "₱0"} /></Link>
+          {staff ? <Link href="/queue" aria-label="Cars in bay" className="block min-w-0 rounded-card"><StatCard className="pb-3" label="In bay" value={String(fig.inBay)} /></Link> : <Link href="/queue" aria-label="Unpaid today" className="block min-w-0 rounded-card"><StatCard className="pb-3" label="Unpaid" value={peso(fig.unpaid) || "₱0"} /></Link>}
         </div>
+        {staff ? null : <>
         <WeeklySalesCard className="mt-5" summary={today.summary} unpaid={fig.unpaid} loading={signedIn && !today.ready} />
         <CompanionCard className="mt-5" />
         <HomeShortcuts className="mt-5" />
         <SalesChartCard className="mt-5" series={series} sales={fig.sales} />
+        </>}
         <Card padding="none" className="mt-5 px-[18px] pb-4 pt-4">
           <CardHeader className="mb-3" title="Bookings to accept" subtitle={aside} action={<Link href="/queue?channel=online" className={linkCls}>All bookings</Link>} />
           {note ? <p className="mb-2 text-[13px] font-semibold">{note}</p> : null}

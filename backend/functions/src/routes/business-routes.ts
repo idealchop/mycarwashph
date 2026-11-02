@@ -248,11 +248,11 @@ export function businessRoutes(deps: Deps) {
     res.json({ data: result.item, sale: result.sale });
   });
 
-  r.get("/sales", member, paid, async (req, res) => {
+  r.get("/sales", owner, paid, async (req, res) => {
     const limit = typeof req.query.limit === "string" ? Number(req.query.limit) : 100;
     res.json({ data: await listSales(store, getBusiness(res).id, { limit: Number.isFinite(limit) ? Math.min(limit, 200) : 100 }) });
   });
-  r.get("/sales/summary", member, paid, async (req, res) => {
+  r.get("/sales/summary", owner, paid, async (req, res) => {
     const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
     res.json({ data: await salesSummary(store, getBusiness(res).id, date) });
   });
@@ -263,14 +263,14 @@ export function businessRoutes(deps: Deps) {
   });
 
   // Week calendar (Sales / Expenses / Profit) + shop expenses. Additive endpoints.
-  r.get("/finance/week", member, paid, async (req, res) => {
+  r.get("/finance/week", owner, paid, async (req, res) => {
     const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
     res.json({ data: await financeWeek(store, getBusiness(res).id, date) });
   });
-  r.post("/expenses", member, paid, validateBody(createExpenseSchema), async (req, res) => {
+  r.post("/expenses", owner, paid, validateBody(createExpenseSchema), async (req, res) => {
     res.status(201).json({ data: await createExpense(store, getBusiness(res).id, req.body, getUser(res).uid, deps.now()) });
   });
-  r.delete("/expenses/:expenseId", member, paid, async (req, res) => {
+  r.delete("/expenses/:expenseId", owner, paid, async (req, res) => {
     await deleteExpense(store, getBusiness(res).id, param(req.params.expenseId), getUser(res).uid, deps.now());
     res.status(204).end();
   });
@@ -283,7 +283,7 @@ export function businessRoutes(deps: Deps) {
     res.status(204).end();
   });
 
-  r.get("/growth", member, async (_req, res) => {
+  r.get("/growth", owner, async (_req, res) => {
     res.json({ data: await growthMetrics(store, getBusiness(res).id, deps.now()) });
   });
 

@@ -47,6 +47,13 @@ describe("sales + invites + alerts", () => {
     expect(accept.body.data.businessId).toBe(shop);
     const me = await request(ctx.app).get("/me").set(auth("staff1"));
     expect(me.body.businesses.some((b: { id: string }) => b.id === shop)).toBe(true);
+    // Staff view: queue yes; sales totals, expenses and billing are owner-only.
+    await request(ctx.app).put(`/businesses/${shop}/plan`).set(auth("ops", true)).send({ plan: "paid" });
+    expect((await request(ctx.app).get(`/businesses/${shop}/queue`).set(auth("staff1"))).status).toBe(200);
+    for (const path of ["sales", "sales/summary", "finance/week", "growth", "members/invites"]) {
+      expect((await request(ctx.app).get(`/businesses/${shop}/${path}`).set(auth("staff1"))).status).toBe(403);
+    }
+    expect((await request(ctx.app).post(`/businesses/${shop}/expenses`).set(auth("staff1")).send({ amountCentavos: 100, note: "x" })).status).toBe(403);
   });
 
   it("stores in-app alerts for new River Mobile bookings", async () => {

@@ -9,7 +9,8 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { MycarwashBrand } from "@/components/brand";
 import { useShop } from "@/lib/shop-context";
-import { activeKeyFor, appNav } from "./nav";
+import { RiverIcon } from "@/components/river-icon";
+import { activeKeyFor, appNav, staffBlocked } from "./nav";
 import { ShopTabBar } from "./shop-tab-bar";
 
 function ShopQrPromo() {
@@ -52,6 +53,8 @@ export function ShopShell({ children }: { children: ReactNode }) {
   const paid = hasPaidFeatures(shop);
   const focus = FOCUS.some((r) => pathname === r || pathname.startsWith(`${r}/`));
   const active = activeKeyFor(pathname);
+  const staff = shop?.role === "staff";
+  const blocked = staff && staffBlocked(pathname);
 
   return (
     <AppShell
@@ -59,15 +62,27 @@ export function ShopShell({ children }: { children: ReactNode }) {
         <Sidebar
           className="sticky top-0 h-dvh"
           brand={<Link href="/home" aria-label="Mycarwash.ph home"><MycarwashBrand /></Link>}
-          items={appNav(active, 26)}
+          items={appNav(active, 26, staff)}
           activeKey={active}
           footer={<div>{paid ? <ShopQrPromo /> : <PartnerPlanCard />}<LegalLinks /></div>}
         />
       }
-      mobileTabBar={focus ? undefined : <ShopTabBar items={appNav(active, 32)} activeKey={active ?? ""} />}
+      mobileTabBar={focus ? undefined : <ShopTabBar items={appNav(active, 32, staff)} activeKey={active ?? ""} />}
       mainClassName={focus ? "w-full min-w-0 pb-0" : "w-full min-w-0"}
     >
-      {children}
+      {blocked ? <OwnerOnly /> : children}
     </AppShell>
+  );
+}
+
+/** What staff see on owner-only pages (sales, settings, billing, history, Moments). */
+function OwnerOnly() {
+  return (
+    <main className="mx-auto flex w-full max-w-[402px] flex-col items-center px-5 pb-10 pt-16 text-center">
+      <RiverIcon name="queue" size={88} className="block" />
+      <h1 className="mt-5 text-[24px] font-extrabold tracking-[-0.03em]">Owner only</h1>
+      <p className="mt-2 max-w-[300px] text-[14.5px] font-medium text-muted">Staff run the queue and walk-ins. Sales, settings and billing are for the shop owner.</p>
+      <Button className="mt-6" fullWidth href="/queue">Go to Queue</Button>
+    </main>
   );
 }

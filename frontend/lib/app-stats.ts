@@ -1,12 +1,11 @@
 /**
  * App-store style stats on the Install page (Jimboy, 2026-10-20).
  *
- * PLACEHOLDER NUMBERS: Jimboy asked for these until real feedback exists. They are not measured.
+ * No fake numbers (Jimboy, 2026-11-02): the stats row only shows once real ratings exist.
  * Once at least REAL_STATS_MIN ratings are saved (appFeedback, via /api/feedback), the page switches
  * automatically to the real average and rating count.
  */
-export const APP_STATS_PLACEHOLDER = { rating: 4.8, users: "1.2k+", usersLabel: "shops" } as const;
-export const REAL_STATS_MIN = 20;
+export const REAL_STATS_MIN = 1;
 
 export interface FeedbackSummary { count: number; sum: number }
 
@@ -16,7 +15,7 @@ export function displayStats(real?: FeedbackSummary | null) {
     const avg = Math.round((real.sum / real.count) * 10) / 10;
     return { rating: avg.toFixed(1), count: compact(real.count), countLabel: real.count === 1 ? "rating" : "ratings", real: true };
   }
-  return { rating: APP_STATS_PLACEHOLDER.rating.toFixed(1), count: APP_STATS_PLACEHOLDER.users, countLabel: APP_STATS_PLACEHOLDER.usersLabel, real: false };
+  return { rating: "", count: "", countLabel: "", real: false };
 }
 
 export function compact(n: number) {

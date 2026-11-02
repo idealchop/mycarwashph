@@ -7,7 +7,7 @@
  * dims the screen and points at Safari's Share button ("Tap Share, then Add to Home Screen"); tap anywhere
  * closes it. Opened from the home screen (standalone): Installed, plus a one-time welcome (PwaHost).
  */
-import { CheckCircle2, Loader2, Share, Star, X } from "lucide-react";
+import { CheckCircle2, Loader2, Share, SquarePlus, Star, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@river-apps/ui";
 import { useAuthGate } from "@/components/auth/auth-gate";
@@ -27,6 +27,8 @@ export function InstallPanel({ features }: { features: InstallFeature[] }) {
   const fb = useFeedback();
   const stats = displayStats(fb.summary);
   const installed = pwa.state === "installed";
+  const { shop } = useShop();
+  const showStaff = shop?.role === "owner";
 
   async function onInstall() {
     if (pwa.platform === "prompt") await pwa.install();
@@ -46,10 +48,10 @@ export function InstallPanel({ features }: { features: InstallFeature[] }) {
         </p>
       ) : null}
 
-      <dl className="mt-4 grid w-full grid-cols-2 divide-x divide-line rounded-[16px] bg-surface py-2.5 shadow-card" aria-label="App stats">
+      {stats.real ? <dl className="mt-4 grid w-full grid-cols-2 divide-x divide-line rounded-[16px] bg-surface py-2.5 shadow-card" aria-label="App stats">
         <div><dt className="sr-only">Rating</dt><dd className="flex items-center justify-center gap-1 text-[17px] font-extrabold"><span>{stats.rating}</span><Star size={15} className="fill-current" aria-label="stars" /></dd><dd className="text-[11.5px] font-semibold text-muted">{stats.real ? "Average rating" : "Rating"}</dd></div>
         <div><dt className="sr-only">{stats.countLabel}</dt><dd className="text-[17px] font-extrabold">{stats.count}</dd><dd className="text-[11.5px] font-semibold text-muted">{stats.countLabel}</dd></div>
-      </dl>
+      </dl> : null}
 
       {installed ? null : (
         <ul className="mt-4 flex w-full flex-col gap-2.5 text-left">
@@ -71,6 +73,8 @@ export function InstallPanel({ features }: { features: InstallFeature[] }) {
           <Button fullWidth onClick={() => void onInstall()}>Install the app</Button>
         )}
       </div>
+      {!installed && (pwa.platform === "ios-safari" || pwa.platform === "ios-other") ? <IosSteps safari={pwa.platform === "ios-safari"} /> : null}
+      {showStaff ? <Button className="mt-3" fullWidth variant="secondary" href="/settings/staff" leadingIcon={<Users size={18} aria-hidden />}>Share to staff</Button> : null}
       <button type="button" onClick={() => setRating(true)} className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-[13.5px] font-bold text-muted hover:underline">
         <Star size={14} aria-hidden /> {fb.mine ? `You rated ${fb.mine.rating} ★ · Edit` : "Rate & send feedback"}
       </button>
@@ -180,5 +184,37 @@ function InstallHint({ kind, onClose }: { kind: "ios" | "safari" | "menu"; onClo
         <span aria-hidden className={`text-[34px] leading-none text-surface ${top ? "mr-4 animate-bounce" : "animate-bounce"}`}>{top ? "↑" : "↓"}</span>
       </span>
     </button>
+  );
+}
+
+/** iPhone/iPad: Safari can't install from a button, so show the two taps with pictures of what to look for. */
+function IosSteps({ safari }: { safari: boolean }) {
+  return (
+    <section aria-label="Install on iPhone" className="mt-5 w-full rounded-card bg-surface p-4 text-left shadow-card">
+      <b className="block text-[15px]">On iPhone</b>
+      {safari ? null : <p className="mt-1 text-[13px] font-semibold text-[#C2410C]">Open this page in Safari first. Other iPhone browsers can’t add apps.</p>}
+      <ol className="mt-3 flex flex-col gap-3">
+        <li className="flex items-center gap-3">
+          <span className="flex h-14 w-24 flex-none items-center justify-center gap-3 rounded-[12px] bg-grey-100" aria-hidden>
+            <span className="text-[16px] text-subtle">‹ ›</span>
+            <span className="inline-flex size-8 items-center justify-center rounded-[8px] bg-surface ring-2 ring-[#0A84FF]"><Share size={18} className="text-[#0A84FF]" /></span>
+          </span>
+          <span className="text-[14px] font-semibold"><b>1.</b> Tap <b>Share</b> in Safari’s bottom bar</span>
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="flex h-14 w-24 flex-none items-center justify-between rounded-[12px] bg-grey-100 px-2.5 ring-2 ring-[#0A84FF]" aria-hidden>
+            <span className="text-[10.5px] font-bold leading-tight">Add to Home Screen</span>
+            <SquarePlus size={18} />
+          </span>
+          <span className="text-[14px] font-semibold"><b>2.</b> Scroll down, tap <b>Add to Home Screen</b></span>
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="flex h-14 w-24 flex-none items-center justify-end rounded-[12px] bg-grey-100 px-3" aria-hidden>
+            <span className="text-[14px] font-bold text-[#0A84FF]">Add</span>
+          </span>
+          <span className="text-[14px] font-semibold"><b>3.</b> Tap <b>Add</b>. Mycarwash appears on your home screen.</span>
+        </li>
+      </ol>
+    </section>
   );
 }
