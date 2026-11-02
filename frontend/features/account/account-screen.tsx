@@ -5,7 +5,7 @@ import { hasPaidFeatures, planGatingEnabled } from "@/lib/plan-gating";
 import { CompanionAvatar } from "@/features/companion/companion-mark";
 import { companionEnabled } from "@/lib/companion-flag";
 import { CarIllustration } from "@river-apps/icons";
-import { ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
+import { ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil, Users } from "lucide-react";
 import { useInstallHidden } from "@/lib/pwa";
 import { RiverIcon, iconSrc } from "@/components/river-icon";
 import { AppVersion } from "@/components/app-version";
@@ -37,10 +37,33 @@ export function AccountScreen() {
   const links = [
     { href: "/history", art: "ticket" as const, icon: History, title: "History", subtitle: "Past washes and bookings" },
     { href: "/settings/services", art: "carwash" as const, icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
+    { href: "/settings/staff", art: "queue" as const, icon: Users, title: "Staff", subtitle: "Share to staff: invite link and QR" },
     { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: shop?.plan === "paid" ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
     // Hidden once installed (home screen open, or remembered on this device); /settings/install still says Installed.
     ...(installHidden ? [] : [{ href: "/settings/install", icon: Download, title: "Install app", subtitle: "Add Mycarwash to your home screen" }]),
   ];
+
+  if (shop?.role === "staff") {
+    return (
+      <div className="mx-auto w-full max-w-[402px] px-4 pb-6 pt-4">
+        <Topbar className="px-1" leading={<PageBack fallback="/home" />} title="Settings" subtitle="Staff account" />
+        <section className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card">
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={shop.logoUrl || iconSrc("home", 72)} alt="" className="size-[60px] rounded-[18px] bg-grey-50 object-cover" />
+            <span className="min-w-0 leading-[1.3]"><b className="block truncate text-[17px]">{shop.name}</b><span className="text-[13px] font-semibold text-muted">You’re staff here · {user?.phoneNumber || user?.email}</span></span>
+          </div>
+          <p className="mt-3 text-[13.5px] font-medium text-muted">You can take walk-ins, run the queue and record payments. Sales, settings and billing are for the owner.</p>
+        </section>
+        <Card padding="none" className="mt-4 px-2 py-1.5">
+          {installHidden ? null : <Link href="/settings/install" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2"><span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Download size={18} strokeWidth={1.75} /></span><b className="flex-1 text-[15px]">Install app</b><ChevronRight size={20} className="text-subtle" /></Link>}
+          <button type="button" onClick={() => { void signOut().then(() => router.push("/home")); }} className="flex min-h-[60px] w-full items-center gap-3 rounded-tile px-1.5 py-2 text-left">
+            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><LogOut size={18} strokeWidth={1.75} /></span><b className="flex-1 text-[15px]">Log out</b>
+          </button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[402px] px-4 pb-6 pt-4 lg:max-w-[880px] lg:px-[30px] lg:pt-6">
