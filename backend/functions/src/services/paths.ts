@@ -6,6 +6,10 @@ export const paths = {
   invites: (b: string) => `businesses/${b}/invites`,
   invite: (b: string, id: string) => `businesses/${b}/invites/${id}`,
   inviteIndex: (id: string) => `invite_index/${id}`,
+  staffLinks: (b: string) => `businesses/${b}/staff_links`,
+  staffLink: (b: string, id: string) => `businesses/${b}/staff_links/${id}`,
+  /** sha256(token) -> { businessId, linkId }. Server-only. */
+  staffLinkIndex: (hash: string) => `staff_link_index/${hash}`,
   services: (b: string) => `businesses/${b}/services`,
   service: (b: string, id: string) => `businesses/${b}/services/${id}`,
   bays: (b: string) => `businesses/${b}/bays`,

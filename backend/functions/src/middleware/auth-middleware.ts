@@ -6,6 +6,8 @@ import { setContext } from "./context.js";
 /** Verifies the Firebase ID token in `Authorization: Bearer <token>`. */
 export function requireAuth(verifier: TokenVerifier): RequestHandler {
   return async (req, res, next) => {
+    // Already authorised by a staff link (staffLinkAuth).
+    if ((res.locals as { user?: unknown }).user) return next();
     const header = req.header("authorization") ?? "";
     const match = /^Bearer (.+)$/i.exec(header);
     if (!match) return next(unauthorized());

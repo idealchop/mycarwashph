@@ -2,6 +2,7 @@ import express from "express";
 import { brand } from "./config/brand.js";
 import type { Deps } from "./deps.js";
 import { requireAuth } from "./middleware/auth-middleware.js";
+import { staffLinkAuth } from "./middleware/staff-link-middleware.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-middleware.js";
 import { cors, limiter } from "./middleware/http-middleware.js";
 import { businessRoutes } from "./routes/business-routes.js";
@@ -29,6 +30,7 @@ export function createApp(deps: Deps) {
   app.use(momentsRoutes(deps));
   // Booking link (/book page from the shop QR): customers have no account.
   app.use(linkRoutes(deps));
+  app.use(staffLinkAuth(deps.store));
   app.use(requireAuth(deps.verifier));
   app.use(meRoutes(deps));
   app.use("/businesses/:businessId", companionRoutes(deps));

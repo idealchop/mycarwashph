@@ -1,6 +1,7 @@
 "use client";
 
 import { firebaseAuth } from "./firebase";
+import { staffLinkToken } from "./staff-link";
 
 /**
  * Same-origin proxy (app/api/[...path]/route.ts) to the private shop API function
@@ -18,13 +19,16 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init: { method?: string; body?: unknown; guest?: boolean } = {}): Promise<T> {
   const auth = firebaseAuth();
   // Screens may load from cache before Firebase restores the session; wait for it instead of failing with 401.
-  if (!auth.currentUser && !init.guest) await auth.authStateReady();
+  const staffLink = staffLinkToken();
+  if (!auth.currentUser && !init.guest && !staffLink) await auth.authStateReady();
   const user = auth.currentUser;
-  if (!user && !init.guest) throw new ApiError(401, "unauthorized", "Please sign in.");
+  // No account on a staff-link device: the link token authorises queue-only requests (server-checked).
+  const linkOnly = !user && !!staffLink;
+  if (!user && !init.guest && !linkOnly) throw new ApiError(401, "unauthorized", "Please sign in.");
   const token = user ? await user.getIdToken() : null;
   const res = await fetch(`${apiBase()}${path}`, {
     method: init.method ?? "GET",
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.body ? { "Content-Type": "application/json" } : {}) },
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(linkOnly ? { "X-Staff-Link": staffLink! } : {}), ...(init.body ? { "Content-Type": "application/json" } : {}) },
     body: init.body ? JSON.stringify(init.body) : undefined,
   });
   if (res.status === 204) return undefined as T;
