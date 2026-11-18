@@ -141,6 +141,13 @@ export const recordSaleSchema = z.object({
   customerName: z.string().trim().max(80).nullable().optional(),
 });
 
+export const createExpenseSchema = z.object({
+  amountCentavos: centavos.refine((v) => v > 0, "Amount must be more than zero"),
+  note: z.string().trim().min(1).max(80),
+  /** Manila day YYYYMMDD; defaults to today. */
+  date: z.string().regex(/^\d{8}$/).optional(),
+});
+
 export const v1CreateBookingSchema = z.object({
   shopId: id,
   serviceIds: z.array(id).min(1).max(10),

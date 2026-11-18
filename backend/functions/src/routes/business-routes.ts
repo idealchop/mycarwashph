@@ -4,6 +4,9 @@ import type { Deps } from "../deps.js";
 import { requireMembership, requirePlan, requireRole } from "../middleware/business-middleware.js";
 import { getBusiness, getMember, getUser } from "../middleware/context.js";
 import { validateBody } from "../middleware/validate.js";
+import { feedbackSummary, myFeedback, saveFeedback } from "../services/feedback-service.js";
+
+const feedbackSchema = z.object({ rating: z.number().int().min(1).max(5), comment: z.string().max(500).optional() }).strict();
 import { badRequest, forbidden, HttpError, notFound } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
 import {
@@ -15,6 +18,7 @@ import {
   activateBillingSchema,
   confirmBillingPaymentSchema,
   recordSaleSchema,
+  createExpenseSchema,
   selectPartnerBillingSchema,
   serviceSchema,
   setPlanSchema,
@@ -32,16 +36,18 @@ import {
   requirePlatformAdmin,
   selectPartnerBilling,
 } from "../services/billing-service.js";
-import { setPlan, updateBusiness } from "../services/businesses-service.js";
+import { removeBusiness, setPlan, updateBusiness } from "../services/businesses-service.js";
 import { createItem, listItems, updateItem } from "../services/catalog-service.js";
 import { growthMetrics } from "../services/growth-service.js";
 import { createInvite, listInvites, revokeInvite } from "../services/invites-service.js";
+import { createStaffLink, listStaffLinks, resetStaffLink, revokeStaffLink } from "../services/staff-links-service.js";
 import { listMembers, removeMember } from "../services/members-service.js";
 import { listAlerts, markAlertRead } from "../services/notify-service.js";
 import { paths } from "../services/paths.js";
 import { ensureStarterServices } from "../services/starter-services.js";
 import { createQueueItem, listQueue, updateQueueItem, walkInAllowance } from "../services/queue-service.js";
 import { listSales, recordSale, salesSummary } from "../services/sales-service.js";
+import { createExpense, deleteExpense, financeWeek } from "../services/expenses-service.js";
 
 const PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
@@ -143,6 +149,20 @@ export function businessRoutes(deps: Deps) {
     const invite = await createInvite(store, b.id, req.body, getUser(res).uid, deps.now());
     res.status(201).json({ data: invite });
   });
+  // Staff links (no account, Barbers.ph barber link): owner creates, resets or turns off.
+  r.get("/staff-links", owner, async (_req, res) => {
+    res.json({ data: await listStaffLinks(store, getBusiness(res).id) });
+  });
+  r.post("/staff-links", owner, validateBody(z.object({ name: z.string().trim().min(1).max(40) }).strict()), async (req, res) => {
+    res.status(201).json({ data: await createStaffLink(store, getBusiness(res).id, req.body.name, getUser(res).uid, deps.now()) });
+  });
+  r.post("/staff-links/:linkId/reset", owner, async (req, res) => {
+    res.json({ data: await resetStaffLink(store, getBusiness(res).id, param(req.params.linkId), getUser(res).uid, deps.now()) });
+  });
+  r.delete("/staff-links/:linkId", owner, async (req, res) => {
+    await revokeStaffLink(store, getBusiness(res).id, param(req.params.linkId), getUser(res).uid, deps.now());
+    res.status(204).end();
+  });
   r.get("/members/invites", owner, async (_req, res) => {
     res.json({ data: await listInvites(store, getBusiness(res).id) });
   });
@@ -153,6 +173,21 @@ export function businessRoutes(deps: Deps) {
   r.delete("/members/:uid", owner, async (req, res) => {
     await removeMember(store, getBusiness(res).id, param(req.params.uid), getUser(res).uid, deps.now());
     res.status(204).end();
+  });
+
+  r.delete("/", owner, async (_req, res) => {
+    await removeBusiness(store, getBusiness(res).id, getUser(res).uid, deps.now());
+    res.status(204).end();
+  });
+
+  r.get("/feedback", member, async (_req, res) => {
+    const b = getBusiness(res);
+    res.json({ data: { summary: await feedbackSummary(store), mine: await myFeedback(store, b.id, getUser(res).uid) } });
+  });
+  r.post("/feedback", member, validateBody(feedbackSchema), async (req, res) => {
+    const b = getBusiness(res);
+    const summary = await saveFeedback(store, b.id, getUser(res).uid, { rating: req.body.rating, comment: (req.body.comment ?? "").trim() }, deps.now());
+    res.json({ data: { summary, mine: { rating: req.body.rating, comment: (req.body.comment ?? "").trim() } } });
   });
 
   r.get("/services", member, async (_req, res) => {
@@ -228,11 +263,11 @@ export function businessRoutes(deps: Deps) {
     res.json({ data: result.item, sale: result.sale });
   });
 
-  r.get("/sales", member, paid, async (req, res) => {
+  r.get("/sales", owner, paid, async (req, res) => {
     const limit = typeof req.query.limit === "string" ? Number(req.query.limit) : 100;
     res.json({ data: await listSales(store, getBusiness(res).id, { limit: Number.isFinite(limit) ? Math.min(limit, 200) : 100 }) });
   });
-  r.get("/sales/summary", member, paid, async (req, res) => {
+  r.get("/sales/summary", owner, paid, async (req, res) => {
     const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
     res.json({ data: await salesSummary(store, getBusiness(res).id, date) });
   });
@@ -240,6 +275,19 @@ export function businessRoutes(deps: Deps) {
     const b = getBusiness(res);
     const sale = await recordSale(store, b.id, req.body, getUser(res).uid, deps.now());
     res.status(201).json({ data: sale });
+  });
+
+  // Week calendar (Sales / Expenses / Profit) + shop expenses. Additive endpoints.
+  r.get("/finance/week", owner, paid, async (req, res) => {
+    const date = typeof req.query.date === "string" && /^\d{8}$/.test(req.query.date) ? req.query.date : manilaDayKey(deps.now());
+    res.json({ data: await financeWeek(store, getBusiness(res).id, date) });
+  });
+  r.post("/expenses", owner, paid, validateBody(createExpenseSchema), async (req, res) => {
+    res.status(201).json({ data: await createExpense(store, getBusiness(res).id, req.body, getUser(res).uid, deps.now()) });
+  });
+  r.delete("/expenses/:expenseId", owner, paid, async (req, res) => {
+    await deleteExpense(store, getBusiness(res).id, param(req.params.expenseId), getUser(res).uid, deps.now());
+    res.status(204).end();
   });
 
   r.get("/alerts", member, async (_req, res) => {
@@ -250,7 +298,7 @@ export function businessRoutes(deps: Deps) {
     res.status(204).end();
   });
 
-  r.get("/growth", member, async (_req, res) => {
+  r.get("/growth", owner, async (_req, res) => {
     res.json({ data: await growthMetrics(store, getBusiness(res).id, deps.now()) });
   });
 

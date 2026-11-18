@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { cn } from "../cn";
 
 export interface OtpInputProps {
@@ -22,10 +22,8 @@ export function OtpInput({ length = 6, value, defaultValue = "", onChange, onCom
   const code = (value ?? inner).replace(/\D/g, "").slice(0, length);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => {
-    if (autoFocus) refs.current[Math.min(code.length, length - 1)]?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Never focus on mount: the keyboard opens only on a user tap.
+  void autoFocus;
 
   const set = (next: string) => {
     const v = next.replace(/\D/g, "").slice(0, length);

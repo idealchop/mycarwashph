@@ -82,7 +82,7 @@ export function Composer({ me, onPost }: { me: PostAuthor; onPost: (body: string
             }
           }}
           placeholder="What’s new at your shop?"
-          className="block w-full resize-none bg-transparent text-[15px] font-medium leading-[1.45] text-ink outline-none placeholder:text-muted"
+          className="block w-full resize-none bg-transparent text-[16px] font-medium leading-[1.45] text-ink outline-none placeholder:text-muted"
         />
         {images.length ? (
           <ul className="mt-2.5 flex gap-2 overflow-x-auto pb-1" aria-label="Attached photos">

@@ -49,7 +49,7 @@ export function Input({ label, hideLabel, hint, error, leadingIcon, trailing, si
           id={fid}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${fid}-error` : hint ? `${fid}-hint` : undefined}
-          className={cn("min-w-0 flex-1 bg-transparent font-semibold text-ink outline-none placeholder:font-medium placeholder:text-subtle", size === "lg" ? "text-[18px]" : "text-[14px]", className)}
+          className={cn("min-w-0 flex-1 bg-transparent font-semibold text-ink outline-none placeholder:font-medium placeholder:text-subtle", size === "lg" ? "text-[18px]" : "text-[16px]", className)}
           {...rest}
         />
         {trailing}
@@ -65,7 +65,7 @@ export function SearchInput({ label = "Search", placeholder = "Search", classNam
     <label className={cn("flex h-[46px] items-center gap-2.5 rounded-tile bg-surface px-4 text-subtle shadow-card focus-within:ring-2 focus-within:ring-ink", className)}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
       <span className="sr-only">{label}</span>
-      <input type="search" placeholder={placeholder} className="min-w-0 flex-1 bg-transparent text-[14px] font-medium text-ink outline-none placeholder:text-subtle" {...rest} />
+      <input type="search" placeholder={placeholder} className="min-w-0 flex-1 bg-transparent text-[16px] font-medium text-ink outline-none placeholder:text-subtle" {...rest} />
     </label>
   );
 }

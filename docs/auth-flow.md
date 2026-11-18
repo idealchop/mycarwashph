@@ -8,6 +8,11 @@
   (`lib/api.ts`). The App Hosting proxy forwards it untouched and adds its own service ID token in
   `X-Serverless-Authorization` for Cloud Run IAM.
 - Guests can browse Home and Moments; actions open the sign-in sheet (`components/auth/auth-gate`).
+- Phone code errors: `sendPhoneCode` logs the Firebase error code to the console (never the number) and
+  `authErrorMessage` maps them. Firebase's `503 "Error code: 39"` (backendError) is its anti-abuse limit for a
+  number or network after many tries: the sheet asks to wait about an hour or continue with Google. Checked
+  Nov 18, 2026: authorized domains include both `*.hosted.app` hosts; invisible reCAPTCHA (v2 fallback, since
+  `v2/recaptchaConfig` returns 500 when reCAPTCHA Enterprise SMS defense is not set up) passes without a puzzle.
 
 ## Identity (backend)
 

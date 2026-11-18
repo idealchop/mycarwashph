@@ -57,6 +57,11 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      // Expenses (shop money out): API-only, like sales. Server writes; clients never read directly.
+      match /expenses/{expenseId} {
+        allow read, write: if false;
+      }
+
       // Everything else under a business (services, bays, customers, queue, ...).
       match /{collection}/{docId} {
         allow read: if isMember(businessId)

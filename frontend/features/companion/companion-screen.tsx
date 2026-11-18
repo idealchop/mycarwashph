@@ -160,7 +160,7 @@ function Chat({ shopId }: { shopId: string }) {
           maxLength={500}
           disabled={!state.enabled}
           placeholder="Ask about your shop…"
-          className="h-12 min-w-0 flex-1 rounded-pill border border-line bg-surface px-4 text-[14.5px] font-medium shadow-card outline-none focus:border-ink"
+          className="h-12 min-w-0 flex-1 rounded-pill border border-line bg-surface px-4 text-[16px] font-medium shadow-card outline-none focus:border-ink"
         />
         <Button type="submit" aria-label="Send" disabled={busy || !text.trim()} className="size-12 flex-none rounded-full p-0"><ArrowUp size={20} /></Button>
       </form>

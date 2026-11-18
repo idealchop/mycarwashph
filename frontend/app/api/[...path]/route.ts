@@ -10,7 +10,7 @@ import { needsIdToken, serviceIdToken, upstreamFor } from "@/lib/upstream";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const REQUEST_HEADERS = ["authorization", "content-type", "idempotency-key", "accept"];
+const REQUEST_HEADERS = ["authorization", "content-type", "idempotency-key", "accept", "x-staff-link"];
 const RESPONSE_HEADERS = ["content-type", "ratelimit", "ratelimit-policy", "retry-after"];
 
 function problem(status: number, code: string, title: string) {

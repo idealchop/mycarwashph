@@ -89,6 +89,8 @@ export interface Business {
   photoUrls: string[];
   /** Opening hours as free text, e.g. "Mon–Sat 8 AM–6 PM". */
   hours?: string | null;
+  /** Soft delete (owner removed the shop). Hidden from /me, members deactivated, River Mobile listing off. */
+  deletedAt?: string | null;
   /** Shop logo HTTPS URL. */
   logoUrl?: string | null;
   /** Billing for the Pro / Lifetime upgrade. */
@@ -116,8 +118,12 @@ export interface Member {
 /** businesses/{businessId}/services/{serviceId} */
 export const SERVICE_CATEGORIES = ["car-wash", "interior", "detailing", "wax-coating", "engine", "add-ons"] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
-/** 3D icon names the frontend can render (packages/icons ICON_NAMES subset). */
-export const SERVICE_ICONS = ["bubbles", "vacuum", "sparkle", "tyre", "drop", "car", "shield", "coin", "check"] as const;
+/** 3D icon names the frontend can render (generic pack names kept for older docs, plus the carwash set). */
+export const SERVICE_ICONS = [
+  "bubbles", "vacuum", "sparkle", "tyre", "drop", "car", "shield", "coin", "check",
+  // Mycarwash carwash 3D set (frontend public/icons3d/carwash), Oct 24, 2026.
+  "carwash", "foam", "pressure-washer", "wax", "tire-shine", "engine", "interior", "detailing", "sedan", "suv", "motorcycle",
+] as const;
 export type ServiceIcon = (typeof SERVICE_ICONS)[number];
 
 export interface Service {
@@ -190,6 +196,10 @@ export interface Booking {
   acceptedBy: string | null;
   checkedInAt: string | null;
   queueItemId: string | null;
+  /** Booking-link (QR web page) bookings: sha256 of the customer ticket token. */
+  linkTokenHash?: string | null;
+  /** Customer pay preference from the booking link ("shop" today; "online" when checkout is on). */
+  payPref?: "shop" | "online" | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -234,7 +244,7 @@ export interface QueueItem {
 
 /** businesses/{businessId}/audit_logs/{id} */
 export interface AuditLog {
-  actor: { type: "user" | "api_client"; id: string };
+  actor: { type: "user" | "api_client" | "customer"; id: string };
   action: string;
   target: string;
   meta: Record<string, unknown> | null;

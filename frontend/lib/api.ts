@@ -1,6 +1,7 @@
 "use client";
 
 import { firebaseAuth } from "./firebase";
+import { staffLinkToken } from "./staff-link";
 
 /**
  * Same-origin proxy (app/api/[...path]/route.ts) to the private shop API function
@@ -16,12 +17,18 @@ export class ApiError extends Error {
 
 /** Calls the shop API (via /api) with the signed-in user's Firebase ID token. */
 export async function api<T>(path: string, init: { method?: string; body?: unknown; guest?: boolean } = {}): Promise<T> {
-  const user = firebaseAuth().currentUser;
-  if (!user && !init.guest) throw new ApiError(401, "unauthorized", "Please sign in.");
+  const auth = firebaseAuth();
+  // Screens may load from cache before Firebase restores the session; wait for it instead of failing with 401.
+  const staffLink = staffLinkToken();
+  if (!auth.currentUser && !init.guest && !staffLink) await auth.authStateReady();
+  const user = auth.currentUser;
+  // No account on a staff-link device: the link token authorises queue-only requests (server-checked).
+  const linkOnly = !user && !!staffLink;
+  if (!user && !init.guest && !linkOnly) throw new ApiError(401, "unauthorized", "Please sign in.");
   const token = user ? await user.getIdToken() : null;
   const res = await fetch(`${apiBase()}${path}`, {
     method: init.method ?? "GET",
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.body ? { "Content-Type": "application/json" } : {}) },
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(linkOnly ? { "X-Staff-Link": staffLink! } : {}), ...(init.body ? { "Content-Type": "application/json" } : {}) },
     body: init.body ? JSON.stringify(init.body) : undefined,
   });
   if (res.status === 204) return undefined as T;
@@ -109,7 +116,10 @@ export interface Booking {
   updatedAt?: string;
 }
 export type ServiceCategory = "car-wash" | "interior" | "detailing" | "wax-coating" | "engine" | "add-ons";
-export type ServiceIconName = "bubbles" | "vacuum" | "sparkle" | "tyre" | "drop" | "car" | "shield" | "coin" | "check";
+/** Carwash 3D set; older docs may still hold generic pack names (rendered through the legacy map). */
+export type ServiceIconName =
+  | "carwash" | "foam" | "pressure-washer" | "vacuum" | "wax" | "tire-shine" | "engine" | "interior" | "detailing" | "sedan" | "suv" | "motorcycle"
+  | "bubbles" | "sparkle" | "tyre" | "drop" | "car" | "shield" | "coin" | "check";
 export interface Service {
   id: string;
   name: string;
@@ -179,6 +189,8 @@ export interface SalesSummary {
   byHour: { hour: number; label: string; centavos: number; count: number }[];
   recent: Sale[];
   previousDayTotalCentavos: number;
+  /** Mon–Sun week holding `date` (older API builds may omit it). */
+  week?: { from: string; to: string; totalCentavos: number; cars: number; days: { date: string; dow: string; centavos: number; cars: number }[] };
 }
 
 export interface Member {
@@ -221,3 +233,12 @@ export interface VerifyResult {
   booking: Booking;
   queueItem: QueueItem | null;
 }
+
+export type Expense = { id: string; amountCentavos: number; note: string; date: string; createdBy: string; createdAt: string };
+export type FinanceWeek = {
+  from: string;
+  to: string;
+  days: { date: string; dow: string; salesCentavos: number; cars: number; expensesCentavos: number; profitCentavos: number }[];
+  totals: { salesCentavos: number; cars: number; expensesCentavos: number; profitCentavos: number };
+  expenses: Expense[];
+};

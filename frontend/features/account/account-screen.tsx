@@ -5,14 +5,19 @@ import { hasPaidFeatures, planGatingEnabled } from "@/lib/plan-gating";
 import { CompanionAvatar } from "@/features/companion/companion-mark";
 import { companionEnabled } from "@/lib/companion-flag";
 import { CarIllustration } from "@river-apps/icons";
-import { Car, ChevronRight, CreditCard, History, LogOut, MapPin, Package, Pencil } from "lucide-react";
+import { ChevronRight, CreditCard, Download, History, LogOut, MapPin, Package, Pencil, Users } from "lucide-react";
+import { useInstallHidden } from "@/lib/pwa";
+import { RiverIcon, iconSrc } from "@/components/river-icon";
+import { AppVersion } from "@/components/app-version";
+import { NotificationBell } from "@/features/activity/activity-screen";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Avatar, Badge, Button, Card, ListItem, Topbar, cn } from "@river-apps/ui";
+import { Badge, Button, Card, ListItem, Topbar, cn } from "@river-apps/ui";
 import { useAuthGate } from "@/components/auth/auth-gate";
 import { PageBack } from "@/components/shop/page-back";
 import { signOut, useAuth } from "@/lib/auth";
+import { setStaffLinkToken } from "@/lib/staff-link";
 import { currentShop } from "@/lib/shop";
 import { useShop } from "@/lib/shop-context";
 
@@ -28,20 +33,51 @@ export function AccountScreen() {
   const paid = hasPaidFeatures(shop);
   const place = (shop?.location?.formattedAddress || shop?.address || "").split(",").slice(-2).join(",").trim();
   const shops = me?.businesses ?? [];
+  const installHidden = useInstallHidden();
 
   const links = [
-    { href: "/history", icon: History, title: "History", subtitle: "Past washes and bookings" },
-    { href: "/settings/services", icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
+    { href: "/history", art: "ticket" as const, icon: History, title: "History", subtitle: "Past washes and bookings" },
+    { href: "/settings/services", art: "carwash" as const, icon: Package, title: "Services", subtitle: "Washes, add-ons and prices by category" },
+    { href: "/settings/staff", art: "queue" as const, icon: Users, title: "Staff", subtitle: "Share to staff: invite link and QR" },
     { href: "/settings/billing", icon: CreditCard, title: "Plan & billing", subtitle: shop?.plan === "paid" ? "You’re on Pro or Lifetime" : "Partner, Pro and Lifetime" },
+    // Hidden once installed (home screen open, or remembered on this device); /settings/install still says Installed.
+    ...(installHidden ? [] : [{ href: "/settings/install", icon: Download, title: "Install app", subtitle: "Add Mycarwash to your home screen" }]),
   ];
+
+  if (shop?.role === "staff") {
+    return (
+      <div className="mx-auto w-full max-w-[402px] px-4 pb-6 pt-4">
+        <Topbar className="px-1" leading={<PageBack fallback="/home" />} title="Settings" subtitle="Staff account" />
+        <section className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card">
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={shop.logoUrl || iconSrc("home", 72)} alt="" className="size-[60px] rounded-[18px] bg-grey-50 object-cover" />
+            <span className="min-w-0 leading-[1.3]"><b className="block truncate text-[17px]">{shop.name}</b><span className="text-[13px] font-semibold text-muted">You’re staff here{user ? ` · ${user.phoneNumber || user.email}` : " · staff link"}</span></span>
+          </div>
+          <p className="mt-3 text-[13.5px] font-medium text-muted">You can take walk-ins, run the queue and record payments. Settings and billing are for the owner.</p>
+        </section>
+        <Card padding="none" className="mt-4 px-2 py-1.5">
+          {installHidden ? null : <Link href="/settings/install" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2"><span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Download size={18} strokeWidth={1.75} /></span><b className="flex-1 text-[15px]">Install app</b><ChevronRight size={20} className="text-subtle" /></Link>}
+          <button type="button" onClick={() => { setStaffLinkToken(null); if (user) void signOut(); router.push("/home"); }} className="flex min-h-[60px] w-full items-center gap-3 rounded-tile px-1.5 py-2 text-left">
+            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><LogOut size={18} strokeWidth={1.75} /></span><b className="flex-1 text-[15px]">Log out</b>
+          </button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[402px] px-4 pb-6 pt-4 lg:max-w-[880px] lg:px-[30px] lg:pt-6">
-      <Topbar className="px-1" leading={<PageBack fallback="/home" />} title="Account" subtitle="Your shop on Mycarwash.ph" />
+      <div className="flex items-start gap-2">
+        <Topbar className="min-w-0 flex-1 px-1" leading={<PageBack fallback="/home" />} title="Settings" subtitle="Your shop on Mycarwash.ph" />
+        {user && shop ? <div className="pt-1.5"><NotificationBell /></div> : null}
+      </div>
 
       <section className="mt-4 rounded-card bg-surface px-4 py-4 shadow-card">
         <div className="flex items-center gap-3.5">
-          <Avatar name={shop?.name || "Shop"} src={shop?.logoUrl || undefined} preset="sky" size={72} decorative={false} className="flex-none shadow-tile ring-1 ring-line" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- shop logo or the carwash 3D home icon (Barbers.ph shop card) */}
+          <img src={shop?.logoUrl || iconSrc("home", 72)} alt={shop?.name ? `${shop.name} logo` : "Shop"} width={72} height={72}
+            className={cn("size-[72px] flex-none rounded-[22px]", shop?.logoUrl ? "object-cover shadow-tile ring-1 ring-line" : "bg-grey-50 object-contain p-1.5")} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h2 className="min-w-0 text-[18px] font-extrabold leading-[1.2] tracking-[-0.02em] sm:text-[20px]">{shop?.name || (user ? "Name your shop" : "Your shop")}</h2>
@@ -108,8 +144,8 @@ export function AccountScreen() {
       ) : (
         <section className="mt-3 rounded-card bg-surface px-4 py-4 shadow-card">
           <p className="text-[13px] font-semibold text-muted">Location</p>
-          <p className="mt-1 text-[14px] font-semibold">{shops.length ? "One shop. Add a branch any time." : "Your shop’s pin shows on River Maps."}</p>
-          <Button className="mt-4" href="/settings/shops" size="md" fullWidth variant="secondary">Manage shops</Button>
+          <p className="mt-2 text-[14.5px] font-semibold">{shops.length ? "One shop. Add more shops in Manage Locations." : "Your shop’s pin shows on River Maps."}</p>
+          <Button className="mt-4" href="/settings/shops" size="md" fullWidth variant="secondary">Manage Locations</Button>
         </section>
       )}
 
@@ -125,7 +161,7 @@ export function AccountScreen() {
                     <ListItem
                       variant="row"
                       className="py-2"
-                      leading={<span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Icon size={18} strokeWidth={1.75} /></span>}
+                      leading={"art" in it && it.art ? <RiverIcon name={it.art} size={40} /> : <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Icon size={18} strokeWidth={1.75} /></span>}
                       title={it.title}
                       subtitle={it.subtitle}
                       trailing={<ChevronRight size={20} strokeWidth={1.75} className="text-subtle" />}
@@ -151,12 +187,12 @@ export function AccountScreen() {
             <div className="relative mx-1.5 mb-1 mt-11 rounded-card bg-grey-100 px-4 pb-4 pt-[78px] lg:hidden">
               <div className="absolute inset-x-0 -top-9 flex justify-center"><CarIllustration size={170} /></div>
               <b className="block text-[14.5px]">Shop QR code</b>
-              <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">Print it for your counter</small>
+              <small className="mb-3 mt-0.5 block text-[12.5px] font-semibold text-ink/55">Customers scan to book</small>
               <Button size="sm" fullWidth href="/qr">Get QR code</Button>
             </div>
           ) : null}
           <Link href="/queue/new" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2">
-            <span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Car size={18} strokeWidth={1.75} /></span>
+            <RiverIcon name="queue" size={40} />
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[15px]">Walk-in</b>
               <small className="block truncate text-[13px] font-medium text-muted">{paid ? "Add a car at the counter" : "10 a day on Partner"}</small>
@@ -183,7 +219,10 @@ export function AccountScreen() {
         <Link href="/terms" className="underline-offset-[3px] hover:underline">Terms of Service</Link>
         <span aria-hidden> · </span>
         <Link href="/privacy" className="underline-offset-[3px] hover:underline">Privacy Policy</Link>
+        <span aria-hidden> · </span>
+        <Link href="/settings/map-credits" className="underline-offset-[3px] hover:underline">Map credits</Link>
       </p>
+      <AppVersion className="mt-2 pb-2" />
     </div>
   );
 }
