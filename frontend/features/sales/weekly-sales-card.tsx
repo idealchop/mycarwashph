@@ -1,8 +1,6 @@
 "use client";
 
 import { cn } from "@river-apps/ui";
-import { ChevronRight } from "lucide-react";
-import Link from "next/link";
 import type { SalesSummary } from "@/lib/api";
 import { peso } from "@/lib/format";
 
@@ -31,16 +29,16 @@ function emptyWeek(today: string): NonNullable<SalesSummary["week"]> {
 
 /**
  * Home "Your weekly sales" (Barbers.ph ProfitReportCard layout): week total, Mon–Sun cells with today ringed,
- * and a footer for today's unpaid cars (red) or all paid (green). The whole card opens Sales.
+ * and a footer for today's unpaid cars (red) or all paid (green). (The Sales page was removed Nov 18, 2026; the card is a summary only.)
  */
 export function WeeklySalesCard({ summary, unpaid, loading, className = "" }: { summary: SalesSummary | null; unpaid: number; loading?: boolean; className?: string }) {
   const today = keyOf(new Date());
   const week = summary?.week ?? emptyWeek(today);
   return (
-    <Link href="/sales" aria-label="Open sales" className={`block rounded-card bg-surface px-4 pb-3.5 pt-4 shadow-card active:scale-[0.99] ${className}`}>
+    <section aria-label="Your weekly sales" className={`block rounded-card bg-surface px-4 pb-3.5 pt-4 shadow-card ${className}`}>
       <span className="flex items-start justify-between gap-3">
         <span className="min-w-0">
-          <span className="flex items-center gap-1 text-[13px] font-bold text-muted">Your weekly sales<ChevronRight size={15} strokeWidth={2.4} aria-hidden className="text-subtle" /></span>
+          <span className="flex items-center gap-1 text-[13px] font-bold text-muted">Your weekly sales</span>
           {loading ? <span className="skeleton mt-1 block h-7 w-28 rounded-[8px]" /> : <b className="mt-1 block text-[28px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">{peso(week.totalCentavos) || "₱0"}</b>}
         </span>
         <span className="mt-0.5 flex-none text-right">
@@ -71,6 +69,6 @@ export function WeeklySalesCard({ summary, unpaid, loading, className = "" }: { 
           <span className="flex items-center gap-1"><i className="size-1.5 rounded-full" style={{ background: RED }} /><span style={{ color: RED }}>Unpaid</span></span>
         </span>
       </span>
-    </Link>
+    </section>
   );
 }

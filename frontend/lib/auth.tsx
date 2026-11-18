@@ -42,7 +42,16 @@ export async function sendPhoneCode(phoneE164: string, buttonId: string) {
   const auth = firebaseAuth();
   verifier?.clear();
   verifier = new RecaptchaVerifier(auth, buttonId, { size: "invisible" });
-  const confirmation = await signInWithPhoneNumber(auth, phoneE164, verifier);
+  let confirmation: ConfirmationResult;
+  try {
+    confirmation = await signInWithPhoneNumber(auth, phoneE164, verifier);
+  } catch (err) {
+    // Keep the real Firebase code in the console so a failed SMS can be diagnosed (no phone number logged).
+    console.warn("[mycarwash] SMS code not sent:", (err as { code?: string })?.code ?? "unknown", (err as Error)?.message ?? "");
+    verifier?.clear();
+    verifier = null;
+    throw err;
+  }
   pending = { phoneE164, confirmation, sentAt: Date.now() };
   markCodeSent(phoneE164, pending.sentAt);
 }
@@ -112,6 +121,12 @@ export const signOut = () => fbSignOut(firebaseAuth());
 /** Friendly messages for common Firebase Auth errors. */
 export function authErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code ?? "";
+  const message = (err as { message?: string })?.message ?? "";
+  // Firebase "Error code: 39" (503 backendError): its anti-abuse limit blocked SMS to this number or network for a while.
+  if (/Error code: 39|TOO_MANY_ATTEMPTS/i.test(message)) return "We can’t text a code to this number right now (too many tries). Please wait about an hour, or continue with Google.";
+  if (code.includes("quota-exceeded")) return "We can’t send codes right now. Please try again later or continue with Google.";
+  if (code.includes("operation-not-allowed")) return "Text-code sign-in isn’t available right now. Please continue with Google.";
+  if (code.includes("invalid-app-credential") || code.includes("missing-app-credential")) return "We couldn’t verify this browser. Please reload the page and try again.";
   if (code.includes("invalid-verification-code")) return "That code is not right. Please check and try again.";
   if (code.includes("code-expired")) return "That code expired. Please request a new one.";
   if (code.includes("invalid-phone-number")) return "Please enter a valid PH mobile number.";

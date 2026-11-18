@@ -54,7 +54,7 @@ export function AccountScreen() {
             <img src={shop.logoUrl || iconSrc("home", 72)} alt="" className="size-[60px] rounded-[18px] bg-grey-50 object-cover" />
             <span className="min-w-0 leading-[1.3]"><b className="block truncate text-[17px]">{shop.name}</b><span className="text-[13px] font-semibold text-muted">You’re staff here{user ? ` · ${user.phoneNumber || user.email}` : " · staff link"}</span></span>
           </div>
-          <p className="mt-3 text-[13.5px] font-medium text-muted">You can take walk-ins, run the queue and record payments. Sales, settings and billing are for the owner.</p>
+          <p className="mt-3 text-[13.5px] font-medium text-muted">You can take walk-ins, run the queue and record payments. Settings and billing are for the owner.</p>
         </section>
         <Card padding="none" className="mt-4 px-2 py-1.5">
           {installHidden ? null : <Link href="/settings/install" className="flex min-h-[60px] items-center gap-3 rounded-tile px-1.5 py-2"><span className="inline-flex size-10 items-center justify-center rounded-tile bg-grey-100"><Download size={18} strokeWidth={1.75} /></span><b className="flex-1 text-[15px]">Install app</b><ChevronRight size={20} className="text-subtle" /></Link>}

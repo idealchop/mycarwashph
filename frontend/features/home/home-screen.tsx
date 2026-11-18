@@ -1,8 +1,5 @@
 "use client";
 
-import { hasPaidFeatures } from "@/lib/plan-gating";
-
-import { CoinIcon } from "@river-apps/icons";
 import { ChevronRight, Plus, ScanLine, User } from "lucide-react";
 import { Avatar, Badge, Button, Card, CardHeader, HeroBanner, ProgressRing, SearchInput, SectionHeader, StatCard, Topbar } from "@river-apps/ui";
 import Link from "next/link";
@@ -89,7 +86,6 @@ export function HomeScreen() {
   const { requireAuth } = useAuthGate();
   const today = useToday(shop);
   const [note, setNote] = useState("");
-  const paid = hasPaidFeatures(shop);
   const greeting = greetingFor();
   const fig = figures(today.jobs, today.summary);
   // Staff view (Barbers.ph): queue + walk-ins only, no sales totals, settings or billing.
@@ -142,10 +138,7 @@ export function HomeScreen() {
                 </button>
               )}
             </div>
-            {staff ? <span className="inline-flex h-8 flex-none items-center rounded-pill bg-grey-100 px-3 text-[12.5px] font-bold">Staff</span> : <Link href="/sales" aria-label="Sales" className="inline-flex min-h-11 flex-none items-center gap-1.5 rounded-full border border-line py-1 pl-1 pr-3">
-              <CoinIcon size={26} />
-              <span className="text-[13px] font-bold leading-none text-ink">Sales</span>
-            </Link>}
+            {staff ? <span className="inline-flex h-8 flex-none items-center rounded-pill bg-grey-100 px-3 text-[12.5px] font-bold">Staff</span> : null}
           </div>
         </header>
         <section className="relative isolate mx-4 mt-3 flex h-[150px] items-center overflow-hidden rounded-banner bg-black px-4 text-on-ink">
@@ -181,15 +174,6 @@ export function HomeScreen() {
         <SectionHeader className="px-5 pb-1 pt-4" title="Bookings to accept" aside={aside} />
         {note ? <p className="mx-4 mb-2 text-[13px] font-semibold">{note}</p> : null}
         <div className="mx-4"><Bookings rows={fresh} loading={!today.ready} max={4} onAct={act} /></div>
-        {paid ? null : (
-          <Card padding="none" className="mx-4 mt-2.5 flex items-center justify-between gap-3 px-4 py-3.5">
-            <span className="min-w-0">
-              <b className="block text-[14px]">You’re on Partner</b>
-              <small className="text-[12.5px] font-semibold text-muted">10 walk-ins a day. Pro (₱499/mo) makes them unlimited, plus bays and the shop QR</small>
-            </span>
-            <Button href="/settings/billing" variant="secondary" size="sm" className="flex-none">Plans</Button>
-          </Card>
-        )}
       </div>
 
       <div className="mx-auto hidden w-full max-w-[1120px] px-4 pb-6 pt-4 lg:block lg:px-[30px] lg:pt-6">
@@ -279,9 +263,6 @@ function DesktopBar({ name, owner, greeting, dayLabel, photoUrl, onSignIn }: { n
           <form className="hidden xl:flex" onSubmit={(e) => { e.preventDefault(); router.push(search.trim() ? `/scan?code=${encodeURIComponent(search.trim())}` : "/scan"); }}>
             <SearchInput className="w-[300px]" placeholder="Find a booking code, e.g. MCW1…" label="Find a booking" value={search} onChange={(e) => setSearch(e.target.value)} />
           </form>
-          <Link href="/sales" aria-label="Sales" className="inline-flex size-11 items-center justify-center">
-            <CoinIcon size={40} />
-          </Link>
           {onSignIn ? (
             <Button size="sm" onClick={onSignIn}>Sign in</Button>
           ) : (

@@ -13,7 +13,7 @@ Firebase client SDKs in the frontend (`frontend/lib/firebase.ts`):
 
 | Screen / data | Read model |
 | :--- | :--- |
-| Home, Queue, History, Sales, Order details | API GET (`/businesses/:id/queue`, `/bookings`, `/sales`, `/sales/summary`, `/queue/:id`, `/bookings/:id`) |
+| Home, Queue, History, Order details (the Sales page was removed Nov 18, 2026; `/sales` redirects to Home) | API GET (`/businesses/:id/queue`, `/bookings`, `/sales`, `/sales/summary`, `/queue/:id`, `/bookings/:id`) |
 | Settings (shop, services, bays, members, billing) | API GET |
 | AI Companion | API GET `/businesses/:id/companion`, `/companion/messages` |
 | Moments | API GET `/moments` |

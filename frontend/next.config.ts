@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@river/map"],
   // Pages retired when Mycarwash moved to the Barbers.ph structure (3-item nav).
   async redirects() {
-    const home = ["/messages", "/growth", "/customers", "/dashboard", "/staff", "/onboarding", "/welcome", "/sign-in", "/sign-in/:path*", "/invite/:path*"];
+    const home = ["/messages", "/growth", "/customers", "/dashboard", "/staff", "/onboarding", "/welcome", "/sign-in", "/sign-in/:path*", "/invite/:path*", "/sales"];
     return [
       ...home.map((source) => ({ source, destination: "/home", permanent: false })),
       { source: "/bookings", destination: "/history", permanent: false },
