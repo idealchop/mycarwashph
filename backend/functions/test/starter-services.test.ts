@@ -1,9 +1,9 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { createApiClient } from "../src/services/api-clients-service.js";
+import { riverCall } from "./river-helpers.js";
 import { paths } from "../src/services/paths.js";
 import { STARTER_SERVICES } from "../src/services/starter-services.js";
-import { auth, FIXED_NOW, makeApps } from "./helpers.js";
+import { auth, makeApps } from "./helpers.js";
 
 const list = async (ctx: ReturnType<typeof makeApps>, shop: string) =>
   (await request(ctx.app).get(`/businesses/${shop}/services`).set(auth("owner"))).body.data as { name: string; category: string; listedOnRiverMobile: boolean; pricesBySize: Record<string, number> }[];
@@ -59,8 +59,7 @@ describe("starter services and categories", () => {
     const ctx = makeApps();
     const shop = (await request(ctx.app).post("/businesses").set(auth("owner")).send({ name: "V1 Wash" })).body.data.id as string;
     await request(ctx.app).patch(`/businesses/${shop}`).set(auth("owner")).send({ riverMobileListed: true });
-    const { apiKey } = await createApiClient(ctx.deps.store, { clientId: "river-mobile", name: "River Mobile", environment: "local", scopes: ["shops:read"] }, "test-pepper", FIXED_NOW);
-    const res = await request(ctx.publicApp).get(`/v1/shops/${shop}/services`).set({ Authorization: `Bearer ${apiKey}` });
+    const res = await riverCall(ctx.publicApp, "GET", `/v1/shops/${shop}/services`);
     expect(res.status).toBe(200);
     expect(res.body.data.find((s: { name: string }) => s.name === "Hand Wax")).toMatchObject({ category: "wax-coating", icon: "shield", durationMins: 30 });
   });

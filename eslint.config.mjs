@@ -25,6 +25,11 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },
+  {
+    // Vendored River bridge-kit (idealchop/River-Mobile-App bridge-kit/src): keep it byte-for-byte.
+    files: ["backend/functions/src/river/bridge-kit/**"],
+    rules: { "prefer-const": "off" },
+  },
   ...nextVitals.map((config) => ({
     ...config,
     files: config.files ?? frontendFiles,

@@ -77,6 +77,11 @@ describe("tenancy rules", () => {
 
   it("platform collections are server-only", async () => {
     await assertFails(getDoc(doc(as("alice"), "api_clients/river-mobile")));
+    // River Bridge: shared nonce store and webhook delivery log are server-only.
+    for (const path of ["river_nonces/n1", "river_webhook_deliveries/mcw.b1.accepted", "api_idempotency/k1", "api_booking_index/b1"]) {
+      await assertFails(getDoc(doc(as("alice"), path)));
+      await assertFails(setDoc(doc(as("alice"), path), { x: 1 }));
+    }
   });
 
   it("a user can list only their own memberships across shops", async () => {

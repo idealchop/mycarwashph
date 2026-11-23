@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { createApiClient } from "../src/services/api-clients-service.js";
-import { auth, FIXED_NOW, makeApps, starterId } from "./helpers.js";
+import { riverCall } from "./river-helpers.js";
+import { auth, makeApps, starterId } from "./helpers.js";
 
 describe("sales + invites + alerts", () => {
   it("records a sale when a queue item is marked paid and summarises the day", async () => {
@@ -67,22 +67,16 @@ describe("sales + invites + alerts", () => {
       pricesBySize: { small: 25000 },
       listedOnRiverMobile: true,
     });
-    const { apiKey } = await createApiClient(
-      ctx.deps.store,
-      { clientId: "river-mobile", name: "River Mobile", environment: "local", scopes: ["bookings:write", "shops:read", "bookings:read", "checkin:write"] },
-      "test-pepper",
-      FIXED_NOW,
-    );
-    const book = await request(ctx.publicApp)
-      .post("/v1/bookings")
-      .set({ Authorization: `Bearer ${apiKey}`, "Idempotency-Key": "idem-alert-1" })
-      .send({
+    const book = await riverCall(ctx.publicApp, "POST", "/v1/bookings", {
+      idem: "idem-alert-1",
+      body: {
         shopId: shop,
         serviceIds: [svc.body.data.id],
         vehicleSize: "small",
         slotStart: "2026-10-04T04:00:00.000Z",
         customer: { ref: "c1", name: "Ana", phoneE164: "+639171111111" },
-      });
+      },
+    });
     expect(book.status).toBe(201);
     const alerts = await request(ctx.app).get(`/businesses/${shop}/alerts`).set(auth("owner"));
     expect(alerts.status).toBe(200);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { API_SCOPES, BILLING_PAYMENT_METHODS, PARTNER_BILLING_OPTIONS, PAYMENT_METHODS, PLANS, QUEUE_STATUSES, ROLES, SERVICE_CATEGORIES, SERVICE_ICONS, VEHICLE_SIZES } from "./types.js";
+import { BILLING_PAYMENT_METHODS, PARTNER_BILLING_OPTIONS, PAYMENT_METHODS, PLANS, QUEUE_STATUSES, ROLES, SERVICE_CATEGORIES, SERVICE_ICONS, VEHICLE_SIZES } from "./types.js";
 
 const name = z.string().trim().min(1).max(80);
 /** Philippine mobile in E.164, e.g. +639171234567. */
@@ -164,9 +164,27 @@ export const v1CreateBookingSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+/** POST /v1/orders: the shared River contract (openapi.yaml OrderCreate), booking kind only. */
+export const v1CreateOrderSchema = z.object({
+  shopId: id,
+  kind: z.literal("booking"),
+  source: z.literal("river_mobile"),
+  lines: z.array(z.object({ id, quantity: z.number().int().min(1).max(10).optional() })).min(1).max(10),
+  slot: z.object({ start: z.iso.datetime({ offset: true }) }),
+  vehicleSize,
+  /** Accepted for compatibility; never stored (no plate numbers). */
+  plate: z.string().trim().max(12).optional(),
+  customer: z.object({ ref: z.string().min(1).max(128), name, phoneE164: phoneE164.optional() }),
+  externalRef: z.string().max(128).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export const v1CancelSchema = z.object({
+  reason: z.string().trim().max(200).optional(),
+});
+
 export const v1CheckInSchema = z.object({
   /** Payload of the printed shop QR scanned in River Mobile: MCW-SHOP.<shopId> (unsigned placeholder). */
   shopQr: z.string().trim().min(5).max(200),
 });
 
-export const apiScopeSchema = z.enum(API_SCOPES);

@@ -44,8 +44,10 @@ transaction (plus the starter services). Staff join by accepting an invite (`/in
 
 ## `/v1` partner API (River Mobile)
 
-Server to server with an API key: `Authorization: Bearer <key>`. `requireApiClient` hashes the key with the
-environment's pepper (Secret Manager `API_KEY_PEPPER_DEV` / `_PROD`) and looks up `api_clients`;
-`requireScope` checks `shops:read`, `bookings:write`, `bookings:read`, `checkin:write`.
+Server to server from the River Bridge only, with two factors on every call
+(`riverPartnerAuth`, vendored bridge-kit): a Google OIDC ID token from an
+allowlisted Bridge service account (aud = the dev App Hosting origin) and an
+`X-River-Signature` HMAC with a single-use nonce. No API keys. `requireScope` checks
+`shops:read`, `orders:read`, `orders:write`, `checkin:write`.
 Shops are only visible when `riverMobile.listed` is on. A booking is tied to the creating client via
-`api_booking_index`, so a client can only read or check in its own bookings. Details: [api.md](./api.md).
+`api_booking_index`, so a client can only read, check in or cancel its own bookings. Details: [api.md](./api.md).

@@ -15,6 +15,14 @@
         { "fieldPath": "queueDate", "order": "ASCENDING" },
         { "fieldPath": "queueNumber", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "businesses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "planStatus", "order": "ASCENDING" },
+        { "fieldPath": "riverGeo", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
@@ -25,6 +33,12 @@
         { "order": "ASCENDING", "queryScope": "COLLECTION" },
         { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
       ]
+    },
+    {
+      "collectionGroup": "river_nonces",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
     }
   ]
 }

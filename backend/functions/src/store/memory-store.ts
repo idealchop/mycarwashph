@@ -98,7 +98,9 @@ function applyQuery<R extends { id: string }>(rows: R[], query?: ListQuery): R[]
   for (const [field, op, value] of query?.where ?? []) {
     out = out.filter((r) => {
       const v = (r as Record<string, unknown>)[field];
-      return op === "<" ? (v as string | number) < (value as string | number) : v === value;
+      if (op === "<") return v !== undefined && v !== null && (v as string | number) < (value as string | number);
+      if (op === ">=") return v !== undefined && v !== null && (v as string | number) >= (value as string | number);
+      return v === value;
     });
   }
   if (query?.orderBy) {
