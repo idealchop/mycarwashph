@@ -76,7 +76,8 @@ service cloud.firestore {
       allow read: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
-    // Default deny (api_clients, api_idempotency, api_booking_index, anything else).
+    // Default deny (api_clients, api_idempotency, api_booking_index, river_nonces,
+    // river_webhook_deliveries, anything else). The River Bridge collections are server-only.
     match /{document=**} {
       allow read, write: if false;
     }

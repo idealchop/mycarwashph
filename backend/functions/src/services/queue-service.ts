@@ -1,7 +1,7 @@
 import { planGatingEnabled } from "../config/plan-gating.js";
 import { HttpError, notFound, unprocessable } from "../lib/errors.js";
 import { manilaDayKey } from "../lib/time.js";
-import type { Bay, OrderLine, Plan, PaymentMethod, QueueItem, QueueStatus, Service, VehicleSize } from "../models/types.js";
+import type { Bay, Booking, OrderLine, Plan, PaymentMethod, QueueItem, QueueStatus, Service, VehicleSize } from "../models/types.js";
 import type { DocStore, Tx } from "../store/doc-store.js";
 import type { Actor } from "./audit-service.js";
 import { writeAudit } from "./audit-service.js";
@@ -179,6 +179,13 @@ export async function updateQueueItem(
     }
   }
   await store.update(path, update);
+  // Mirror the car's progress onto its booking (Paid shops) so the booking status, and the
+  // River Mobile status webhook fired from booking updates, follow the queue.
+  if (item.bookingId && update.status) {
+    const bookingPath = paths.booking(businessId, item.bookingId);
+    const booking = await store.get<Booking>(bookingPath);
+    if (booking && booking.status !== update.status) await store.update(bookingPath, { status: update.status, updatedAt: at });
+  }
   await writeAudit(store, businessId, { actor: { type: "user", id: actorUid }, action: "queue.update", target: path, meta: { status: patch.status, bayId: patch.bayId } }, now);
 
   let sale = null;

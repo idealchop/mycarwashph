@@ -79,6 +79,8 @@ export interface Business {
   location?: ShopLocation | null;
   /** Opt-in to being listed and bookable in River Mobile. */
   riverMobile: { listed: boolean; listedAt: string | null };
+  /** Geohash while listed on River Mobile with a map pin (river/geo.ts riverGeoFor); null otherwise. Powers GET /v1/shops. */
+  riverGeo?: string | null;
   /** Set once the starter services were seeded or the backfill checked this shop. */
   starterServicesAt?: string | null;
   /** Partner availability: simple max bookings per slot. */
@@ -181,7 +183,8 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 /** businesses/{businessId}/bookings/{bookingId} */
 export interface Booking {
   reference: string;
-  source: "river_mobile_api" | "online_link" | "staff";
+  /** "river_mobile" for River Bridge orders; "river_mobile_api" on older rows (same status mapping). */
+  source: "river_mobile" | "river_mobile_api" | "online_link" | "staff";
   status: BookingStatus;
   serviceIds: string[];
   vehicleSize: VehicleSize;
@@ -196,6 +199,8 @@ export interface Booking {
   acceptedBy: string | null;
   checkedInAt: string | null;
   queueItemId: string | null;
+  /** Customer cancel reason from River Mobile (POST /v1/orders/{id}/cancel). */
+  cancelReason?: string | null;
   /** Booking-link (QR web page) bookings: sha256 of the customer ticket token. */
   linkTokenHash?: string | null;
   /** Customer pay preference from the booking link ("shop" today; "online" when checkout is on). */
@@ -309,23 +314,14 @@ export interface Alert {
   createdAt: string;
 }
 
+/** Scopes the River Bridge can be granted on /v1 (docs/partner-api/mapping.md). */
 export const API_SCOPES = [
   "shops:read",
-  "bookings:write",
-  "bookings:read",
+  "orders:read",
+  "orders:write",
   "checkin:write",
 ] as const;
 export type ApiScope = (typeof API_SCOPES)[number];
-
-/** api_clients/{clientId} (top level, platform-managed; never readable by clients). */
-export interface ApiClient {
-  name: string;
-  environment: "dev" | "prod" | "local";
-  scopes: ApiScope[];
-  secretHash: string;
-  status: "active" | "revoked";
-  createdAt: string;
-}
 
 /** api_booking_index/{bookingId}: maps a public booking id to its shop and client. */
 export interface ApiBookingIndex {

@@ -9,6 +9,7 @@ import { writeAudit } from "./audit-service.js";
 import { notifyShop } from "./notify-service.js";
 import { allocateQueueItem } from "./queue-service.js";
 import { paths } from "./paths.js";
+import { RIVER_SOURCE, toRiverStatus } from "../river/status.js";
 
 /** Check-in QR payload shown in River Mobile: MCW1.<businessId>.<bookingId>.<code> */
 export const checkInPayload = (businessId: string, bookingId: string, code: string) =>
@@ -126,7 +127,7 @@ export interface ApiBookingInput {
   notes?: string;
 }
 
-/** River Mobile booking (POST /v1/bookings). Only listed shops and listed services are bookable. */
+/** River Mobile booking (POST /v1/orders or legacy POST /v1/bookings). Only listed shops and listed services are bookable. */
 export async function createApiBooking(store: DocStore, clientId: string, input: ApiBookingInput, now: Date) {
   const business = await store.get<Business>(paths.business(input.shopId));
   if (!business || !business.riverMobile.listed || business.planStatus !== "active") {
@@ -143,7 +144,7 @@ export async function createApiBooking(store: DocStore, clientId: string, input:
   const at = now.toISOString();
   const booking: Booking = {
     reference: `${brand.bookingRefPrefix}-${randomCode(6)}`,
-    source: "river_mobile_api",
+    source: RIVER_SOURCE,
     status: "requested",
     serviceIds: input.serviceIds,
     vehicleSize: input.vehicleSize,
@@ -181,6 +182,8 @@ export async function createApiBooking(store: DocStore, clientId: string, input:
     bookingId,
     reference: booking.reference,
     status: booking.status,
+    riverStatus: toRiverStatus(booking.status),
+    source: RIVER_SOURCE,
     shopId: input.shopId,
     checkIn: { code, qrPayload: checkInPayload(input.shopId, bookingId, code) },
     createdAt: at,
@@ -201,6 +204,7 @@ export function apiBookingView(b: Doc<Booking>, businessId: string) {
     reference: b.reference,
     shopId: businessId,
     status: b.status,
+    riverStatus: toRiverStatus(b.status),
     serviceIds: b.serviceIds,
     vehicleSize: b.vehicleSize,
     scheduledStart: b.scheduledStart,
@@ -227,4 +231,48 @@ export async function apiCheckIn(store: DocStore, clientId: string, bookingId: s
   await writeAudit(store, businessId, { actor: { type: "api_client", id: clientId }, action: "booking.verify", target: paths.booking(businessId, bookingId), meta: { via: "customer_shop_qr" } }, now);
   // Phase 1: on Paid shops also create the queue item, as the shop-side scan does.
   return apiBookingView({ ...booking, ...patch }, businessId);
+}
+
+/** Shared-contract Order view (docs/partner-api/openapi.yaml `Order`) for /v1/orders routes. */
+export function apiOrderView(b: Doc<Booking>, businessId: string) {
+  return {
+    orderId: b.id,
+    shopId: businessId,
+    reference: b.reference,
+    status: toRiverStatus(b.status),
+    source: RIVER_SOURCE,
+    currency: "PHP",
+    slotStart: b.scheduledStart,
+    checkedInAt: b.checkedInAt,
+    externalRef: b.external?.externalBookingRef ?? null,
+    updatedAt: b.updatedAt,
+  };
+}
+
+/**
+ * Customer cancel from River Mobile (POST /v1/orders/{id}/cancel). Allowed while
+ * requested or accepted; a repeat on an already-cancelled order returns it as is.
+ * The status webhook to the Bridge fires from the booking update trigger.
+ */
+export async function apiCancel(store: DocStore, clientId: string, bookingId: string, reason: string | undefined, now: Date) {
+  const index = await store.get<ApiBookingIndex>(paths.apiBookingIndex(bookingId));
+  if (!index || index.clientId !== clientId) throw notFound("Booking not found.");
+  const path = paths.booking(index.businessId, bookingId);
+  const result = await store.runTransaction(async (tx) => {
+    const booking = await tx.get<Booking>(path);
+    if (!booking) throw notFound("Booking not found.");
+    if (booking.status === "cancelled") return { booking, changed: false };
+    if (booking.status !== "requested" && booking.status !== "accepted") {
+      throw conflict(`This booking is already ${booking.status} and can no longer be cancelled.`, "invalid_status");
+    }
+    const at = now.toISOString();
+    const patch: Partial<Booking> = { status: "cancelled", cancelReason: reason?.trim() || null, updatedAt: at };
+    tx.update(path, patch);
+    await writeAudit(store, index.businessId, { actor: { type: "api_client", id: clientId }, action: "booking.cancelled", target: path, meta: { via: "river_mobile" } }, now, tx);
+    return { booking: { ...booking, ...patch }, changed: true };
+  });
+  if (result.changed) {
+    await notifyShop(store, index.businessId, { type: "booking.status", title: "Booking cancelled", body: `${result.booking.reference} was cancelled by the customer.`, bookingId }, now);
+  }
+  return { booking: result.booking, businessId: index.businessId };
 }

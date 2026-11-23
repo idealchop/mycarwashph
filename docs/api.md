@@ -125,46 +125,77 @@ queue item with the day's next number and the booking moves to `queued`.
 
 ## River Mobile API (`/v1`, `mycarwashPublicApiDev` / `mycarwashPublicApiProd`)
 
-Server to server only: the River Mobile app talks to River Mobile's backend,
-which holds the Mycarwash credentials. Mycarwash and River Mobile share no
-database or user table; this API is the only connection.
+Server to server only: River Mobile's app talks to the **River Bridge** (River
+Mobile's backend, `idealchop/River-Mobile-App` `functions/`), and only the Bridge
+calls this API. Mycarwash and River Mobile share no database or user table. The
+contract is the Bridge's `docs/partner-api/openapi.yaml`; this app's verifier is
+the vendored `backend/functions/src/river/bridge-kit/` (unchanged logic).
 
-### Auth (placeholder)
+Public entry: `https://mycarwash-dev--mycarwashph.asia-southeast1.hosted.app/v1/*`
+(App Hosting proxy `frontend/app/v1/[...path]/route.ts` → private Cloud Run
+`mycarwashPublicApiDev`). **Dev only for now.** The prod partner API has no River
+config and answers `401` to everything except `/v1/health` (fail closed).
 
-`Authorization: Bearer mcw_<clientId>_<secret>`. The key is checked against
-`api_clients/{clientId}` in that environment's database (`secretHash = sha256(pepper:secret)`,
-with the pepper from Secret Manager `API_KEY_PEPPER_DEV` / `_PROD`; `status`,
-`scopes`). Scopes: `shops:read`, `bookings:write`, `bookings:read`, `checkin:write`.
-Phase 1 replaces this with OAuth 2.0 client credentials (`POST /v1/oauth/token`,
-short-lived tokens) as proposed in the plan (§3.9.1).
+### Auth: two factors on every call (except `GET /v1/health`)
 
-Only shops with `riverMobile.listed = true` are visible or bookable, and a client
-can only read bookings it created.
+1. **OIDC.** `Authorization: Bearer <Google-signed ID token>` from the Bridge
+   service account. `aud` must be exactly the dev origin
+   `https://mycarwash-dev--mycarwashph.asia-southeast1.hosted.app` (no `/v1`);
+   tokens for prod or any other audience are refused. The `email` must be in
+   `RIVER_DEV_BRIDGE_EMAILS`. There is **no API-key fallback**; the old `mcw_`
+   keys and `api_clients` lookup are gone.
+2. **HMAC.** `X-River-Signature: v1=<hex>` = HMAC-SHA256 over
+   `v1\nMETHOD\nPATH?SORTED_QUERY\nX-River-Timestamp\nX-River-Nonce\nhex(sha256(raw body))`,
+   plus `X-River-Key-Id`, `X-River-Timestamp` (unix seconds, ±5 min) and
+   `X-River-Nonce` (UUID v4, single use for 10 min in the shared Firestore store
+   `river_nonces/{sha256(keyId\nnonce)}`, TTL on `expireAt`). Two active request
+   secrets (`bridge-to-carwash-dev-v1` / `-v2`, Secret Manager
+   `RIVER_BRIDGE_REQUEST_HMAC_DEV_V1` / `_V2`). Constant-time comparison.
+
+Writes need `Idempotency-Key` (8–128 of `A-Za-z0-9_.:-`); same key + body replays
+with `Idempotent-Replayed: true`, a different body is `422`. Bodies over 16 KB are
+`413`. HTTPS only. Auth failures are generic `application/problem+json`
+(`unauthorized` / `forbidden`); the reason is only in the `river_auth` log line
+(method, path, key id, caller email, result, reason; never tokens or secrets).
+
+Scopes granted to the Bridge (`RIVER_DEV_SCOPES`): `shops:read`, `orders:read`,
+`orders:write`, `checkin:write`. Only listed, active shops are visible, and the
+Bridge only sees bookings it created (`api_booking_index`).
 
 ### Endpoints
 
 | Method & path | Scope | Purpose |
 |---|---|---|
 | `GET /v1/health` | none | Liveness, `apiVersion` |
-| `GET /v1/shops/{shopId}` | `shops:read` | Listed shop detail (`address`, `location` `{lat,lng,formattedAddress}`, phone) |
+| `GET /v1/shops?lat&lng&radiusKm&limit&cursor` | `shops:read` | **Near me**: listed, active shops with a map pin, nearest first, `distanceKm`; `radiusKm` ≤ 200 (default 10), `limit` 1–50 (default 20); `{ shops, nextCursor }` |
+| `GET /v1/shops/{shopId}` | `shops:read` | Listed shop detail |
 | `GET /v1/shops/{shopId}/services` | `shops:read` | Active services listed on River Mobile (prices in centavos) |
-| `POST /v1/bookings` | `bookings:write` | **Receive a booking** (requires `Idempotency-Key`) |
-| `GET /v1/bookings/{bookingId}` | `bookings:read` | Booking status (only bookings this client created) |
-| `POST /v1/bookings/{bookingId}/check-in` | `checkin:write` | **Customer verify**: customer scanned the shop QR |
+| `POST /v1/orders` | `orders:write` | Create (shared `OrderCreate`, `kind: "booking"`) |
+| `GET /v1/orders/{orderId}` | `orders:read` | Shared `Order` view (`status` in the shared set) |
+| `POST /v1/orders/{orderId}/check-in` | `checkin:write` | Customer scanned the shop QR |
+| `POST /v1/orders/{orderId}/cancel` | `orders:write` | Customer cancel while `requested` or `accepted`; repeat = `200` |
+| `POST /v1/bookings` | `orders:write` | Legacy create (the Bridge's current Carwash adapter) |
+| `GET /v1/bookings/{bookingId}` | `orders:read` | Legacy view (`status` = Carwash status, plus `riverStatus`) |
+| `POST /v1/bookings/{bookingId}/check-in` | `checkin:write` | Legacy check-in |
+| `POST /v1/bookings/{bookingId}/cancel` | `orders:write` | Same as orders cancel |
 
-#### POST /v1/bookings
+All creates write `businesses/{shopId}/bookings/{id}` with `source: "river_mobile"`
+(older rows keep `river_mobile_api`; both map to the same statuses), so owners see
+them live. Plates are accepted for compatibility but never stored.
 
-```http
-POST /v1/bookings
-Authorization: Bearer mcw_river-mobile_<secret>
-Idempotency-Key: 6f1c2b8e-booking-001
-Content-Type: application/json
+The near-me list uses the denormalized `businesses.riverGeo` geohash (set while a
+shop is listed with a map pin, cleared when unlisted or removed). One range query
+per covering geohash cell (≤ 9 cells × 60 docs), index
+`businesses (planStatus ASC, riverGeo ASC)`. Shops listed before this change get
+`riverGeo` the next time the owner saves the shop (or a one-off backfill).
 
+#### POST /v1/bookings (legacy body)
+
+```json
 {
   "shopId": "shopA",
   "serviceIds": ["svc1"],
   "vehicleSize": "medium",
-  "plate": "NAB 1234",
   "slotStart": "2026-10-10T15:00:00+08:00",
   "customer": { "ref": "rm-opaque-customer-id", "name": "Juan Dela Cruz", "phoneE164": "+639181112222" },
   "externalBookingRef": "RM-123",
@@ -172,48 +203,54 @@ Content-Type: application/json
 }
 ```
 
-`201 Created`:
+`201`: `{ bookingId, reference, status: "requested", riverStatus, source: "river_mobile", shopId, checkIn: { code, qrPayload }, createdAt }`.
 
-```json
-{
-  "bookingId": "bk123",
-  "reference": "CWS-7KQ2M9",
-  "status": "requested",
-  "shopId": "shopA",
-  "checkIn": { "code": "7KQ2M9XD", "qrPayload": "MCW1.shopA.bk123.7KQ2M9XD" },
-  "createdAt": "2026-10-04T02:00:00.000Z"
-}
-```
+### Status mapping (shared set)
 
-Repeating the same `Idempotency-Key` with the same body returns the stored
-response with `Idempotent-Replayed: true`; a different body returns
-`422 idempotency_key_reused`. Errors: `400` validation, `401` bad key, `403`
-missing scope, `404` shop not listed, `422 invalid_service`.
+| Carwash | River |
+|---|---|
+| `requested` | `requested` |
+| `accepted` | `accepted` |
+| `checked_in`, `queued`, `in_bay` | `in_progress` |
+| `done` | `ready` |
+| `completed`, `paid`, `closed` | `completed` |
+| `declined` | `declined` |
+| `cancelled`, `no_show` | `cancelled` |
 
-#### POST /v1/bookings/{bookingId}/check-in
+On Paid shops the booking now follows its queue item (`in_bay`, `done`, `paid`, `closed`, `cancelled`).
 
-```json
-{ "shopQr": "MCW-SHOP.shopA" }
-```
+### Status webhooks (app → Bridge)
 
-The printed shop QR payload is a placeholder (`MCW-SHOP.<shopId>`, unsigned).
-The booking must be `accepted`. Returns the booking view with
-`status: "checked_in"`. Errors: `403` QR for another shop, `409 invalid_status`,
-`422 invalid_qr`.
+`mycarwashRiverWebhookDev` (Firestore trigger on `businesses/{id}/bookings/{id}`
+updates in `mycarwash-dev`; no polling) sends `order.<status>` when the shared status
+changes on a River Mobile booking, to `{RIVER_DEV_BRIDGE_BASE_URL}/hooks/carwash`.
+Factor 1 is this function's service-account OIDC token (aud = that exact URL);
+factor 2 is the webhook-direction HMAC (`carwash-to-bridge-dev-v1` / `-v2`, Secret
+Manager `RIVER_BRIDGE_WEBHOOK_HMAC_DEV_V1` / `_V2`, `RIVER_DEV_WEBHOOK_ACTIVE`
+picks which signs), signed over the path from `/hooks/` (`/hooks/carwash`), as the
+Bridge verifies it. `Idempotency-Key` = event id `mcw.<bookingId>.<status>`. Up to
+3 attempts (network, 408, 429, 5xx); outcome in `river_webhook_deliveries/{eventId}`
+(`delivered`, `failed`, `not_configured`).
 
-### Booking statuses
+The trigger runs as the dedicated service account
+`carwash-runtime@mycarwashph.iam.gserviceaccount.com` (not the project-default
+compute account); that email is what the Bridge allowlists for webhooks. Least
+privilege for it: `roles/datastore.user` (read bookings / write delivery records in
+`mycarwash-dev`), `roles/logging.logWriter`, `roles/eventarc.eventReceiver` and
+`roles/run.invoker` (Eventarc delivers the Firestore event to the function), and
+`roles/secretmanager.secretAccessor` on the two `RIVER_BRIDGE_WEBHOOK_HMAC_DEV_*`
+secrets only. Minting its own OIDC token needs no extra role (metadata server).
 
-`requested → accepted | declined | cancelled`; `accepted → checked_in | cancelled | no_show`;
-Partner: `checked_in → completed`. Paid: `checked_in → queued → in_bay → done → paid → closed`.
+### Conformance
 
-### Not built yet (Phase 1)
+`pnpm --filter @mycarwash/functions conformance` runs the bridge-kit prod-key
+checklist against this app's real `/v1` routes over HTTP (test-only secrets and a
+stand-in for Google's token check), plus the webhook direction.
 
-OAuth client credentials and token endpoint; shared rate-limit counter; shop list
-and availability; list and cancel bookings; signed shop QR with time window;
-webhooks to River Mobile (`booking.accepted`, `.declined`, `.checked_in`,
-`.completed`, `.cancelled`, `.no_show`, HMAC-SHA256 signed, retried, delivery log);
-idempotency key expiry; OpenAPI spec and Swagger UI; admin console for API clients.
+### Not built yet
 
+`GET /v1/shops/{id}/catalog` and `/availability` (shared names); signed shop QR
+with a time window; idempotency record expiry; River config for prod.
 
 ## Notifications
 

@@ -11,12 +11,13 @@ import { meRoutes } from "./routes/me-routes.js";
 import { momentsRoutes } from "./routes/moments-routes.js";
 import { linkRoutes } from "./routes/link-routes.js";
 import { publicRoutes } from "./routes/v1/public-routes.js";
+import { captureRawBody } from "./river/bridge-kit/index.js";
 
-function base() {
+function base(json: Parameters<typeof express.json>[0] = { limit: "100kb" }) {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
-  app.use(express.json({ limit: "100kb" }));
+  app.use(express.json(json));
   return app;
 }
 
@@ -42,7 +43,9 @@ export function createApp(deps: Deps) {
 
 /** Public partner API for River Mobile (server to server). Functions: mycarwashPublicApiDev / mycarwashPublicApiProd. */
 export function createPublicApp(deps: Deps) {
-  const app = base();
+  // 16 KB max (River Bridge contract); keep the exact bytes for the HMAC body hash.
+  // On Cloud Functions the body is already parsed and req.rawBody is set by the runtime.
+  const app = base({ limit: "16kb", verify: captureRawBody });
   app.use(limiter(deps.config, 120));
   app.use("/v1", publicRoutes(deps));
   app.use(notFoundHandler);

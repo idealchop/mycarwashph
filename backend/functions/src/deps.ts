@@ -3,6 +3,7 @@ import type { AppConfig } from "./config/env.js";
 import type { CompanionModel } from "./services/companion/model.js";
 import type { PhotoStore } from "./services/photo-store.js";
 import type { DocStore } from "./store/doc-store.js";
+import type { RiverAuthConfig } from "./river/config.js";
 
 /** Everything the API needs from the outside world; injected so tests can fake it. */
 export interface Deps {
@@ -14,4 +15,6 @@ export interface Deps {
   photos?: PhotoStore;
   /** Gemini (Vertex AI) for AI Companion. Optional so tests inject a fake. */
   ai?: CompanionModel;
+  /** River Bridge 2FA for /v1 (dev partner API only). Unset = every /v1 call except health is 401. */
+  river?: RiverAuthConfig;
 }

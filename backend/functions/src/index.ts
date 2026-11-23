@@ -7,6 +7,8 @@ import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions/logger";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { GoogleAuth } from "google-auth-library";
 import { createApp, createPublicApp } from "./app.js";
 import { FirebaseTokenVerifier } from "./auth/token-verifier.js";
 import { brand } from "./config/brand.js";
@@ -17,6 +19,12 @@ import { VertexCompanionModel } from "./services/companion/model.js";
 import { runWeeklyCompanion } from "./services/companion/tips-service.js";
 import { FirebasePhotoStore } from "./services/photo-store.js";
 import { FirestoreStore } from "./store/firestore-store.js";
+import type { Booking } from "./models/types.js";
+import type { DocStore } from "./store/doc-store.js";
+import { googleOidcVerifier } from "./river/bridge-kit/index.js";
+import { logAudit, RIVER_SECRET_NAMES, riverEnv, type RiverAuthConfig } from "./river/config.js";
+import { FirestoreNonceStore } from "./river/nonce-store.js";
+import { deliverWebhook, webhookEventFor } from "./river/webhooks.js";
 
 const firebaseApp = initializeApp();
 
@@ -77,11 +85,57 @@ function shopApi(env: EnvName) {
   );
 }
 
+/**
+ * River Bridge secrets (Secret Manager on mycarwashph). Dev only: they are bound to
+ * the dev partner API and the dev webhook trigger, never to a prod function.
+ */
+const riverSecrets = {
+  requestV1: defineSecret(RIVER_SECRET_NAMES.requestV1),
+  requestV2: defineSecret(RIVER_SECRET_NAMES.requestV2),
+  webhookV1: defineSecret(RIVER_SECRET_NAMES.webhookV1),
+  webhookV2: defineSecret(RIVER_SECRET_NAMES.webhookV2),
+};
+
+const secretValue = (s: ReturnType<typeof defineSecret>) => {
+  try {
+    return s.value() || "";
+  } catch {
+    return "";
+  }
+};
+
+/**
+ * /v1 two-factor config. Prod has none yet, so the prod partner API answers 401 to
+ * everything except /v1/health (fail closed) until River Mobile goes live on prod.
+ */
+function riverAuthFor(env: EnvName, store: DocStore): RiverAuthConfig | undefined {
+  if (env !== "dev") return undefined;
+  const cfg = riverEnv();
+  return {
+    audience: cfg.audience,
+    allowedEmails: cfg.allowedEmails,
+    secrets: [
+      { keyId: cfg.requestKeyIds[0], secret: secretValue(riverSecrets.requestV1) },
+      { keyId: cfg.requestKeyIds[1], secret: secretValue(riverSecrets.requestV2) },
+    ].filter((s) => s.secret),
+    scopes: cfg.scopes,
+    clientId: cfg.clientId,
+    requireHttps: process.env.FUNCTIONS_EMULATOR !== "true",
+    oidc: googleOidcVerifier(),
+    nonces: new FirestoreNonceStore(store),
+    onAudit: logAudit,
+  };
+}
+
 /** Partner API (/v1): private; only App Hosting /v1 proxy may invoke (org policy forbids allUsers). */
 function partnerApi(env: EnvName) {
+  const secrets = env === "dev" ? [peppers[env], riverSecrets.requestV1, riverSecrets.requestV2] : [peppers[env]];
   return onRequest(
-    { region: brand.region, invoker: [APP_HOSTING_SERVICE_ACCOUNT], secrets: [peppers[env]], memory: "256MiB", maxInstances: 10 },
-    lazy(() => createPublicApp(depsFor(env)) as unknown as Handler),
+    { region: brand.region, invoker: [APP_HOSTING_SERVICE_ACCOUNT], secrets, memory: "256MiB", maxInstances: 10 },
+    lazy(() => {
+      const deps = depsFor(env);
+      return createPublicApp({ ...deps, river: riverAuthFor(env, deps.store) }) as unknown as Handler;
+    }),
   );
 }
 
@@ -122,3 +176,50 @@ function weeklyTips(env: EnvName) {
 export const mycarwashCompanionWeeklyDev = weeklyTips("dev");
 /** AI Companion weekly tips, prod database (guarded off until approved). */
 export const mycarwashCompanionWeeklyProd = weeklyTips("prod");
+
+/**
+ * River Mobile status webhooks, dev database only. Fires on booking updates (no
+ * polling); sends order.<status> to {RIVER_DEV_BRIDGE_BASE_URL}/hooks/carwash signed
+ * with this function's service-account OIDC token + the webhook HMAC. Bounded
+ * in-process retries; outcome in river_webhook_deliveries/{eventId}.
+ */
+/** Runtime identity for the River webhook trigger (created for this function only). */
+const RIVER_WEBHOOK_SERVICE_ACCOUNT = "carwash-runtime@mycarwashph.iam.gserviceaccount.com";
+
+export const mycarwashRiverWebhookDev = onDocumentUpdated(
+  {
+    document: "businesses/{businessId}/bookings/{bookingId}",
+    database: ENVIRONMENTS.dev.databaseId,
+    region: brand.region,
+    secrets: [riverSecrets.webhookV1, riverSecrets.webhookV2],
+    // Dedicated least-privilege identity (not the project-default compute SA). Its
+    // OIDC token is what the Bridge allowlists in RIVER_APP_CARWASH_WEBHOOK_EMAILS.
+    serviceAccount: RIVER_WEBHOOK_SERVICE_ACCOUNT,
+    retry: false,
+    memory: "256MiB",
+    timeoutSeconds: 60,
+    maxInstances: 5,
+  },
+  async (event) => {
+    const now = new Date();
+    const ev = webhookEventFor(
+      event.data?.before.data() as Booking | undefined,
+      event.data?.after.data() as Booking | undefined,
+      { businessId: event.params.businessId, bookingId: event.params.bookingId },
+      now,
+    );
+    if (!ev) return;
+    const cfg = riverEnv();
+    const secret = secretValue(cfg.webhookActive === 1 ? riverSecrets.webhookV2 : riverSecrets.webhookV1);
+    const auth = new GoogleAuth();
+    await deliverWebhook(jobStore("dev"), { url: cfg.webhookUrl, keyId: cfg.webhookKeyIds[cfg.webhookActive], secret }, ev, {
+      mintIdToken: async (audience) => (await auth.getIdTokenClient(audience)).idTokenProvider.fetchIdToken(audience),
+      fetch: async (url, init) => {
+        const res = await fetch(url, { ...init, signal: AbortSignal.timeout(10_000), redirect: "manual" });
+        return { status: res.status };
+      },
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      now: () => new Date(),
+    });
+  },
+);

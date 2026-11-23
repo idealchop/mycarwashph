@@ -5,6 +5,7 @@ import type { Deps } from "../src/deps.js";
 import type { Member, Role } from "../src/models/types.js";
 import { paths } from "../src/services/paths.js";
 import { MemoryStore } from "../src/store/memory-store.js";
+import { riverConfig } from "./river-helpers.js";
 
 /** Test tokens look like "test:<uid>" or "test:<uid>:admin". */
 export class FakeVerifier implements TokenVerifier {
@@ -24,8 +25,10 @@ export class FakeVerifier implements TokenVerifier {
 export const FIXED_NOW = new Date("2026-10-04T02:00:00.000Z"); // 10:00 PHT
 
 export function makeDeps(): Deps & { store: MemoryStore } {
+  const store = new MemoryStore();
   return {
-    store: new MemoryStore(),
+    store,
+    river: riverConfig(store),
     verifier: new FakeVerifier(),
     config: { allowedOrigins: ["http://localhost:3000"], apiKeyPepper: "test-pepper", disableRateLimit: true },
     now: () => FIXED_NOW,

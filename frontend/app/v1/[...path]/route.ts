@@ -5,8 +5,10 @@ import { needsIdToken, serviceIdToken } from "@/lib/upstream";
  * Same-origin public entry for the River Mobile partner API (`/v1/*`).
  *
  * The Cloud Functions remain private (org Domain restricted sharing forbids
- * allUsers). App Hosting invokes them with a Google ID token; callers send the
- * River Mobile API key in Authorization (unchanged).
+ * allUsers). App Hosting invokes them with its own Google ID token in
+ * X-Serverless-Authorization. The River Bridge's two factors pass through
+ * untouched: its OIDC token in Authorization (aud = this site's origin) and the
+ * X-River-* HMAC headers, plus the raw body bytes the signature covers.
  */
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,11 +31,24 @@ function publicUpstream(host: string | null): string | null {
   return null;
 }
 
-const REQUEST_HEADERS = ["authorization", "content-type", "idempotency-key", "accept", "x-api-key"];
+const REQUEST_HEADERS = [
+  "authorization",
+  "content-type",
+  "idempotency-key",
+  "accept",
+  "x-river-key-id",
+  "x-river-timestamp",
+  "x-river-nonce",
+  "x-river-signature",
+  "x-request-id",
+];
 const RESPONSE_HEADERS = ["content-type", "ratelimit", "ratelimit-policy", "retry-after", "idempotent-replayed"];
 
 function problem(status: number, code: string, title: string) {
-  return Response.json({ status, code, title }, { status, headers: { "Cache-Control": "no-store" } });
+  return new Response(JSON.stringify({ type: `https://mycarwash.ph/problems/${code}`, title, status, code }), {
+    status,
+    headers: { "Cache-Control": "no-store", "Content-Type": "application/problem+json" },
+  });
 }
 
 async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {

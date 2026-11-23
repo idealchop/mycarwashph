@@ -6,6 +6,7 @@ import { writeAudit } from "./audit-service.js";
 import { defaultBilling } from "./billing-service.js";
 import { paths } from "./paths.js";
 import { seedStarterServices } from "./starter-services.js";
+import { riverGeoFor } from "../river/geo.js";
 
 export interface CreateBusinessInput {
   name: string;
@@ -35,6 +36,7 @@ export async function createBusiness(
     address: input.address ?? input.location?.formattedAddress ?? null,
     location: input.location ?? null,
     riverMobile: { listed: false, listedAt: null },
+    riverGeo: null,
     starterServicesAt: now.toISOString(),
     bookingCapacity: { slotMins: 60, maxBookingsPerSlot: 2 },
     settings: { dailyTargetCentavos: null },
@@ -121,6 +123,8 @@ export async function updateBusiness(
     const cleaned = [...new Set(input.photoUrls.filter((u) => typeof u === "string" && u.startsWith("https://")))].slice(0, 6);
     patch.photoUrls = cleaned;
   }
+  // Keep the River Mobile near-me index field in step with listing + map pin.
+  patch.riverGeo = riverGeoFor({ ...business, ...patch });
   await store.update(paths.business(business.id), patch);
   await writeAudit(store, business.id, { actor: { type: "user", id: actorUid }, action: "business.update", target: paths.business(business.id), meta: { fields: Object.keys(input) } }, now);
   return { ...business, ...patch };
@@ -145,7 +149,7 @@ export async function removeBusiness(store: DocStore, businessId: string, actorU
   await store.runTransaction(async (tx) => {
     const b = await tx.get<Business>(paths.business(businessId));
     if (!b || b.deletedAt) return;
-    tx.update(paths.business(businessId), { deletedAt: at, updatedAt: at, riverMobile: { ...(b.riverMobile ?? {}), listed: false } });
+    tx.update(paths.business(businessId), { deletedAt: at, updatedAt: at, riverMobile: { ...(b.riverMobile ?? {}), listed: false }, riverGeo: null });
     for (const m of members) tx.update(paths.member(businessId, m.id), { status: "removed", updatedAt: at });
     await writeAudit(store, businessId, { actor: { type: "user", id: actorUid }, action: "business.remove", target: paths.business(businessId), meta: null }, now, tx);
   });

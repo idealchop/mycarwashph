@@ -9,10 +9,9 @@
  * the code is also shown in the emulator UI / logs):
  *   +63 917 123 4567  Jun   -> "Sample Carwash"      (Partner, listed on River Mobile)
  *   +63 918 123 4567  Liza  -> "Sample Carwash Plus" (Paid, with bays and a queue)
- * It also registers a local River Mobile API client and books through the real
- * /v1 API (mycarwashPublicApiDev -> database mycarwash-dev), so the Partner home
- * shows incoming bookings. Writes the local API key
- * and check-in QR payloads to /tmp/mycarwash-seed.json (local only).
+ * It also writes four River Mobile bookings (source river_mobile) so the Partner
+ * home shows incoming bookings, and writes their check-in QR payloads to
+ * /tmp/mycarwash-seed.json (local only).
  */
 import { createHash, randomBytes } from "node:crypto";
 import { writeFileSync } from "node:fs";
@@ -24,9 +23,7 @@ const PROJECT = process.env.GCLOUD_PROJECT ?? "demo-mycarwash";
 if (!PROJECT.startsWith("demo-")) throw new Error("Refusing to seed a non-demo project.");
 process.env.FIRESTORE_EMULATOR_HOST ??= "127.0.0.1:8080";
 process.env.FIREBASE_AUTH_EMULATOR_HOST ??= "127.0.0.1:9099";
-const PEPPER = process.env.API_KEY_PEPPER ?? "local-dev-pepper";
 const DATABASE_ID = process.env.FIRESTORE_DATABASE_ID ?? "mycarwash-dev";
-const PUBLIC_API = process.env.PUBLIC_API_URL ?? `http://127.0.0.1:5001/${PROJECT}/asia-southeast1/mycarwashPublicApiDev`;
 
 const app = initializeApp({ projectId: PROJECT });
 const auth = getAuth(app);
@@ -88,50 +85,49 @@ async function main() {
     [6, "queued", null, ["svc-detail"], "UIO 8642", "staff", 0],
     [7, "queued", null, ["svc-regular"], "PAS 9753", "booking", 0],
   ];
-  for (const [n, status, bayId, serviceIds, plate, source, started] of q) {
+  for (const [n, status, bayId, serviceIds, _plate, source, started] of q) {
     await db.doc(`${P}/queue/q-${n}`).set({
-      queueNumber: n, queueDate: manilaDay, source, status, bayId, serviceIds, vehicleSize: "medium", plate,
+      queueNumber: n, queueDate: manilaDay, source, status, bayId, serviceIds, vehicleSize: "medium", plate: null,
       customerId: null, bookingId: null, startedAt: status === "in_bay" ? minsAgo(started) : null, doneAt: null,
       createdAt: minsAgo(60 - n), updatedAt: at,
     });
   }
   await db.doc(`${P}/counters/queue-${manilaDay}`).set({ next: 8, dayKey: manilaDay });
 
-  // Local River Mobile API client (key stays on this machine).
-  const secret = randomBytes(24).toString("hex");
-  await db.doc("api_clients/river-mobile").set({
-    name: "River Mobile (local)", environment: "local", scopes: ["shops:read", "bookings:write", "bookings:read", "checkin:write"],
-    secretHash: createHash("sha256").update(`${PEPPER}:${secret}`).digest("hex"), status: "active", createdAt: at,
-  });
-  const apiKey = `mcw_river-mobile_${secret}`;
-
-  // Book through the real /v1 API (functions emulator must be running).
+  // River Mobile bookings, written the way POST /v1/orders stores them (source river_mobile,
+  // no plate). /v1 itself needs the River Bridge's OIDC token + HMAC, which the emulator lacks.
+  const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+  const code = (n) => [...randomBytes(n)].map((b) => ALPHABET[b % ALPHABET.length]).join("");
   const bookings = [
-    ["Maria S.", "ABC 1234", ["svc-vacuum"], "10:00"],
-    ["Rico D.", "KLM 4321", ["svc-detail"], "11:30"],
-    ["Ana P.", "DFG 7788", ["svc-regular"], "14:00"],
-    ["Ben T.", "JKL 2020", ["svc-regular"], "16:00"],
+    ["Maria S.", ["svc-vacuum"], "10:00"],
+    ["Rico D.", ["svc-detail"], "11:30"],
+    ["Ana P.", ["svc-regular"], "14:00"],
+    ["Ben T.", ["svc-regular"], "16:00"],
   ];
   const created = [];
-  for (const [i, [name, plate, serviceIds, time]] of bookings.entries()) {
-    const res = await fetch(`${PUBLIC_API}/v1/bookings`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `seed-${now.getTime()}-${i}` },
-      body: JSON.stringify({ shopId: "sample-carwash", serviceIds, vehicleSize: "medium", plate, slotStart: todayAt(time), customer: { ref: `rm-sample-${i}`, name } }),
+  for (const [i, [name, serviceIds, time]] of bookings.entries()) {
+    const bookingId = `rm-sample-bk-${i}`;
+    const checkCode = code(8);
+    const reference = `CWS-${code(6)}`;
+    await db.doc(`businesses/sample-carwash/bookings/${bookingId}`).set({
+      reference, source: "river_mobile", status: "requested", serviceIds, vehicleSize: "medium", plate: null,
+      scheduledStart: new Date(todayAt(time)).toISOString(), customerSnapshot: { name, phoneE164: null },
+      verifyCodeHash: createHash("sha256").update(`${bookingId}:${checkCode}`).digest("hex"),
+      external: { clientId: "river-mobile", customerRef: `rm-sample-${i}`, externalBookingRef: null },
+      notes: null, acceptedBy: null, checkedInAt: null, queueItemId: null, createdAt: at, updatedAt: at,
     });
-    const body = await res.json();
-    if (!res.ok) throw new Error(`POST /v1/bookings failed: ${res.status} ${JSON.stringify(body)}`);
-    created.push(body);
+    await db.doc(`api_booking_index/${bookingId}`).set({ businessId: "sample-carwash", clientId: "river-mobile", customerRef: `rm-sample-${i}`, createdAt: at });
+    created.push({ bookingId, reference, status: "requested", checkIn: { code: checkCode, qrPayload: `MCW1.sample-carwash.${bookingId}.${checkCode}` } });
   }
   // The 2nd and 3rd bookings are already accepted so they can be scanned.
   for (const b of created.slice(1, 3)) {
     await db.doc(`businesses/sample-carwash/bookings/${b.bookingId}`).update({ status: "accepted", acceptedBy: "owner-jun", updatedAt: at });
   }
-  writeFileSync("/tmp/mycarwash-seed.json", JSON.stringify({ apiKey, bookings: created }, null, 2));
+  writeFileSync("/tmp/mycarwash-seed.json", JSON.stringify({ bookings: created }, null, 2));
   console.log("Seeded emulators (SAMPLE data).");
   console.log("Sign in as +63 917 123 4567 (Partner) or +63 918 123 4567 (Paid).");
   console.log("Scan test payload (accepted booking):", created[1].checkIn.qrPayload);
-  console.log("Local API key and payloads written to /tmp/mycarwash-seed.json");
+  console.log("Check-in payloads written to /tmp/mycarwash-seed.json");
 }
 
 main().then(() => process.exit(0), (err) => {

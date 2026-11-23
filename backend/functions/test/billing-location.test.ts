@@ -1,12 +1,12 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { PARTNER_PRICING } from "../src/models/types.js";
-import { createApiClient } from "../src/services/api-clients-service.js";
-import { auth, FIXED_NOW, makeApps } from "./helpers.js";
+import { riverCall } from "./river-helpers.js";
+import { auth, makeApps } from "./helpers.js";
 
 describe("location + partner billing", () => {
   it("persists address/location and exposes them on /v1 when listed", async () => {
-    const { app, publicApp, deps } = makeApps();
+    const { app, publicApp } = makeApps();
     const created = await request(app).post("/businesses").set(auth("owner1")).send({
       name: "Map Wash",
       address: "123 Maginhawa St, Quezon City",
@@ -28,13 +28,7 @@ describe("location + partner billing", () => {
     expect(patched.status).toBe(200);
     expect(patched.body.data.location.lat).toBe(14.66);
 
-    const { apiKey } = await createApiClient(
-      deps.store,
-      { clientId: "river-mobile", name: "River Mobile", environment: "local", scopes: ["shops:read"] },
-      "test-pepper",
-      FIXED_NOW,
-    );
-    const shop = await request(publicApp).get(`/v1/shops/${id}`).set({ Authorization: `Bearer ${apiKey}` });
+    const shop = await riverCall(publicApp, "GET", `/v1/shops/${id}`);
     expect(shop.status).toBe(200);
     expect(shop.body.location).toEqual({ lat: 14.66, lng: 121.06, formattedAddress: "Updated QC" });
     expect(shop.body.address).toBe("Updated QC");
