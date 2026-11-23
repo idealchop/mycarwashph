@@ -232,6 +232,15 @@ Bridge verifies it. `Idempotency-Key` = event id `mcw.<bookingId>.<status>`. Up 
 3 attempts (network, 408, 429, 5xx); outcome in `river_webhook_deliveries/{eventId}`
 (`delivered`, `failed`, `not_configured`).
 
+The trigger runs as the dedicated service account
+`carwash-runtime@mycarwashph.iam.gserviceaccount.com` (not the project-default
+compute account); that email is what the Bridge allowlists for webhooks. Least
+privilege for it: `roles/datastore.user` (read bookings / write delivery records in
+`mycarwash-dev`), `roles/logging.logWriter`, `roles/eventarc.eventReceiver` and
+`roles/run.invoker` (Eventarc delivers the Firestore event to the function), and
+`roles/secretmanager.secretAccessor` on the two `RIVER_BRIDGE_WEBHOOK_HMAC_DEV_*`
+secrets only. Minting its own OIDC token needs no extra role (metadata server).
+
 ### Conformance
 
 `pnpm --filter @mycarwash/functions conformance` runs the bridge-kit prod-key

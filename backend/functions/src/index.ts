@@ -183,12 +183,18 @@ export const mycarwashCompanionWeeklyProd = weeklyTips("prod");
  * with this function's service-account OIDC token + the webhook HMAC. Bounded
  * in-process retries; outcome in river_webhook_deliveries/{eventId}.
  */
+/** Runtime identity for the River webhook trigger (created for this function only). */
+const RIVER_WEBHOOK_SERVICE_ACCOUNT = "carwash-runtime@mycarwashph.iam.gserviceaccount.com";
+
 export const mycarwashRiverWebhookDev = onDocumentUpdated(
   {
     document: "businesses/{businessId}/bookings/{bookingId}",
     database: ENVIRONMENTS.dev.databaseId,
     region: brand.region,
     secrets: [riverSecrets.webhookV1, riverSecrets.webhookV2],
+    // Dedicated least-privilege identity (not the project-default compute SA). Its
+    // OIDC token is what the Bridge allowlists in RIVER_APP_CARWASH_WEBHOOK_EMAILS.
+    serviceAccount: RIVER_WEBHOOK_SERVICE_ACCOUNT,
     retry: false,
     memory: "256MiB",
     timeoutSeconds: 60,
